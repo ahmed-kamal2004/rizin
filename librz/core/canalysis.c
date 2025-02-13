@@ -2950,6 +2950,10 @@ RZ_IPI void rz_core_add_string_ref(RzCore *core, ut64 xref_from, ut64 xref_to) {
 	}
 }
 
+static inline bool aligns(ut64 addr, size_t align) {
+	return align > 0 && addr % align == 0;
+}
+
 RZ_API int rz_core_search_value_in_range(RzCore *core, RzInterval search_itv, ut64 vmin,
 	ut64 vmax, int vsize, inRangeCb cb, void *cb_user) {
 	int i, align = core->search->align, hitctr = 0;
@@ -2967,7 +2971,7 @@ RZ_API int rz_core_search_value_in_range(RzCore *core, RzInterval search_itv, ut
 		return -1;
 	}
 	bool maybeThumb = false;
-	if (align && core->analysis->cur && core->analysis->cur->arch) {
+	if (align > 1 && core->analysis->cur && core->analysis->cur->arch) {
 		if (!strcmp(core->analysis->cur->arch, "arm") && core->analysis->bits != 64) {
 			maybeThumb = true;
 		}
@@ -3014,7 +3018,7 @@ RZ_API int rz_core_search_value_in_range(RzCore *core, RzInterval search_itv, ut
 			if (rz_cons_is_breaked()) {
 				goto beach;
 			}
-			if (align && (addr) % align) {
+			if (!aligns(addr, align)) {
 				continue;
 			}
 			int match = false;
@@ -3060,7 +3064,7 @@ RZ_API int rz_core_search_value_in_range(RzCore *core, RzInterval search_itv, ut
 			}
 			if (match && value) {
 				bool isValidMatch = true;
-				if (align && (value % align)) {
+				if (!aligns(value, align)) {
 					// ignored .. unless we are analyzing arm/thumb and lower bit is 1
 					isValidMatch = false;
 					if (maybeThumb && (value & 1)) {
@@ -4705,20 +4709,20 @@ static void _CbInRangeAav(RzCore *core, ut64 from, ut64 to, int vsize, void *use
 	int arch_align = rz_analysis_archinfo(core->analysis, RZ_ANALYSIS_ARCHINFO_TEXT_ALIGN);
 	bool vinfun = rz_config_get_b(core->config, "analysis.vinfun");
 	int searchAlign = rz_config_get_i(core->config, "search.align");
-	int align = (searchAlign > 0) ? searchAlign : arch_align;
-	if (align > 1) {
-		if ((from % align) || (to % align)) {
-			bool itsFine = false;
-			if (archIsThumbable(core)) {
-				if ((from & 1) || (to & 1)) {
-					itsFine = true;
-				}
+	int align = (arch_align < 1) ? searchAlign : arch_align;
+	if (arch_align < 0 || (!aligns(from, align) || !aligns(to, align))) {
+		// If archaling < 0, the arch has no alignment defined. Hence it is
+		// ignored if isFine stays false.
+		bool itsFine = false;
+		if (archIsThumbable(core)) {
+			if ((from & 1) || (to & 1)) {
+				itsFine = true;
 			}
-			if (!itsFine) {
-				return;
-			}
-			RZ_LOG_DEBUG("Warning: aav: false positive in 0x%08" PFMT64x "\n", from);
 		}
+		if (!itsFine) {
+			return;
+		}
+		RZ_LOG_DEBUG("Warning: aav: false positive in 0x%08" PFMT64x "\n", from);
 	}
 	if (!vinfun) {
 		RzAnalysisFunction *fcn = rz_analysis_get_fcn_in(core->analysis, from, -1);
@@ -4747,7 +4751,7 @@ RZ_IPI void rz_core_analysis_value_pointers(RzCore *core, RzOutputMode mode) {
 	char *tmp = rz_str_dup(analysisin);
 	bool is_debug = rz_config_get_b(core->config, "cfg.debug");
 	int archAlign = rz_analysis_archinfo(core->analysis, RZ_ANALYSIS_ARCHINFO_TEXT_ALIGN);
-	rz_config_set_i(core->config, "search.align", archAlign);
+	rz_config_set_i(core->config, "search.align", archAlign < 1 ? 1 : archAlign);
 	rz_config_set(core->config, "analysis.in", "io.maps.x");
 	rz_core_notify_done(core, "Finding xrefs in noncode section with analysis.in=io.maps");
 
@@ -4822,7 +4826,7 @@ beach:
 	// end
 	rz_config_set(core->config, "analysis.in", tmp);
 	free(tmp);
-	rz_config_set_i(core->config, "search.align", o_align);
+	rz_config_set_i(core->config, "search.align", o_align < 1 ? 1 : o_align);
 }
 
 RZ_API int rz_core_get_stacksz(RzCore *core, ut64 from, ut64 to) {
