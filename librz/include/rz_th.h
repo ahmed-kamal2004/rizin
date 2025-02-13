@@ -34,7 +34,11 @@ typedef struct rz_th_t RzThread;
 typedef struct rz_th_pool_t RzThreadPool;
 typedef struct rz_th_queue_t RzThreadQueue;
 typedef void *(*RzThreadFunction)(void *user);
-typedef void (*RzThreadIterator)(void *element, void *user);
+
+/**
+ * This function shall return false to stop the threaded iteration.
+ */
+typedef bool (*RzThreadIterator)(void *element, void *user);
 
 typedef struct rz_atomic_bool_t RzAtomicBool;
 
