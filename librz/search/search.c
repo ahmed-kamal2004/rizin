@@ -556,7 +556,19 @@ typedef struct search_ctx {
 	RzSearchOpt *opt; ///< User options
 	RzThreadQueue /* RzSearchHits */ *hits; ///< Hits list
 	RzAtomicBool *loop; ///< If set, the execution will continue until it terminates. If unset, the execution cancels.
+	RzThreadQueue /* RzSearchInterval */ *finished_intervals; ///< Interval queue
 } search_ctx_t;
+
+static void print_intervals(RZ_NONNULL RzThreadQueue *intervals) {
+	rz_return_if_fail(intervals);
+
+	RzSearchInterval *search_interval = NULL;
+	while ((search_interval = rz_th_queue_pop(intervals, false))) {
+		RzInterval *itv = &search_interval->interval;
+		eprintf("[0x%" PFMT64x ", 0x%" PFMT64x "): %" PFMTSZu "\n", itv->addr, itv->addr + itv->size,
+			search_interval->n_hits);
+	}
+}
 
 static void *search_cancel_th(void *user) {
 	search_ctx_t *ctx = (search_ctx_t *)user;
@@ -567,12 +579,14 @@ static void *search_cancel_th(void *user) {
 		if (!rz_atomic_bool_get(ctx->loop)) {
 			break;
 		}
+		print_intervals(ctx->finished_intervals);
 		size_t n_hits = rz_th_queue_size(ctx->hits);
 		if (opt->cancel_cb(opt->cancel_usr, n_hits, RZ_SEARCH_CANCEL_REGULAR_CHECK)) {
 			rz_atomic_bool_set(ctx->loop, false);
 			break;
 		}
 	}
+	print_intervals(ctx->finished_intervals);
 
 	return NULL;
 }
@@ -602,10 +616,18 @@ static bool search_iterator_io_map_cb(void *element, void *user) {
 	}
 	rz_th_lock_leave(ctx->io_lock);
 
+	size_t n_hits = 0;
 	RzSearchFindBytesCallback find = col->find;
-	if (!find(ctx->opt->find_opts, col->user, at, buffer, ctx->hits)) {
+	if (!find(ctx->opt->find_opts, col->user, at, buffer, ctx->hits, &n_hits)) {
 		RZ_LOG_ERROR("search: failed search at 0x%08" PFMT64x "\n", at);
 		goto failure;
+	} else if (ctx->opt->show_progress == RZ_SEARCH_PROGRESS_INTERVALS) {
+		RzSearchInterval *interval = rz_search_interval_new(*window, n_hits);
+		if (!interval || !rz_th_queue_push(ctx->finished_intervals, interval, true)) {
+			RZ_LOG_ERROR("search: failed to push search interval to queue\n");
+			free(interval);
+			goto failure;
+		}
 	}
 
 	rz_buf_free(buffer);
@@ -663,6 +685,7 @@ RZ_API RZ_OWN RzList /*<RzSearchHit *>*/ *rz_search_on_io(
 	search_ctx_t ctx = { 0 };
 	RzList *results = NULL;
 	RzThreadQueue *hits = NULL;
+	RzThreadQueue *intervals = NULL;
 	RzList /* RzInterval */ *windows = NULL;
 	RzThread *cancel_th = NULL;
 
@@ -692,6 +715,12 @@ RZ_API RZ_OWN RzList /*<RzSearchHit *>*/ *rz_search_on_io(
 		return NULL;
 	}
 
+	intervals = rz_th_queue_new(RZ_THREAD_QUEUE_UNLIMITED, (RzListFree)rz_search_interval_free);
+	if (!intervals) {
+		RZ_LOG_ERROR("search: cannot allocate RzSearchInterval queue.\n");
+		return NULL;
+	}
+
 	windows = assemble_search_window_list(search_in, opt);
 	if (!windows) {
 		RZ_LOG_ERROR("search: Could not prepare search window queue.\n");
@@ -705,6 +734,7 @@ RZ_API RZ_OWN RzList /*<RzSearchHit *>*/ *rz_search_on_io(
 	ctx.io_lock = rz_th_lock_new(false);
 	ctx.loop = rz_atomic_bool_new(true);
 	ctx.hits = hits;
+	ctx.finished_intervals = intervals;
 
 	if (opt->cancel_cb) {
 		// create cancel thread
@@ -712,6 +742,7 @@ RZ_API RZ_OWN RzList /*<RzSearchHit *>*/ *rz_search_on_io(
 		if (!cancel_th) {
 			RZ_LOG_ERROR("search: cannot allocate cancel thread.\n");
 			rz_th_queue_free(hits);
+			rz_th_queue_free(intervals);
 			rz_atomic_bool_free(ctx.loop);
 			return NULL;
 		}
@@ -734,6 +765,7 @@ RZ_API RZ_OWN RzList /*<RzSearchHit *>*/ *rz_search_on_io(
 	rz_th_lock_free(ctx.io_lock);
 	rz_list_free(windows);
 	rz_th_queue_free(hits);
+	rz_th_queue_free(intervals);
 
 	rz_list_sort(results, (RzListComparator)rz_search_hit_cmp, NULL);
 	return results;
@@ -824,4 +856,21 @@ RZ_API RZ_OWN char *rz_search_hit_flag_name(RZ_NONNULL const RzSearchHit *hit,
 	rz_strbuf_appendf(buf, ".%" PFMTSZd, hit_id);
 
 	return rz_strbuf_drain(buf);
+}
+
+RZ_IPI RZ_OWN RzSearchInterval *rz_search_interval_new(RzInterval interval, size_t n_hits) {
+	RzSearchInterval *search_interval = RZ_NEW0(RzSearchInterval);
+	if (!search_interval) {
+		return NULL;
+	}
+	search_interval->interval = interval;
+	search_interval->n_hits = n_hits;
+	return search_interval;
+}
+
+RZ_IPI void rz_search_interval_free(RZ_NULLABLE RzSearchInterval *search_interval) {
+	if (!search_interval) {
+		return;
+	}
+	free(search_interval);
 }

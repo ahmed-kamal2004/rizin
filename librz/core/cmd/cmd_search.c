@@ -2423,7 +2423,7 @@ static RzCmdStatus cmd_core_handle_search_hits(RzCore *core, RzCmdStateOutput *s
 		return RZ_CMD_STATUS_ERROR;
 	}
 
-	if (rz_config_get_b(core->config, "search.show_progress")) {
+	if (!rz_str_is_false(rz_config_get(core->config, "search.show_progress"))) {
 		// clear last progress notification, if any
 		rz_cons_clear_line(1);
 	}
@@ -2475,8 +2475,12 @@ static RzCmdStatus cmd_core_handle_search_hits(RzCore *core, RzCmdStateOutput *s
 
 static RzSearchOpt *setup_search_options(RzCore *core) {
 	RzSearchOpt *search_opts = rz_search_opt_new();
-	if (!(rz_search_opt_set_max_hits(search_opts, rz_config_get_i(core->config, "search.maxhits")) &&
-		    rz_search_opt_set_max_threads(search_opts, rz_th_max_threads(rz_config_get_i(core->config, "search.max_threads"))))) {
+	ut32 max_threads = rz_th_max_threads(rz_config_get_i(core->config, "search.max_threads"));
+	ut32 max_hits = rz_config_get_i(core->config, "search.maxhits");
+	const char *show_progress = rz_config_get(core->config, "search.show_progress");
+	if (!(rz_search_opt_set_max_threads(search_opts, max_threads) &&
+		    rz_search_opt_set_max_hits(search_opts, max_hits) &&
+		    rz_search_opt_set_show_progress_from_str(search_opts, show_progress))) {
 		RZ_LOG_ERROR("Failed setup find options.\n");
 		return NULL;
 	}
@@ -2507,7 +2511,7 @@ static RzCmdStatus byte_pattern_search(RzCore *core, RZ_OWN RzSearchBytesPattern
 		goto error;
 	}
 
-	bool progress = rz_config_get_b(core->config, "search.show_progress");
+	bool progress = !rz_str_is_false(rz_config_get(core->config, "search.show_progress"));
 	if (!rz_search_opt_set_cancel_cb(search_opts, cmd_search_progress_cancel, progress ? state : NULL)) {
 		RZ_LOG_ERROR("code: Failed to setup default search options.\n");
 		goto error;
@@ -2890,7 +2894,7 @@ RZ_IPI RzCmdStatus rz_cmd_search_hex_regex_handler(RzCore *core, int argc, const
 		goto error;
 	}
 
-	bool progress = rz_config_get_b(core->config, "search.show_progress");
+	bool progress = !rz_str_is_false(rz_config_get(core->config, "search.show_progress"));
 	if (!rz_search_opt_set_cancel_cb(search_opts, cmd_search_progress_cancel, progress ? state : NULL)) {
 		RZ_LOG_ERROR("code: Failed to setup default search options.\n");
 		goto error;
@@ -2950,7 +2954,7 @@ static RzCmdStatus cmd_string_search_generic(RzCore *core, const char *string, c
 		// Else we are fine, since the encoding in the settings is set to 'guess'.
 	}
 
-	bool progress = rz_config_get_b(core->config, "search.show_progress");
+	bool progress = !rz_str_is_false(rz_config_get(core->config, "search.show_progress"));
 	if (!rz_search_opt_set_cancel_cb(search_opts, cmd_search_progress_cancel, progress ? state : NULL)) {
 		RZ_LOG_ERROR("code: Failed to setup default search options.\n");
 		free(search_str);

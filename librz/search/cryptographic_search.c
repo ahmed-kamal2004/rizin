@@ -50,7 +50,8 @@ RZ_API bool rz_search_collection_cryptographic_name_to_type(RZ_NONNULL const cha
 	return false;
 }
 
-static bool cryptographic_find(RzSearchFindOpt *fopts, void *user, ut64 address, const RzBuffer *buffer, RZ_OUT RzThreadQueue *hits) {
+static bool cryptographic_find(RzSearchFindOpt *fopts, void *user, ut64 address, const RzBuffer *buffer,
+	RZ_OUT RzThreadQueue *hits, RZ_OUT size_t *n_hits) {
 	RzPVector /*<CryptographicCallback *>*/ *pvec = (RzPVector *)user;
 
 	ut64 n_bytes = 0;
@@ -61,6 +62,7 @@ static bool cryptographic_find(RzSearchFindOpt *fopts, void *user, ut64 address,
 	CryptographicCallback find_cb = NULL;
 	void **it;
 
+	*n_hits = 0;
 	for (size_t offset = 0; offset < n_bytes;) {
 		if (fopts->alignment > 1 && rz_mem_align_padding(address + offset, fopts->alignment) != 0) {
 			// Match has not the correct alignment in memory.
@@ -78,6 +80,7 @@ static bool cryptographic_find(RzSearchFindOpt *fopts, void *user, ut64 address,
 				rz_search_hit_free(hit);
 				return false;
 			}
+			(*n_hits)++;
 			if (!fopts->match_overlap) {
 				match_len = RZ_MIN(match_len, hit->size);
 				break;

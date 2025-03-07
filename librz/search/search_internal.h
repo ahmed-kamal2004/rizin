@@ -64,12 +64,14 @@ typedef bool (*RzSearchIsEmptyCallback)(void *user);
  * \param user The private user data.
  * \param address The address associated with the given bytes.
  * \param buffer The bytes buffer.
- * \param The queue to push new hits onto.
+ * \param hits The queue to push new hits onto.
+ * \param n_hits The variable to store the number of new hits.
  *
  * \return True, if a match was found.
  * \return False otherwise.
  */
-typedef bool (*RzSearchFindBytesCallback)(RzSearchFindOpt *fopt, void *user, ut64 address, const RzBuffer *buffer, RZ_OUT RzThreadQueue *hits);
+typedef bool (*RzSearchFindBytesCallback)(RzSearchFindOpt *fopt, void *user, ut64 address, const RzBuffer *buffer,
+	RZ_OUT RzThreadQueue *hits, RZ_OUT size_t *n_hits);
 
 /**
  * \brief A callback to search a graph for a pattern.
@@ -88,6 +90,12 @@ typedef enum {
 	RZ_SEARCH_SPACE_GRAPH, ///< The search is performed on a graph.
 	RZ_SEARCH_SPACE_KB, ///< The search is performed on the knowledge base.
 } RzSearchSpace;
+
+typedef enum {
+	RZ_SEARCH_PROGRESS_DISABLED = 0, ///< Don't show any search progress.
+	RZ_SEARCH_PROGRESS_NUM_HITS, ///< Show running count of hits.
+	RZ_SEARCH_PROGRESS_INTERVALS, ///< Above + show hits per interval.
+} RzSearchProgress;
 
 struct rz_search_collection_t {
 	void *user; ///< Context defined by the various collections
@@ -111,6 +119,7 @@ struct rz_search_opt_t {
 	ut64 chunk_size;
 	ut64 element_size;
 	RzThreadNCores max_threads;
+	RzSearchProgress show_progress;
 
 	// cancel callback
 	void *cancel_usr;
@@ -123,9 +132,17 @@ struct rz_search_find_opt_t {
 	size_t alignment; ///< The address alignment to start the search from. If >1, only `buffer + (alignment * x)` is searched.
 };
 
+struct rz_search_interval_t {
+	RzInterval interval;
+	size_t n_hits;
+};
+
 RZ_IPI RZ_OWN RzSearchHit *rz_search_hit_new(const char *metadata, ut64 address, size_t size);
 RZ_IPI void rz_search_hit_free(RZ_NULLABLE RzSearchHit *hit);
 RZ_IPI int rz_search_hit_cmp(RZ_NULLABLE RzSearchHit *a, RZ_NULLABLE RzSearchHit *b, void *user);
+
+RZ_IPI RZ_OWN RzSearchInterval *rz_search_interval_new(RzInterval interval, size_t n_hits);
+RZ_IPI void rz_search_interval_free(RZ_NULLABLE RzSearchInterval *interval);
 
 RZ_IPI RZ_OWN RzSearchCollection *rz_search_collection_new_bytes_space(RZ_NONNULL RzSearchFindBytesCallback find, RZ_NONNULL RzSearchIsEmptyCallback is_empty, RZ_NULLABLE RzSearchFreeCallback free, RZ_NULLABLE void *user);
 RZ_IPI RZ_OWN RzSearchCollection *rz_search_collection_new_graph_space(RZ_NONNULL RzSearchFindGraphCallback find, RZ_NONNULL RzSearchIsEmptyCallback is_empty, RZ_NULLABLE RzSearchFreeCallback free, RZ_NULLABLE void *user);
