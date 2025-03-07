@@ -2639,7 +2639,9 @@ RZ_IPI RzCmdStatus rz_write_duplicate_handler(RzCore *core, int argc, const char
 // "ws"
 RZ_IPI RzCmdStatus rz_write_length_string_handler(RzCore *core, int argc, const char **argv);
 // "x"
-RZ_IPI int rz_cmd_hexdump(void *data, const char *input);
+RZ_IPI RzCmdStatus rz_print_hexdump_alias_handler(RzCore *core, int argc, const char **argv, RzCmdStateOutput *state);
+// "xc"
+RZ_IPI RzCmdStatus rz_print_hexdump_comments_alias_handler(RzCore *core, int argc, const char **argv);
 // "y"
 RZ_IPI RzCmdStatus rz_yank_handler(RzCore *core, int argc, const char **argv, RzCmdStateOutput *state);
 // "ye"
