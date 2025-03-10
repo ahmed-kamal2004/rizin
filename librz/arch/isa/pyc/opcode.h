@@ -12,6 +12,8 @@
 
 #define OBJECT_SIZE_ON_STACK 1
 
+typedef void *(*opcode_func)();
+
 typedef enum {
 	HASCOMPARE = 0x1,
 	HASCONDITION = 0x2, // conditional operator; has jump offset
@@ -97,6 +99,7 @@ pyc_opcodes *opcode_37(void);
 pyc_opcodes *opcode_38(void);
 pyc_opcodes *opcode_39(void);
 pyc_opcodes *opcode_310(void);
+pyc_opcodes *opcode_311(void);
 
 pyc_opcodes *get_opcode_by_version(char *version);
 
