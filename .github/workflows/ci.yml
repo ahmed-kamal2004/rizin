@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   changes:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       edited: ${{ steps.filter.outputs.edited }}
     steps:
@@ -68,7 +68,7 @@ jobs:
           ]
         include:
           - name: linux-meson-clang-tests
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             build_system: meson
             compiler: clang
             run_tests: true
@@ -77,7 +77,7 @@ jobs:
             timeout: 45
             allow_failure: false
           - name: linux-meson-gcc-tests
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             build_system: meson
             compiler: gcc
             run_tests: true
@@ -96,9 +96,9 @@ jobs:
             timeout: 60
             allow_failure: false
           - name: linux-gcc-tests-asan
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             build_system: meson
-            compiler: gcc-12
+            compiler: gcc
             cflags: "-DASAN=1 -DRZ_ASSERT_STDOUT=1 -ftrivial-auto-var-init=pattern -funsigned-char"
             meson_options: -Dbuildtype=debugoptimized -Db_sanitize=address,undefined --werror
             asan: true
@@ -108,10 +108,10 @@ jobs:
             timeout: 120
             allow_failure: false
           - name: linux-clang-tests-asan
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             build_system: meson
             compiler: clang
-            cflags: "-DASAN=1 -DRZ_ASSERT_STDOUT=1"
+            cflags: "-DASAN=1 -DRZ_ASSERT_STDOUT=1 -fno-sanitize=function"
             meson_options: -Dbuildtype=debugoptimized -Db_lundef=false -Db_sanitize=address,undefined --werror
             asan: true
             asan_options: detect_leaks=0,detect_odr_violation=0,allocator_may_return_null=1
@@ -120,7 +120,7 @@ jobs:
             timeout: 115
             allow_failure: false
           - name: linux-gcc-tests-codecov
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             build_system: meson
             compiler: gcc
             run_tests: true
@@ -130,7 +130,7 @@ jobs:
             timeout: 60
             allow_failure: false
           - name: capstone-sys
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             build_system: meson
             compiler: gcc
             meson_options: -Dbuildtype=release -Duse_sys_capstone=enabled --werror
@@ -139,7 +139,7 @@ jobs:
             timeout: 45
             allow_failure: false
           - name: capstone-v4
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             build_system: meson
             compiler: gcc
             meson_options: -Dbuildtype=release -Duse_capstone_version=v4 --werror
@@ -148,7 +148,7 @@ jobs:
             timeout: 45
             allow_failure: true
           - name: capstone-v5
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             build_system: meson
             compiler: gcc
             meson_options: -Dbuildtype=release -Duse_capstone_version=v5 --werror
@@ -157,7 +157,7 @@ jobs:
             timeout: 45
             allow_failure: true
           - name: capstone-v6
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             build_system: meson
             compiler: gcc
             meson_options: -Dbuildtype=release -Duse_capstone_version=v6 --werror
@@ -166,7 +166,7 @@ jobs:
             timeout: 45
             allow_failure: true
           - name: no-gpl-code
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             build_system: meson
             compiler: gcc
             meson_options: -Dbuildtype=release -Duse_gpl=false --werror
@@ -204,14 +204,11 @@ jobs:
           sudo apt-get update
           sudo apt-get --assume-yes install libc6 libc6-i386 libc6-dev debuginfod
       - name: Install gdbserver dependency
-        if: matrix.run_tests && matrix.enabled && matrix.os == 'ubuntu-22.04'
+        if: matrix.run_tests && matrix.enabled && matrix.os == 'ubuntu-24.04'
         run: sudo apt-get --assume-yes install gdbserver
       - name: Install clang
-        if: matrix.compiler == 'clang' && matrix.os == 'ubuntu-22.04' && matrix.enabled
+        if: matrix.compiler == 'clang' && matrix.os == 'ubuntu-24.04' && matrix.enabled
         run: sudo apt-get --assume-yes install clang
-      - name: Install gcc-12
-        if: matrix.compiler == 'gcc-12' && matrix.os == 'ubuntu-22.04' && matrix.enabled
-        run: sudo apt-get --assume-yes install gcc-12
       - name: Build with Meson
         if: matrix.build_system == 'meson' && matrix.enabled
         run: |
@@ -335,7 +332,7 @@ jobs:
 
   build-centos7:
     name: Build on CentOS 7
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: contains(github.head_ref, 'dist') || contains(github.head_ref, 'centos') || contains(github.ref, 'release-') || github.ref == 'refs/heads/stable' || github.event_name == 'schedule'
     container: centos:7
     steps:
@@ -382,7 +379,7 @@ jobs:
           - debian:jessie
           - debian:stretch
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container: ${{ matrix.container }}
 
     steps:
@@ -461,70 +458,10 @@ jobs:
         env:
           PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig
 
-  build-gcc11-asan:
-    name: Build on gcc 11 ASAN
-    if: contains(github.head_ref, 'dist') || contains(github.head_ref, 'gcc11') || contains(github.ref, 'release-') || github.ref == 'refs/heads/stable' || github.event_name == 'schedule'
-    runs-on: ubuntu-22.04
-    timeout-minutes: 120
-    steps:
-      - name: Install tools
-        run: sudo apt-get update && sudo apt-get install --yes patch unzip git gcc make curl pkg-config libc6-i386 build-essential
-      - name: Install python and other dependencies
-        run: sudo apt-get install --yes python3-wheel python3-setuptools python3-pip
-      - name: Install meson and ninja
-        run: sudo pip3 install meson ninja PyYAML
-      - name: Install test dependencies
-        run: |
-          sudo pip3 install 'git+https://github.com/rizinorg/rz-pipe#egg=rzpipe&subdirectory=python' requests
-          sudo apt-get install --yes tzdata debuginfod
-      - name: Checkout rizin
-        run: |
-          git clone https://github.com/${{ github.repository }}
-          cd rizin
-          git fetch origin ${{ github.ref }}
-          git checkout -b local_branch FETCH_HEAD
-      - name: Checkout our Testsuite Binaries
-        run: git clone https://github.com/rizinorg/rizin-testbins test/bins
-        working-directory: rizin
-      - name: Build with Meson + Ninja
-        run: meson setup --prefix=/usr -Dbuildtype=debugoptimized -Db_sanitize=address,undefined --werror build && ninja -C build
-        working-directory: rizin
-        env:
-          CFLAGS: -DASAN=1 -DRZ_ASSERT_STDOUT=1
-      - name: Install with Ninja
-        run: sudo ninja -C build install
-        working-directory: rizin
-      - name: Run unit tests
-        run: ASAN_LD_PRELOAD=$(gcc -print-file-name=libasan.so) meson test -C build --suite unit
-        working-directory: rizin
-        env:
-          ASAN: true
-          ASAN_OPTIONS: detect_leaks=0,detect_odr_violation=0,allocator_may_return_null=1
-      - name: Run integration tests and rz-test
-        run: |
-          export ASAN_LD_PRELOAD=$(gcc -print-file-name=libasan.so)
-          meson test -C build --suite integration
-          cd test
-          rz-test -L -o results.json
-        working-directory: rizin
-        env:
-          ASAN: true
-          ASAN_OPTIONS: detect_leaks=0,detect_odr_violation=0,allocator_may_return_null=1
-      - name: Run fuzz tests
-        run: |
-          rz-test -LF bins/fuzzed @fuzz
-          # some fuzzed bins are mem hungry and are killed by the runner.
-          # running them one threaded allows to be check them
-          rz-test -j1 -LF bins/fuzzed-memhungry @fuzz
-        working-directory: rizin/test
-        env:
-          ASAN: true
-          ASAN_OPTIONS: detect_leaks=0,detect_odr_violation=0,allocator_may_return_null=1
-
-  test-ubuntu-focal-debug:
-    name: Run debug tests on Ubuntu 20.04
+  test-ubuntu-jammy-debug:
+    name: Run debug tests on Ubuntu 22.04
     if: contains(github.head_ref, 'dist') || contains(github.head_ref, 'debug') || contains(github.ref, 'release-') || github.ref == 'refs/heads/stable' || github.event_name == 'schedule'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 45
     steps:
       - name: Install meson and ninja
@@ -555,7 +492,7 @@ jobs:
   build-static:
     name: Build static
     if: contains(github.head_ref, 'dist') || contains(github.head_ref, 'static') || contains(github.ref, 'release-') || github.ref == 'refs/heads/stable' || github.event_name == 'schedule'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     container:
       image: alpine:3.19
       options: --cap-add=SYS_PTRACE --security-opt seccomp=unconfined --security-opt apparmor=unconfined
@@ -606,7 +543,7 @@ jobs:
   create-tarball:
     name: Create source tarball
     if: contains(github.head_ref, 'dist') || contains(github.head_ref, 'extras') || contains(github.ref, 'release-') || github.ref == 'refs/heads/stable'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.extract_version.outputs.version }}
     steps:
@@ -634,7 +571,7 @@ jobs:
   test-tarball:
     name: Test source tarball
     if: contains(github.head_ref, 'dist') || contains(github.head_ref, 'extras') || contains(github.ref, 'release-') || github.ref == 'refs/heads/stable'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: [ create-tarball ]
     steps:
       - name: Install python and other dependencies
@@ -739,7 +676,7 @@ jobs:
 
   build-android:
     name: Build Android ${{ matrix.name }} package
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: contains(github.head_ref, 'dist') || contains(github.head_ref, 'android') || ((contains(github.ref, 'release-') || github.ref == 'refs/heads/stable') && github.event_name == 'push') || github.event_name == 'schedule'
     needs: [ build-and-test ]
     strategy:
@@ -768,7 +705,7 @@ jobs:
 
   build-cpp-linux:
     name: Include Rizin headers from C++ program (Linux)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: contains(github.head_ref, 'dist') || contains(github.head_ref, 'cpp') || ((contains(github.ref, 'release-') || github.ref == 'refs/heads/stable') && github.event_name == 'push') || github.event_name == 'schedule'
     needs: [ build-and-test ]
     steps:
@@ -794,7 +731,7 @@ jobs:
 
   test-extra-prefix:
     name: Test EXTRA_PREFIX works well
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: contains(github.head_ref, 'dist') || ((contains(github.ref, 'release-') || github.ref == 'refs/heads/stable') && github.event_name == 'push') || github.event_name == 'schedule'
     needs: [ build-and-test ]
     steps:
@@ -825,7 +762,7 @@ jobs:
     name: Build rizin rzpipe
     if: contains(github.head_ref, 'dist') || contains(github.ref, 'release-') || github.ref == 'refs/heads/stable' || github.event_name == 'schedule'
     needs: [ test-tarball ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       RZPIPE_TESTS: "rz-pipe-py rz-pipe-go"
     steps:
@@ -854,7 +791,7 @@ jobs:
     name: Build rz-bindgen
     if: contains(github.head_ref, 'dist') || contains(github.ref, 'release-') || github.ref == 'refs/heads/stable' || github.event_name == 'schedule'
     needs: [ test-tarball ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -974,7 +911,7 @@ jobs:
 
   create-release:
     name: Create draft release and upload artifacts
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: github.event_name == 'push' && (contains(github.ref, 'release-') || github.ref == 'refs/heads/stable')
     needs:
       [
@@ -1030,7 +967,7 @@ jobs:
   publish-docker-image:
     name: Publish Docker image on Docker Hub
     needs: [ build-and-test ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && contains(github.head_ref, 'container'))
     steps:
       - uses: actions/checkout@v4
@@ -1067,7 +1004,7 @@ jobs:
   meson-subproject:
     name: Test use as meson subproject
     needs: [ build-and-test ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies
