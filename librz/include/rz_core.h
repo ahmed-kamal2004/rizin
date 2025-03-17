@@ -452,7 +452,6 @@ RZ_API int rz_core_fgets(char *buf, int len, void *user);
 RZ_API RzFlagItem *rz_core_flag_get_by_spaces(RzFlag *f, ut64 off);
 RZ_API int rz_core_flush(RzCore *core, const char *cmd);
 RZ_API void rz_core_cmd_init(RzCore *core);
-RZ_API int rz_core_cmd_pipe_old(RzCore *core, char *rizin_cmd, char *shell_cmd);
 RZ_API char *rz_core_cmd_str(RzCore *core, const char *cmd);
 RZ_API ut8 *rz_core_cmd_raw(RzCore *core, const char *cmd, int *length);
 RZ_API char *rz_core_cmd_strf(RzCore *core, const char *fmt, ...) RZ_PRINTF_CHECK(2, 3);
@@ -643,8 +642,6 @@ RZ_API int rz_core_cmd_buffer(RzCore *core, const char *buf);
 RZ_API int rz_core_cmdf(RzCore *core, const char *fmt, ...) RZ_PRINTF_CHECK(2, 3);
 RZ_API int rz_core_cmd0(RzCore *core, const char *cmd);
 RZ_API RzCmdStatus rz_core_cmd0_rzshell(RzCore *core, const char *cmd);
-RZ_API int rz_core_cmd_foreach(RzCore *core, const char *cmd, char *each);
-RZ_API int rz_core_cmd_foreach3(RzCore *core, const char *cmd, char *each);
 RZ_API char *rz_core_op_str(RzCore *core, ut64 addr);
 RZ_API RzAnalysisOp *rz_core_op_analysis(RzCore *core, ut64 addr, RzAnalysisOpMask mask);
 RZ_API char *rz_core_disassemble_instr(RzCore *core, ut64 addr, int l);
@@ -1119,7 +1116,6 @@ RZ_API RZ_OWN RzList /*<RzIOMap *>*/ *rz_core_get_boundaries_debug_stack(RZ_NONN
 RZ_API RZ_OWN RzList /*<RzIOMap *>*/ *rz_core_get_boundaries_debug_program(RZ_NONNULL RzCore *core, const RzInterval interval);
 RZ_API RZ_OWN RzList /*<RzIOMap *>*/ *rz_core_get_boundaries_select(RZ_NONNULL RzCore *core, RZ_NONNULL const char *from_key, RZ_NONNULL const char *to_key, RZ_NONNULL const char *in_key);
 
-RZ_API void rz_core_hack_help(const RzCore *core);
 RZ_API bool rz_core_hack(RzCore *core, const char *op);
 RZ_API bool rz_core_dump(RzCore *core, const char *file, ut64 addr, ut64 size, int append);
 RZ_API RZ_OWN char *rz_core_clippy(RZ_NONNULL RzCore *core, RZ_NONNULL const char *msg);
