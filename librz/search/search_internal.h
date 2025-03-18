@@ -131,13 +131,25 @@ struct rz_search_interval_t {
 	size_t n_hits;
 };
 
-struct rz_search_hash_find_data_t {
-	char *algo; ///< The hash algorithm.
-	void *digits; ///< The expected hash digits the data block should match.
-	size_t digits_len; ///< Length of the expected digits.
-	ut64 block_size; ///< The data block size given as input to the hash function.
-	const RzHash *rz_hash; ///< Immutable RzHash instance with all registered plugins.
+struct rz_search_hit_detail_t {
+	RzSearchHitDetailType type;
+	union {
+		char *string;
+		ut64 u64;
+		st64 s64;
+		double f64;
+		ut8 *bytes;
+	};
+	size_t length;
 };
+
+RZ_IPI RZ_OWN RzSearchHitDetail *rz_search_hit_detail_string_new(const char *string);
+RZ_IPI RZ_OWN RzSearchHitDetail *rz_search_hit_detail_unsigned_new(const ut64 u64);
+RZ_IPI RZ_OWN RzSearchHitDetail *rz_search_hit_detail_signed_new(const st64 s64);
+RZ_IPI RZ_OWN RzSearchHitDetail *rz_search_hit_detail_double_new(const double f64);
+RZ_IPI RZ_OWN RzSearchHitDetail *rz_search_hit_detail_bytes_new(const ut8 *bytes, size_t length);
+
+RZ_IPI void rz_search_hit_detail_free(RZ_NULLABLE RzSearchHitDetail *detail);
 
 /**
  * \brief Checks of \p fopst->alignment is aligned.
@@ -150,13 +162,9 @@ struct rz_search_hash_find_data_t {
 		continue; \
 	}
 
-RZ_IPI RZ_OWN RzSearchHit *rz_search_hit_new(const char *hit_desc, ut64 address, size_t size, const char *hit_comment);
-RZ_IPI RZ_OWN bool rz_search_hit_add_details(RZ_NONNULL RzSearchHit *hit, RzSearchHitDetailType type, RZ_OWN void *details);
+RZ_IPI RZ_OWN RzSearchHit *rz_search_hit_new(RZ_NULLABLE const char *hit_desc, ut64 address, size_t size, RZ_NULLABLE RZ_OWN RzSearchHitDetail *hit_detail);
 RZ_IPI void rz_search_hit_free(RZ_NULLABLE RzSearchHit *hit);
 RZ_IPI int rz_search_hit_cmp(RZ_NULLABLE RzSearchHit *a, RZ_NULLABLE RzSearchHit *b, void *user);
-
-RZ_IPI bool rz_search_hit_detail_str_entropy(RZ_NONNULL RzSearchHit *hit, RZ_OUT RzStrBuf *str);
-RZ_IPI bool rz_search_hit_detail_json_entropy(RZ_BORROW RZ_NONNULL RzSearchHit *hit, RZ_OUT RZ_NONNULL PJ *pj);
 
 RZ_IPI RZ_OWN RzSearchInterval *rz_search_interval_new(RzInterval interval, size_t n_hits);
 RZ_IPI void rz_search_interval_free(RZ_NULLABLE RzSearchInterval *interval);
