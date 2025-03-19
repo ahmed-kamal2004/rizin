@@ -1,5 +1,6 @@
 name: Coverity Scan
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 18 * * 2,4' # Bi-weekly at 18:00 UTC on Tuesday and Thursday
 
