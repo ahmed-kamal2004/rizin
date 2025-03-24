@@ -31,6 +31,23 @@
 #define MIN_SUMMARY_WIDTH    6
 #define MAX_RIGHT_ALIGHNMENT 20
 
+// Based on Config and Line order choses the vertical line shape
+static inline const char *get_vertical_line(size_t idx, size_t len, bool scr_curvy, bool scr_utf8) {
+	if (scr_curvy && !idx) {
+		return RUNE_CURVE_CORNER_TL;
+	} else if (scr_curvy && (idx == len - 1)) {
+		return RUNE_CURVE_CORNER_BL;
+	} else if (scr_utf8) {
+		return RUNE_LINE_VERT;
+	}
+	return "| ";
+}
+
+// return rz_config_get_b if core and core->config aren't NULL else false
+static inline bool core_config_get_b(RzCore *core, const char *option) {
+	return core && core->config ? rz_config_get_b(core->config, option) : false;
+}
+
 // NOTE: this should be in sync with SPECIAL_CHARACTERS in
 //       rizin-shell-parser grammar, except for ", ' and
 //       whitespaces, because we let cmd_substitution_arg create
@@ -1070,7 +1087,7 @@ static void update_minmax_len(RzCmdDesc *cd, size_t *max_len, size_t *min_len, b
 	*min_len = val < *min_len ? val : *min_len;
 }
 
-static void do_print_child_help(RzCmd *cmd, RzStrBuf *sb, const RzCmdDesc *cd, const char *name, const char *summary, bool show_children, size_t max_len, bool use_color) {
+static void do_print_child_help(RzCmd *cmd, RzStrBuf *sb, const RzCmdDesc *cd, const char *name, const char *summary, const char *vertical_line, bool show_children, size_t max_len, bool use_color) {
 	size_t str_len = calc_padding_len(cd, name, show_children);
 	int padding = str_len < max_len ? max_len - str_len : 0;
 	const char *pal_args_color = "",
@@ -1089,7 +1106,7 @@ static void do_print_child_help(RzCmd *cmd, RzStrBuf *sb, const RzCmdDesc *cd, c
 	}
 
 	size_t columns = 0;
-	columns += strbuf_append_calc(sb, "| ");
+	columns += strbuf_append_calc(sb, vertical_line);
 	rz_strbuf_append(sb, pal_input_color);
 	columns += strbuf_append_calc(sb, name);
 	if (show_children && show_children_shortcut(cd)) {
@@ -1110,15 +1127,20 @@ static void do_print_child_help(RzCmd *cmd, RzStrBuf *sb, const RzCmdDesc *cd, c
 	rz_strbuf_appendf(sb, "%s\n", pal_reset);
 }
 
-static void print_child_help(RzCmd *cmd, RzStrBuf *sb, RzCmdDesc *cd, size_t max_len, bool use_color) {
-	do_print_child_help(cmd, sb, cd, cd->name, cd->help->summary ? cd->help->summary : "", true, max_len, use_color);
+static void print_child_help(RzCmd *cmd, RzStrBuf *sb, RzCmdDesc *cd, size_t max_len, const char *vertical_line, bool use_color) {
+	do_print_child_help(cmd, sb, cd, cd->name, cd->help->summary ? cd->help->summary : "", vertical_line, true, max_len, use_color);
 }
 
 static char *group_get_help(RzCmd *cmd, RzCmdDesc *cd, bool use_color) {
+	bool scr_utf8 = core_config_get_b(cmd->core, "scr.utf8");
+	bool scr_curvy = scr_utf8 && core_config_get_b(cmd->core, "scr.utf8.curvy");
+
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	fill_usage_strbuf(cmd, sb, cd, use_color);
 
 	void **it_cd;
+	size_t idx = 0;
+
 	size_t max_len = 0, min_len = SIZE_MAX;
 
 	rz_cmd_desc_children_foreach(cd, it_cd) {
@@ -1129,9 +1151,12 @@ static char *group_get_help(RzCmd *cmd, RzCmdDesc *cd, bool use_color) {
 		max_len = min_len + MAX_RIGHT_ALIGHNMENT;
 	}
 
-	rz_cmd_desc_children_foreach(cd, it_cd) {
+	size_t n_descs = rz_pvector_len(&cd->children);
+
+	rz_cmd_desc_children_foreach_idx(cd, it_cd, idx) {
 		RzCmdDesc *child = *(RzCmdDesc **)it_cd;
-		print_child_help(cmd, sb, child, max_len, use_color);
+		const char *vertical_line = get_vertical_line(idx, n_descs, scr_curvy, scr_utf8);
+		print_child_help(cmd, sb, child, max_len, vertical_line, use_color);
 	}
 
 	bool details_filled = fill_details(cmd, cd, sb, use_color);
@@ -1164,19 +1189,22 @@ static char *group_get_help(RzCmd *cmd, RzCmdDesc *cd, bool use_color) {
 }
 
 static void fill_argv_modes_help_strbuf(RzCmd *cmd, RzStrBuf *sb, RzCmdDesc *cd, bool use_color) {
+	bool scr_utf8 = core_config_get_b(cmd->core, "scr.utf8");
+	const char *vertical_line = scr_utf8 ? RUNE_LINE_VERT : "| ";
+
 	size_t max_len = 0, min_len = SIZE_MAX;
 	update_minmax_len(cd, &max_len, &min_len, true);
 	max_len++; // consider the suffix letter
 	if (max_len - min_len > MAX_RIGHT_ALIGHNMENT) {
 		max_len = min_len + MAX_RIGHT_ALIGHNMENT;
 	}
-
 	size_t i;
+
 	for (i = 0; i < RZ_ARRAY_SIZE(argv_modes); i++) {
 		if (cd->d.argv_modes_data.modes & argv_modes[i].mode) {
 			char *name = rz_str_newf("%s%s", cd->name, argv_modes[i].suffix);
 			char *summary = rz_str_newf("%s%s", cd->help->summary, argv_modes[i].summary_suffix);
-			do_print_child_help(cmd, sb, cd, name, summary, false, max_len, use_color);
+			do_print_child_help(cmd, sb, cd, name, summary, vertical_line, false, max_len, use_color);
 			free(name);
 			free(summary);
 		}
@@ -1483,11 +1511,24 @@ RZ_API bool rz_cmd_get_help_json(RzCmd *cmd, const RzCmdDesc *cd, PJ *j) {
  */
 RZ_API bool rz_cmd_get_help_strbuf(RzCmd *cmd, const RzCmdDesc *cd, bool use_color, RzStrBuf *sb) {
 	rz_return_val_if_fail(cmd && cd && sb, false);
-	do_print_child_help(cmd, sb, cd, cd->name, cd->help->summary, false, MAX_RIGHT_ALIGHNMENT, use_color);
+
+	bool scr_utf8 = core_config_get_b(cmd->core, "scr.utf8");
+	const char *vertical_line = scr_utf8 ? RUNE_LINE_VERT : "| ";
+
+	do_print_child_help(cmd, sb, cd, cd->name, cd->help->summary, vertical_line, false, MAX_RIGHT_ALIGHNMENT, use_color);
 	return true;
 }
 
-RZ_API char *rz_cmd_get_help(RzCmd *cmd, RzCmdParsedArgs *args, bool use_color) {
+/**
+ * \brief Generates a text output of the help message for given args
+ *
+ * \param cmd reference to RzCmd
+ * \param args reference to RzCmdParsedArgs
+ * \param use_color output strings with color codes.
+ *
+ * \return returns NULL if invalid args are given, otherwise returns help message of the given args.
+ */
+RZ_API RZ_OWN char *rz_cmd_get_help(RZ_BORROW RzCmd *cmd, RZ_BORROW RzCmdParsedArgs *args, bool use_color) {
 	char *cmdid = rz_str_dup(rz_cmd_parsed_args_cmd(args));
 	if (!cmdid) {
 		return NULL;
