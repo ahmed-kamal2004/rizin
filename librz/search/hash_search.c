@@ -18,7 +18,7 @@ typedef struct search_hash_context_t {
 	const RzHash *rz_hash; ///< Immutable RzHash instance with all registered plugins.
 } SearchHashContext;
 
-static void search_hash_data_free(SearchHashContext *data) {
+static void search_hash_context_free(SearchHashContext *data) {
 	if (!data) {
 		return;
 	}
@@ -95,11 +95,11 @@ static RZ_OWN SearchHashContext *search_hash_context_new(RZ_NONNULL const RzHash
 	}
 
 	ut32 digest_size = rz_hash_cfg_size(md, algo_name);
+	rz_hash_cfg_free(md);
 	if (digest_size < 1) {
 		rz_warn_if_reached();
 		return NULL;
 	}
-	rz_hash_cfg_free(md);
 
 	ut8 *digest = parse_digest(algo_name, expected_digest, digest_size);
 	if (!digest) {
@@ -135,9 +135,11 @@ static RzSearchHit *calculate_hash_and_compare(const SearchHashContext *data, ut
 		return NULL;
 	} else if (!rz_hash_cfg_update(md, buffer, buf_size)) {
 		RZ_LOG_ERROR("search: hash config update failed.\n");
+		rz_hash_cfg_free(md);
 		return NULL;
 	} else if (!rz_hash_cfg_final(md)) {
 		RZ_LOG_ERROR("search: hash config final failed.\n");
+		rz_hash_cfg_free(md);
 		return NULL;
 	}
 
@@ -243,11 +245,13 @@ RZ_API bool rz_search_collection_hash_add(RZ_NONNULL RzSearchCollection *col, RZ
 
 	if (already_in_hash_collection(pvec, ctx)) {
 		RZ_LOG_WARN("search: %s already in hash search collection!\n", algo_name);
+		search_hash_context_free(ctx);
 		return true;
 	}
 
 	if (!rz_pvector_push(pvec, ctx)) {
 		RZ_LOG_ERROR("search: failed to add %s to hash search collection\n", algo_name);
+		search_hash_context_free(ctx);
 		return false;
 	}
 	return true;
@@ -259,7 +263,7 @@ RZ_API bool rz_search_collection_hash_add(RZ_NONNULL RzSearchCollection *col, RZ
  * \return     On success returns a valid pointer, otherwise NULL
  */
 RZ_API RZ_OWN RzSearchCollection *rz_search_collection_hash() {
-	RzPVector /*<SearchHashContext *>*/ *vec = rz_pvector_new((RzPVectorFree)search_hash_data_free);
+	RzPVector /*<SearchHashContext *>*/ *vec = rz_pvector_new((RzPVectorFree)search_hash_context_free);
 	if (!vec) {
 		RZ_LOG_ERROR("search: cannot allocate internal data for hash search collection\n");
 		return NULL;
