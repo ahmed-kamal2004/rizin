@@ -1188,7 +1188,7 @@ RZ_API char *rz_core_analysis_hasrefs_to_depth(RzCore *core, ut64 value, PJ *pj,
 				rz_strbuf_appendf(s, "%sW%s ", c, cend);
 			}
 			if (type & RZ_ANALYSIS_ADDR_TYPE_EXEC) {
-				RzAsmOp op;
+				RzAsmOp op = { 0 };
 				ut8 buf[32];
 				rz_strbuf_appendf(s, "%sX%s ", c, cend);
 				/* instruction disassembly */
@@ -1196,6 +1196,7 @@ RZ_API char *rz_core_analysis_hasrefs_to_depth(RzCore *core, ut64 value, PJ *pj,
 				rz_asm_set_pc(core->rasm, value);
 				rz_asm_disassemble(core->rasm, &op, buf, sizeof(buf));
 				rz_strbuf_appendf(s, "'%s' ", rz_asm_op_get_asm(&op));
+				rz_asm_op_fini(&op);
 				/* get library name */
 				{ // NOTE: dup for mapname?
 					RzDebugMap *map;

@@ -104,15 +104,16 @@ static bool test_rz_tokenize_generic_0_no_reg_profile(void) {
 	};
 	RzAsmTokenString *toks = rz_asm_tokenize_asm_string(asm_str, NULL);
 
-	mu_assert_eq(rz_vector_len(toks->tokens), 5, "Number of generated tokens");
+	mu_assert_eq(rz_pvector_len(toks->tokens), 5, "Number of generated tokens");
 
 	int i = 0;
-	RzAsmToken *it;
-	rz_vector_foreach (toks->tokens, it) {
-		mu_assert_eq(it->start, tokens[i].start, "Token start");
-		mu_assert_eq(it->len, tokens[i].len, "Token length");
-		mu_assert_eq(it->type, tokens[i].type, "Token type");
-		mu_assert_eq(it->val.number, tokens[i].val.number, "Token value");
+	void **it;
+	rz_pvector_foreach (toks->tokens, it) {
+		RzAsmToken *tok = *it;
+		mu_assert_eq(tok->start, tokens[i].start, "Token start");
+		mu_assert_eq(tok->len, tokens[i].len, "Token length");
+		mu_assert_eq(tok->type, tokens[i].type, "Token type");
+		mu_assert_eq(tok->val.number, tokens[i].val.number, "Token value");
 		++i;
 	}
 
@@ -134,15 +135,16 @@ static bool test_rz_tokenize_generic_0(void) {
 	RzAsmParseParam param = { .reg_sets = a->reg->regset };
 	RzAsmTokenString *toks = rz_asm_tokenize_asm_string(asm_str, &param);
 
-	mu_assert_eq(rz_vector_len(toks->tokens), 5, "Number of generated tokens");
+	mu_assert_eq(rz_pvector_len(toks->tokens), 5, "Number of generated tokens");
 
 	int i = 0;
-	RzAsmToken *it;
-	rz_vector_foreach (toks->tokens, it) {
-		mu_assert_eq(it->start, tokens[i].start, "Token start");
-		mu_assert_eq(it->len, tokens[i].len, "Token length");
-		mu_assert_eq(it->type, tokens[i].type, "Token type");
-		mu_assert_eq(it->val.number, tokens[i].val.number, "Token value");
+	void **it;
+	rz_pvector_foreach (toks->tokens, it) {
+		RzAsmToken *tok = *it;
+		mu_assert_eq(tok->start, tokens[i].start, "Token start");
+		mu_assert_eq(tok->len, tokens[i].len, "Token length");
+		mu_assert_eq(tok->type, tokens[i].type, "Token type");
+		mu_assert_eq(tok->val.number, tokens[i].val.number, "Token value");
 		++i;
 	}
 
@@ -181,15 +183,16 @@ static bool test_rz_tokenize_generic_1(void) {
 	RzAsmParseParam param = { .reg_sets = a->reg->regset };
 	RzAsmTokenString *toks = rz_asm_tokenize_asm_string(asm_str, &param);
 
-	mu_assert_eq(rz_vector_len(toks->tokens), 20, "Number of generated tokens");
+	mu_assert_eq(rz_pvector_len(toks->tokens), 20, "Number of generated tokens");
 
 	int i = 0;
-	RzAsmToken *it;
-	rz_vector_foreach (toks->tokens, it) {
-		mu_assert_eq(it->start, tokens[i].start, "Token start");
-		mu_assert_eq(it->len, tokens[i].len, "Token length");
-		mu_assert_eq(it->type, tokens[i].type, "Token type");
-		mu_assert_eq(it->val.number, tokens[i].val.number, "Token value");
+	void **it;
+	rz_pvector_foreach (toks->tokens, it) {
+		RzAsmToken *tok = *it;
+		mu_assert_eq(tok->start, tokens[i].start, "Token start");
+		mu_assert_eq(tok->len, tokens[i].len, "Token length");
+		mu_assert_eq(tok->type, tokens[i].type, "Token type");
+		mu_assert_eq(tok->val.number, tokens[i].val.number, "Token value");
 		++i;
 	}
 
@@ -212,15 +215,16 @@ static bool test_rz_tokenize_generic_2(void) {
 	RzAsmParseParam param = { .reg_sets = a->reg->regset };
 	RzAsmTokenString *toks = rz_asm_tokenize_asm_string(asm_str, &param);
 
-	mu_assert_eq(rz_vector_len(toks->tokens), 5, "Number generated tokens");
+	mu_assert_eq(rz_pvector_len(toks->tokens), 5, "Number generated tokens");
 
 	int i = 0;
-	RzAsmToken *it;
-	rz_vector_foreach (toks->tokens, it) {
-		mu_assert_eq(it->start, tokens[i].start, "Token start");
-		mu_assert_eq(it->len, tokens[i].len, "Token length");
-		mu_assert_eq(it->type, tokens[i].type, "Token type");
-		mu_assert_eq(it->val.number, tokens[i].val.number, "Token value");
+	void **it;
+	rz_pvector_foreach (toks->tokens, it) {
+		RzAsmToken *tok = *it;
+		mu_assert_eq(tok->start, tokens[i].start, "Token start");
+		mu_assert_eq(tok->len, tokens[i].len, "Token length");
+		mu_assert_eq(tok->type, tokens[i].type, "Token type");
+		mu_assert_eq(tok->val.number, tokens[i].val.number, "Token value");
 		++i;
 	}
 
@@ -243,15 +247,16 @@ static bool test_rz_tokenize_generic_3(void) {
 	RzAsmParseParam param = { .reg_sets = a->reg->regset };
 	RzAsmTokenString *toks = rz_asm_tokenize_asm_string(asm_str, &param);
 
-	mu_assert_eq(rz_vector_len(toks->tokens), 5, "Number of generated tokens");
+	mu_assert_eq(rz_pvector_len(toks->tokens), 5, "Number of generated tokens");
 
 	int i = 0;
-	RzAsmToken *it;
-	rz_vector_foreach (toks->tokens, it) {
-		mu_assert_eq(it->start, tokens[i].start, "Token start");
-		mu_assert_eq(it->len, tokens[i].len, "Token length");
-		mu_assert_eq(it->type, tokens[i].type, "Token type");
-		mu_assert_eq(it->val.number, tokens[i].val.number, "Token value");
+	void **it;
+	rz_pvector_foreach (toks->tokens, it) {
+		RzAsmToken *tok = *it;
+		mu_assert_eq(tok->start, tokens[i].start, "Token start");
+		mu_assert_eq(tok->len, tokens[i].len, "Token length");
+		mu_assert_eq(tok->type, tokens[i].type, "Token type");
+		mu_assert_eq(tok->val.number, tokens[i].val.number, "Token value");
 		++i;
 	}
 
@@ -280,15 +285,16 @@ static bool test_rz_tokenize_generic_4(void) {
 	RzAsmParseParam param = { .reg_sets = a->reg->regset };
 	RzAsmTokenString *toks = rz_asm_tokenize_asm_string(asm_str, &param);
 
-	mu_assert_eq(rz_vector_len(toks->tokens), 11, "Number of generated tokens");
+	mu_assert_eq(rz_pvector_len(toks->tokens), 11, "Number of generated tokens");
 
 	int i = 0;
-	RzAsmToken *it;
-	rz_vector_foreach (toks->tokens, it) {
-		mu_assert_eq(it->start, tokens[i].start, "Token start");
-		mu_assert_eq(it->len, tokens[i].len, "Token length");
-		mu_assert_eq(it->type, tokens[i].type, "Token type");
-		mu_assert_eq(it->val.number, tokens[i].val.number, "Token value");
+	void **it;
+	rz_pvector_foreach (toks->tokens, it) {
+		RzAsmToken *tok = *it;
+		mu_assert_eq(tok->start, tokens[i].start, "Token start");
+		mu_assert_eq(tok->len, tokens[i].len, "Token length");
+		mu_assert_eq(tok->type, tokens[i].type, "Token type");
+		mu_assert_eq(tok->val.number, tokens[i].val.number, "Token value");
 		++i;
 	}
 
@@ -317,19 +323,22 @@ static bool test_rz_tokenize_custom_hexagon_0(void) {
 	if (!op->asm_toks) {
 		mu_fail("NULL check failed.\n");
 	}
-	mu_assert_eq(rz_vector_len(op->asm_toks->tokens), 7, "Number of generated tokens.");
+	mu_assert_eq(rz_pvector_len(op->asm_toks->tokens), 7, "Number of generated tokens.");
 
 	int i = 0;
-	RzAsmToken *it;
-	rz_vector_foreach (op->asm_toks->tokens, it) {
-		mu_assert_eq(it->start, tokens[i].start, "Token start");
-		mu_assert_eq(it->len, tokens[i].len, "Token length");
-		mu_assert_eq(it->type, tokens[i].type, "Token type");
-		mu_assert_eq(it->val.number, tokens[i].val.number, "Token value");
+	void **it;
+	rz_pvector_foreach (op->asm_toks->tokens, it) {
+		RzAsmToken *tok = *it;
+		mu_assert_eq(tok->start, tokens[i].start, "Token start");
+		mu_assert_eq(tok->len, tokens[i].len, "Token length");
+		mu_assert_eq(tok->type, tokens[i].type, "Token type");
+		mu_assert_eq(tok->val.number, tokens[i].val.number, "Token value");
 		++i;
 	}
 
 	rz_asm_op_fini(op);
+	free(op);
+	rz_asm_free(a);
 	mu_end;
 }
 
@@ -359,18 +368,21 @@ static bool test_rz_tokenize_custom_hexagon_1(void) {
 	if (!op->asm_toks) {
 		mu_fail("NULL check failed.\n");
 	}
-	mu_assert_eq(rz_vector_len(op->asm_toks->tokens), 13, "Number of generated tokens.");
+	mu_assert_eq(rz_pvector_len(op->asm_toks->tokens), 13, "Number of generated tokens.");
 	int i = 0;
-	RzAsmToken *it;
-	rz_vector_foreach (op->asm_toks->tokens, it) {
-		mu_assert_eq(it->start, tokens[i].start, "Token start");
-		mu_assert_eq(it->len, tokens[i].len, "Token length");
-		mu_assert_eq(it->type, tokens[i].type, "Token type");
-		mu_assert_eq(it->val.number, tokens[i].val.number, "Token value");
+	void **it;
+	rz_pvector_foreach (op->asm_toks->tokens, it) {
+		RzAsmToken *tok = *it;
+		mu_assert_eq(tok->start, tokens[i].start, "Token start");
+		mu_assert_eq(tok->len, tokens[i].len, "Token length");
+		mu_assert_eq(tok->type, tokens[i].type, "Token type");
+		mu_assert_eq(tok->val.number, tokens[i].val.number, "Token value");
 		++i;
 	};
 
 	rz_asm_op_fini(op);
+	free(op);
+	rz_asm_free(a);
 	mu_end;
 }
 
@@ -397,6 +409,7 @@ static bool test_rz_colorize_generic_0(void) {
 
 	rz_asm_parse_param_free(param);
 	rz_asm_op_fini(asmop);
+	free(asmop);
 	rz_analysis_op_free(anaop);
 	rz_asm_free(d);
 	rz_analysis_free(a);
@@ -419,15 +432,18 @@ static bool test_rz_colorize_generic_1(void) {
 	rz_asm_disassemble(d, asmop, buf, sizeof(buf));
 	rz_analysis_op(a, anaop, 0x0, buf, sizeof(buf), RZ_ANALYSIS_OP_MASK_ALL);
 
+	RzAsmParseParam *param = rz_asm_get_parse_param(a->reg, anaop->type);
 	RzStrBuf *colored_asm = rz_asm_colorize_asm_str(&asmop->buf_asm, p,
-		rz_asm_get_parse_param(a->reg, anaop->type), asmop->asm_toks);
+		param, asmop->asm_toks);
 
 	RzStrBuf *expected = rz_strbuf_new("\x1b[33madc.w\x1b[0m\x1b[37m \x1b[0m\x1b[36mr8\x1b[0m\x1b[37m, \x1b[0m\x1b[36msb\x1b[0m\x1b[37m, \x1b[0m\x1b[36msl\x1b[0m\x1b[37m, \x1b[0m\x1b[37mlsl\x1b[0m\x1b[37m \x1b[0m\x1b[33m31\x1b[0m");
 	char err_msg[2048];
 	snprintf(err_msg, sizeof(err_msg), "Colors of \"%s\" are incorrect. Should be \"%s\"\n.", rz_strbuf_get(colored_asm), rz_strbuf_get(expected));
 	mu_assert_true(rz_strbuf_equals(colored_asm, expected), err_msg);
 
+	rz_asm_parse_param_free(param);
 	rz_asm_op_fini(asmop);
+	free(asmop);
 	rz_analysis_op_free(anaop);
 	rz_asm_free(d);
 	rz_analysis_free(a);
@@ -450,15 +466,18 @@ static bool test_rz_colorize_generic_2(void) {
 	rz_asm_disassemble(d, asmop, buf, sizeof(buf));
 	rz_analysis_op(a, anaop, 0x0, buf, sizeof(buf), RZ_ANALYSIS_OP_MASK_ALL);
 
+	RzAsmParseParam *param = rz_asm_get_parse_param(a->reg, anaop->type);
 	RzStrBuf *colored_asm = rz_asm_colorize_asm_str(&asmop->buf_asm, p,
-		rz_asm_get_parse_param(a->reg, anaop->type), asmop->asm_toks);
+		param, asmop->asm_toks);
 
 	RzStrBuf *expected = rz_strbuf_new("\x1b[37mmovabs\x1b[0m\x1b[37m \x1b[0m\x1b[36mrax\x1b[0m\x1b[37m, \x1b[0m\x1b[33m0x1122334455667788\x1b[0m");
 	char err_msg[2048];
 	snprintf(err_msg, sizeof(err_msg), "Colors of \"%s\" are incorrect. Should be \"%s\"\n.", rz_strbuf_get(colored_asm), rz_strbuf_get(expected));
 	mu_assert_true(rz_strbuf_equals(colored_asm, expected), err_msg);
 
+	rz_asm_parse_param_free(param);
 	rz_asm_op_fini(asmop);
+	free(asmop);
 	rz_analysis_op_free(anaop);
 	rz_asm_free(d);
 	rz_analysis_free(a);
@@ -480,8 +499,9 @@ static bool test_rz_colorize_generic_3(void) {
 	rz_asm_disassemble(d, asmop, buf, sizeof(buf));
 	rz_analysis_op(a, anaop, 0x0, buf, sizeof(buf), RZ_ANALYSIS_OP_MASK_ALL);
 
+	RzAsmParseParam *param = rz_asm_get_parse_param(a->reg, anaop->type);
 	RzStrBuf *colored_asm = rz_asm_colorize_asm_str(&asmop->buf_asm, p,
-		rz_asm_get_parse_param(a->reg, anaop->type), asmop->asm_toks);
+		param, asmop->asm_toks);
 
 	RzStrBuf *expected = rz_strbuf_new("\x1b[37mmov\x1b[0m\x1b[37m \x1b[0m\x1b[36mac0\x1b[0m\x1b[37m.\x1b[0m\x1b[37ml\x1b[0m\x1b[37m, \x1b[0m\x1b[37m*\x1b[0m\x1b[36mar2\x1b[0m\x1b[37m |\x1b[0m\x1b[37m|\x1b[0m\x1b[37m \x1b[0m\x1b[37mmov\x1b[0m\x1b[37m \x1b[0m\x1b[37m*\x1b[0m\x1b[37m(\x1b[0m\x1b[36mar1\x1b[0m\x1b[37m+\x1b[0m\x1b[37mt0b\x1b[0m\x1b[37m) \x1b[0m\x1b[37m<<\x1b[0m\x1b[37m \x1b[0m\x1b[36mt3\x1b[0m\x1b[37m, \x1b[0m\x1b[36mac1\x1b[0m");
 
@@ -489,7 +509,9 @@ static bool test_rz_colorize_generic_3(void) {
 	snprintf(err_msg, sizeof(err_msg), "Colors of \"%s\" are incorrect. Should be \"%s\"\n.", rz_strbuf_get(colored_asm), rz_strbuf_get(expected));
 	mu_assert_true(rz_strbuf_equals(colored_asm, expected), err_msg);
 
+	rz_asm_parse_param_free(param);
 	rz_asm_op_fini(asmop);
+	free(asmop);
 	rz_analysis_op_free(anaop);
 	rz_asm_free(d);
 	rz_analysis_free(a);
@@ -511,8 +533,9 @@ static bool test_rz_colorize_generic_4(void) {
 	rz_asm_disassemble(d, asmop, buf, sizeof(buf));
 	rz_analysis_op(a, anaop, 0x0, buf, sizeof(buf), RZ_ANALYSIS_OP_MASK_ALL);
 
+	RzAsmParseParam *param = rz_asm_get_parse_param(a->reg, anaop->type);
 	RzStrBuf *colored_asm = rz_asm_colorize_asm_str(&asmop->buf_asm, p,
-		rz_asm_get_parse_param(a->reg, anaop->type), asmop->asm_toks);
+		param, asmop->asm_toks);
 
 	RzStrBuf *expected = rz_strbuf_new("\x1b[37mmov\x1b[0m\x1b[37m \x1b[0m\x1b[36mac0\x1b[0m\x1b[37m.\x1b[0m\x1b[37ml\x1b[0m\x1b[37m, \x1b[0m\x1b[37m*\x1b[0m\x1b[36mar2\x1b[0m\x1b[37m |\x1b[0m\x1b[37m|\x1b[0m\x1b[37m \x1b[0m\x1b[37mmov\x1b[0m\x1b[37m \x1b[0m\x1b[37m*\x1b[0m\x1b[37m(\x1b[0m\x1b[36mar1\x1b[0m\x1b[37m+\x1b[0m\x1b[37mt0b\x1b[0m\x1b[37m) \x1b[0m\x1b[37m<<\x1b[0m\x1b[37m \x1b[0m\x1b[36mt3\x1b[0m\x1b[37m, \x1b[0m\x1b[36mac1\x1b[0m");
 
@@ -520,7 +543,9 @@ static bool test_rz_colorize_generic_4(void) {
 	snprintf(err_msg, sizeof(err_msg), "Colors of \"%s\" are incorrect. Should be \"%s\"\n.", rz_strbuf_get(colored_asm), rz_strbuf_get(expected));
 	mu_assert_true(rz_strbuf_equals(colored_asm, expected), err_msg);
 
+	rz_asm_parse_param_free(param);
 	rz_asm_op_fini(asmop);
+	free(asmop);
 	rz_analysis_op_free(anaop);
 	rz_asm_free(d);
 	rz_analysis_free(a);
@@ -552,7 +577,9 @@ static bool test_rz_colorize_custom_hexagon_0(void) {
 	snprintf(err_msg, sizeof(err_msg), "Colors of \"%s\" are incorrect. Should be \"%s\"\n.", rz_strbuf_get(colored_asm), rz_strbuf_get(expected));
 	mu_assert_true(rz_strbuf_equals(colored_asm, expected), err_msg);
 
+	rz_asm_free(d);
 	rz_asm_op_fini(asmop);
+	free(asmop);
 	rz_analysis_op_free(anaop);
 	rz_cons_context_free(p->cons->context);
 	rz_print_free(p);
@@ -581,7 +608,9 @@ static bool test_rz_colorize_custom_hexagon_1(void) {
 	snprintf(err_msg, sizeof(err_msg), "Colors of \"%s\" are incorrect. Should be \"%s\"\n.", rz_strbuf_get(colored_asm), rz_strbuf_get(expected));
 	mu_assert_true(rz_strbuf_equals(colored_asm, expected), err_msg);
 
+	rz_asm_free(d);
 	rz_asm_op_fini(asmop);
+	free(asmop);
 	rz_cons_context_free(p->cons->context);
 	rz_print_free(p);
 	rz_strbuf_free(expected);
@@ -597,7 +626,7 @@ static bool test_rz_colorize_custom_hexagon_2(void) {
 	d->core = &core;
 
 	RzPrint *p = setup_print();
-	RzAsmOp *asmop;
+	RzAsmOp asmop = { 0 };
 	RzStrBuf *colored_asm;
 	RzStrBuf *expected;
 	char err_msg[2048];
@@ -616,10 +645,9 @@ static bool test_rz_colorize_custom_hexagon_2(void) {
 	};
 
 	for (int i = 0; i < 0x14; i += 4) {
-		asmop = rz_asm_op_new();
 		rz_asm_set_pc(d, i);
-		rz_asm_disassemble(d, asmop, buf + i, 4);
-		colored_asm = rz_print_colorize_asm_str(p, asmop->asm_toks);
+		rz_asm_disassemble(d, &asmop, buf + i, 4);
+		colored_asm = rz_print_colorize_asm_str(p, asmop.asm_toks);
 		expected = rz_strbuf_new(expected_str[i / 4]);
 		snprintf(err_msg, sizeof(err_msg), "Colors of \"%s\" are incorrect. Should be \"%s\"\n.", rz_strbuf_get(colored_asm), rz_strbuf_get(expected));
 		mu_assert_true(rz_strbuf_equals(colored_asm, expected), err_msg);
@@ -627,7 +655,8 @@ static bool test_rz_colorize_custom_hexagon_2(void) {
 		rz_strbuf_free(expected);
 	}
 
-	rz_asm_op_fini(asmop);
+	rz_asm_op_fini(&asmop);
+	rz_asm_free(d);
 	rz_cons_context_free(p->cons->context);
 	rz_print_free(p);
 	mu_end;
@@ -641,7 +670,7 @@ static bool test_rz_colorize_custom_hexagon_3(void) {
 	d->core = &core;
 
 	RzPrint *p = setup_print();
-	RzAsmOp *asmop;
+	RzAsmOp asmop = { 0 };
 	RzStrBuf *colored_asm;
 	RzStrBuf *expected;
 	char err_msg[2048];
@@ -663,11 +692,10 @@ static bool test_rz_colorize_custom_hexagon_3(void) {
 	};
 
 	for (int i = 0; i < 0x10; i += 4) {
-		asmop = rz_asm_op_new();
 		rz_asm_set_pc(d, i);
-		rz_asm_disassemble(d, asmop, buf + i, 4);
+		rz_asm_disassemble(d, &asmop, buf + i, 4);
 
-		colored_asm = rz_print_colorize_asm_str(p, asmop->asm_toks);
+		colored_asm = rz_print_colorize_asm_str(p, asmop.asm_toks);
 		expected = rz_strbuf_new(expected_str[i / 4]);
 		snprintf(err_msg, sizeof(err_msg), "Colors of \"%s\" are incorrect. Should be \"%s\"\n.", rz_strbuf_get(colored_asm), rz_strbuf_get(expected));
 		mu_assert_true(rz_strbuf_equals(colored_asm, expected), err_msg);
@@ -675,9 +703,10 @@ static bool test_rz_colorize_custom_hexagon_3(void) {
 		rz_strbuf_free(expected);
 	}
 
-	rz_asm_op_fini(asmop);
+	rz_asm_op_fini(&asmop);
 	rz_cons_context_free(p->cons->context);
 	rz_print_free(p);
+	rz_asm_free(d);
 	mu_end;
 }
 
@@ -711,18 +740,18 @@ static bool test_rz_tokenize_custom_bf_0(void) {
 
 	RzPrint *p = setup_print();
 	char err_msg[2048];
+	RzAsmOp asmop = { 0 };
 	for (int i = 0; i < sizeof(buf) - 1; i++) {
-		RzAsmOp *asmop = rz_asm_op_new();
-		rz_asm_disassemble(a, asmop, buf + i, 1);
-		RzStrBuf *colored_asm = rz_print_colorize_asm_str(p, asmop->asm_toks);
+		rz_asm_disassemble(a, &asmop, buf + i, 1);
+		RzStrBuf *colored_asm = rz_print_colorize_asm_str(p, asmop.asm_toks);
 		RzStrBuf *expected = rz_strbuf_new(expected_str[i]);
 		snprintf(err_msg, sizeof(err_msg), "Colors of \"%s\" are incorrect. Should be \"%s\"\n.", rz_strbuf_get(colored_asm), rz_strbuf_get(expected));
 		mu_assert_true(rz_strbuf_equals(colored_asm, expected), err_msg);
-		rz_asm_op_fini(asmop);
 		rz_strbuf_free(expected);
 		rz_strbuf_free(colored_asm);
 	}
 
+	rz_asm_op_fini(&asmop);
 	rz_asm_free(a);
 	rz_cons_context_free(p->cons->context);
 	rz_print_free(p);

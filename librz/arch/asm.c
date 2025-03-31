@@ -405,7 +405,7 @@ RZ_API bool rz_asm_use_assembler(RzAsm *a, const char *name) {
 	RzAsmPlugin **val;
 	rz_iterator_foreach(iter, val) {
 		RzAsmPlugin *h = *val;
-		if (h->assemble && !strcmp(h->name, name)) {
+		if (h->assemble && RZ_STR_EQ(h->name, name)) {
 			a->acur = h;
 			rz_iterator_free(iter);
 			return true;
@@ -568,11 +568,11 @@ static bool __isInvalid(RzAsmOp *op) {
 }
 
 RZ_API int rz_asm_disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
-	rz_asm_op_init(op);
 	rz_return_val_if_fail(a && buf && op, -1);
 	if (len < 1) {
 		return 0;
 	}
+	rz_asm_op_init(op);
 
 	int ret = op->payload = 0;
 	op->size = 4;
@@ -795,10 +795,10 @@ RZ_API RzAsmCode *rz_asm_mdisassemble(RzAsm *a, const ut8 *buf, int len) {
 	if (!(buf_asm = rz_strbuf_new(NULL))) {
 		return rz_asm_code_free(acode);
 	}
-	RzAsmOp op;
-	rz_asm_op_init(&op);
+	RzAsmOp op = { 0 };
 	for (idx = 0; idx + addrbytes <= len; idx += (addrbytes * ret)) {
 		rz_asm_set_pc(a, pc + idx);
+		rz_asm_op_init(&op);
 		ret = rz_asm_disassemble(a, &op, buf + idx, len - idx);
 		if (ret < 1) {
 			ret = 1;
@@ -808,8 +808,8 @@ RZ_API RzAsmCode *rz_asm_mdisassemble(RzAsm *a, const ut8 *buf, int len) {
 		}
 		rz_strbuf_append(buf_asm, rz_strbuf_get(&op.buf_asm));
 		rz_strbuf_append(buf_asm, "\n");
+		rz_asm_op_fini(&op);
 	}
-	rz_asm_op_fini(&op);
 	acode->assembly = rz_strbuf_drain(buf_asm);
 	acode->len = idx;
 	return acode;
@@ -1324,7 +1324,7 @@ RZ_API RZ_OWN RzAsmTokenString *rz_asm_token_string_new(const char *asm_str) {
 	if (!s) {
 		return NULL;
 	}
-	s->tokens = rz_vector_new(sizeof(RzAsmToken), NULL, NULL);
+	s->tokens = rz_pvector_new(free);
 	s->str = rz_strbuf_new(asm_str);
 	if (!s->tokens || !s->str) {
 		rz_asm_token_string_free(s);
@@ -1338,8 +1338,13 @@ RZ_API void rz_asm_token_string_free(RZ_OWN RzAsmTokenString *toks) {
 		return;
 	}
 	rz_strbuf_free(toks->str);
-	rz_vector_free(toks->tokens);
+	rz_pvector_free(toks->tokens);
 	free(toks);
+}
+
+static void clone_asm_token(RzAsmToken *dst, RzAsmToken *src) {
+	rz_return_if_fail(dst && src);
+	memcpy(dst, src, sizeof(RzAsmToken));
 }
 
 RZ_API RZ_OWN RzAsmTokenString *rz_asm_token_string_clone(RZ_OWN RZ_NONNULL RzAsmTokenString *toks) {
@@ -1349,12 +1354,12 @@ RZ_API RZ_OWN RzAsmTokenString *rz_asm_token_string_clone(RZ_OWN RZ_NONNULL RzAs
 	if (!newt) {
 		return NULL;
 	}
-	newt->tokens = rz_vector_clone(toks->tokens);
+	newt->tokens = rz_pvector_clonef(toks->tokens, (RzPVectorItemCpyFunc)clone_asm_token);
 	newt->str = rz_strbuf_new(rz_strbuf_get(toks->str));
 	newt->op_type = toks->op_type;
 
 	if (!(newt->tokens && newt->str)) {
-		free(newt);
+		rz_asm_token_string_free(newt);
 		return NULL;
 	}
 	return newt;
@@ -1417,8 +1422,7 @@ static void add_token(RZ_OUT RzAsmTokenString *toks, const size_t i, const size_
 		return;
 	}
 
-	rz_vector_push(toks->tokens, t);
-	free(t);
+	rz_pvector_push(toks->tokens, t);
 }
 
 /**
@@ -1430,13 +1434,14 @@ static void add_token(RZ_OUT RzAsmTokenString *toks, const size_t i, const size_
  * \return true Overlaps with token from token vector.
  * \return false Does not overap with other token.
  */
-static bool overlaps_with_token(RZ_BORROW RzVector /*<RzAsmTokenString>*/ *toks, const size_t s, const size_t e) {
+static bool overlaps_with_token(RZ_BORROW RzPVector /*<RzAsmTokenString *>*/ *toks, const size_t s, const size_t e) {
 	rz_return_val_if_fail(toks, false);
 	size_t x, y; // Other tokens start/end
-	RzAsmToken *it;
-	rz_vector_foreach (toks, it) {
-		x = it->start;
-		y = it->start + it->len - 1;
+	void **it;
+	rz_pvector_foreach (toks, it) {
+		RzAsmToken *tok = *it;
+		x = tok->start;
+		y = tok->start + tok->len - 1;
 		if (!(s > y || e < x)) { // s:e not outside of x:y
 			return true;
 		}
@@ -1488,18 +1493,20 @@ static const char *token_str(RzAsmToken *t) {
  *
  * \param toks The token string to check.
  */
-static void check_token_coverage(RzAsmTokenString *toks) {
-	rz_return_if_fail(toks);
-	if (rz_vector_len(toks->tokens) == 0) {
+static bool check_token_coverage(RzAsmTokenString *toks) {
+	rz_return_val_if_fail(toks, false);
+	if (rz_pvector_len(toks->tokens) == 0) {
 		RZ_LOG_WARN("No tokens given.\n");
-		return;
+		return false;
 	}
 	bool error = false;
 	// Check if all characters belong to a token.
-	RzAsmToken *cur, *prev = NULL;
+	RzAsmToken *prev = NULL;
+	void **it;
 	int i = 0;
 	ut32 ci, cj, pi, pj; // Current and previous token indices.
-	rz_vector_foreach (toks->tokens, cur) {
+	rz_pvector_foreach (toks->tokens, it) {
+		RzAsmToken *cur = *it;
 		if (i == cur->start) {
 			prev = cur;
 			i = cur->start + cur->len;
@@ -1525,6 +1532,7 @@ static void check_token_coverage(RzAsmTokenString *toks) {
 	if (error) {
 		RZ_LOG_WARN("Parsing errors in asm str: %s\n", rz_strbuf_get(toks->str));
 	}
+	return !error;
 }
 
 /**
@@ -1606,8 +1614,11 @@ RZ_API RZ_OWN RzAsmTokenString *rz_asm_tokenize_asm_regex(RZ_BORROW RzStrBuf *as
 		rz_pvector_free(match_sets);
 	}
 
-	rz_vector_sort(toks->tokens, (RzVectorComparator)cmp_tokens, false, NULL);
-	check_token_coverage(toks);
+	rz_pvector_sort(toks->tokens, (RzPVectorComparator)cmp_tokens, false);
+	if (!check_token_coverage(toks)) {
+		rz_asm_token_string_free(toks);
+		return NULL;
+	}
 
 	return toks;
 }

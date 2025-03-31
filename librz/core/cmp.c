@@ -166,7 +166,7 @@ RZ_API RZ_OWN RzList /*<RzCompareData *>*/ *rz_core_cmp_disasm(RzCore *core, ut6
 		goto error_goto;
 	}
 	cmp_list->free = (RzListFree)&rz_core_cmp_free;
-	RzAsmOp op, op2;
+	RzAsmOp op = { 0 }, op2 = { 0 };
 	int i, j;
 	ut8 *buf = calloc(len + 32, 1);
 	if (!buf) {
@@ -207,6 +207,8 @@ RZ_API RZ_OWN RzList /*<RzCompareData *>*/ *rz_core_cmp_disasm(RzCore *core, ut6
 			op2.size = 1;
 		}
 		j += op2.size;
+		rz_asm_op_fini(&op);
+		rz_asm_op_fini(&op2);
 	}
 
 	free(buf);
