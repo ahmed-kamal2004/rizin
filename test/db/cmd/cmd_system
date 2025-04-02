@@ -76,3 +76,15 @@ EXPECT=<<EOF
 EOF
 EXPECT_ERR=
 RUN
+
+NAME=echo $
+FILE=--
+CMDS=<<EOF
+echo $$$
+echo ${str}
+EOF
+EXPECT=<<EOF
+$$$
+${str}
+EOF
+RUN
