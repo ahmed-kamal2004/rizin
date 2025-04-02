@@ -5574,13 +5574,15 @@ RZ_API bool rz_core_analysis_continue_until_call(RZ_NONNULL RzCore *core) {
 
 /**
  * \brief Compute analysis coverage count
+ * \param core The RzCore instance
+ * \return Total size of coverage. SIZE_MAX on failure.
  */
-RZ_API st64 rz_core_analysis_coverage_count(RZ_NONNULL RzCore *core) {
-	rz_return_val_if_fail(core && core->analysis, ST64_MAX);
+RZ_API size_t rz_core_analysis_coverage_count(RZ_NONNULL RzCore *core) {
+	rz_return_val_if_fail(core && core->analysis, SIZE_MAX);
 	RzListIter *iter;
 	RzAnalysisFunction *fcn;
-	st64 cov = 0;
-	cov += (st64)rz_meta_get_size(core->analysis, RZ_META_TYPE_DATA);
+	size_t cov = 0;
+	cov += (size_t)rz_meta_get_size(core->analysis, RZ_META_TYPE_DATA);
 	rz_list_foreach (core->analysis->fcns, iter, fcn) {
 		void **it;
 		RzPVector *maps = rz_io_maps(core->io);
@@ -5590,7 +5592,7 @@ RZ_API st64 rz_core_analysis_coverage_count(RZ_NONNULL RzCore *core) {
 				ut64 section_end = map->itv.addr + map->itv.size;
 				ut64 s = rz_analysis_function_realsize(fcn);
 				if (fcn->addr >= map->itv.addr && (fcn->addr + s) < section_end) {
-					cov += (st64)s;
+					cov += (size_t)s;
 				}
 			}
 		}
@@ -5600,16 +5602,19 @@ RZ_API st64 rz_core_analysis_coverage_count(RZ_NONNULL RzCore *core) {
 
 /**
  * \brief Compute analysis code count
+ * \param core The RzCore instance
+ * \return Total size of code regions. SIZE_MAX on failure.
  */
-RZ_API st64 rz_core_analysis_code_count(RZ_NONNULL RzCore *core) {
-	rz_return_val_if_fail(core, ST64_MAX);
-	st64 code = 0;
+RZ_API size_t rz_core_analysis_code_count(RZ_NONNULL RzCore *core) {
+	rz_return_val_if_fail(core, SIZE_MAX);
+	size_t code = 0;
+	code += (size_t)rz_meta_get_size(core->analysis, RZ_META_TYPE_DATA);
 	void **it;
 	RzPVector *maps = rz_io_maps(core->io);
 	rz_pvector_foreach (maps, it) {
 		RzIOMap *map = *it;
 		if (map->perm & RZ_PERM_X) {
-			code += (st64)map->itv.size;
+			code += (size_t)map->itv.size;
 		}
 	}
 	return code;
@@ -5617,12 +5622,14 @@ RZ_API st64 rz_core_analysis_code_count(RZ_NONNULL RzCore *core) {
 
 /**
  * \brief Compute analysis function xrefs count
+ * \param core The RzCore instance
+ * \return Total calls from all functions. SIZE_MAX on failure.
  */
-RZ_API st64 rz_core_analysis_calls_count(RZ_NONNULL RzCore *core) {
-	rz_return_val_if_fail(core && core->analysis, ST64_MAX);
+RZ_API size_t rz_core_analysis_calls_count(RZ_NONNULL RzCore *core) {
+	rz_return_val_if_fail(core && core->analysis, SIZE_MAX);
 	RzListIter *iter;
 	RzAnalysisFunction *fcn;
-	st64 cov = 0;
+	size_t cov = 0;
 	rz_list_foreach (core->analysis->fcns, iter, fcn) {
 		RzList *xrefs = rz_analysis_function_get_xrefs_from(fcn);
 		if (xrefs) {
