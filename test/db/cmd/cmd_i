@@ -4648,6 +4648,15 @@ EXPECT=<<EOF
 EOF
 RUN
 
+NAME=izx
+FILE=bins/arm/elf/hello_world 
+CMDS=aaa;izxq
+EXPECT=<<EOF
+0x574 13 12 Hello world!
+0x494 11 10 \bH\tKxD\tJ{D
+EOF
+RUN
+
 NAME=iT
 FILE==
 ARGS=-w

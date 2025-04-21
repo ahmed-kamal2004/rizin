@@ -2946,6 +2946,47 @@ RZ_API bool rz_core_bin_whole_strings_print(RZ_NONNULL RzCore *core, RZ_NONNULL 
 	return res;
 }
 
+RZ_API bool rz_core_bin_xrefs_strings_print(RZ_NONNULL RzCore *core, RZ_NONNULL RzBinFile *bf, RZ_NONNULL RzCmdStateOutput *state) {
+	rz_return_val_if_fail(core && state, false);
+
+	RzPVector *whole_strings = rz_core_bin_whole_strings(core, bf);
+
+	if (!whole_strings) {
+		return false;
+	}
+
+	RzPVector *xrefs_strings = rz_pvector_new((RzPVectorFree)rz_bin_string_free);
+
+	if (!xrefs_strings) {
+		rz_pvector_free(whole_strings);
+		return false;
+	}
+
+	void **iter;
+	rz_pvector_foreach (whole_strings, iter) {
+		RzBinString *string = *iter;
+		const RzList *list = rz_analysis_xrefs_get_to(core->analysis, string->paddr);
+		const RzAnalysisXRef *xref;
+		const RzListIter *iterator;
+		rz_list_foreach (list, iterator, xref) {
+			switch (xref->type) {
+			case RZ_ANALYSIS_XREF_TYPE_CODE:
+			case RZ_ANALYSIS_XREF_TYPE_DATA:
+				if (!rz_pvector_contains(xrefs_strings, string)) {
+					rz_pvector_remove_data(whole_strings, string);
+					rz_pvector_push_front(xrefs_strings, string);
+				}
+			default:
+				break;
+			}
+		}
+	}
+	bool res = strings_print(core, state, xrefs_strings);
+	rz_pvector_free(whole_strings);
+	rz_pvector_free(xrefs_strings);
+	return res;
+}
+
 static const char *get_filename(RzBinInfo *info, RzIODesc *desc) {
 	if (info && info->file) {
 		return info->file;
