@@ -131,6 +131,13 @@ static int x86_disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
 	return op->size;
 }
 
+static bool x86_sw_breakpoint(RzAsm *a, RzAsmOp *op) {
+	// { 0, 1, 0, "\xcc" }, // valid for 16, 32, 64
+	// { 0, 2, 0, "\xcd\x03" },
+	rz_asm_op_set_buf(op, (const ut8 *)"\xcc", 1);
+	return true;
+}
+
 RzAsmPlugin rz_asm_plugin_x86_cs = {
 	.name = "x86",
 	.desc = "X86/X86_64 Capstone-based disassembler",
@@ -144,6 +151,7 @@ RzAsmPlugin rz_asm_plugin_x86_cs = {
 	.fini = x86_asm_fini,
 	.mnemonics = x86_asm_mnemonics,
 	.disassemble = &x86_disassemble,
+	.sw_breakpoint = x86_sw_breakpoint,
 	.features = "vm,3dnow,aes,adx,avx,avx2,avx512,bmi,bmi2,cmov,"
 		    "f16c,fma,fma4,fsgsbase,hle,mmx,rtm,sha,sse1,sse2,"
 		    "sse3,sse41,sse42,sse4a,ssse3,pclmul,xop"

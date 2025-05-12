@@ -321,13 +321,13 @@ RZ_API RZ_BORROW RzBreakpointItem *rz_debug_bp_add(RZ_NONNULL RzDebug *dbg, ut64
 				}
 				perm = ((map->perm & 1) << 2) | (map->perm & 2) | ((map->perm & 4) >> 2);
 				if (!(perm & RZ_PERM_X)) {
-					eprintf("WARNING: setting bp within mapped memory without exec perm\n");
+					RZ_LOG_WARN("setting bp within mapped memory without exec perm\n");
 				}
 				break;
 			}
 		}
 		if (!valid) {
-			eprintf("WARNING: module's base addr + delta is not a valid address\n");
+			RZ_LOG_WARN("module's base addr + delta is not a valid address\n");
 			return NULL;
 		}
 	}
@@ -422,33 +422,33 @@ RZ_API void rz_debug_tracenodes_reset(RzDebug *dbg) {
 	dbg->tracenodes = ht_up_new(NULL, free);
 }
 
-RZ_API RzDebug *rz_debug_free(RzDebug *dbg) {
-	if (dbg) {
-		rz_hash_free(dbg->hash);
-		rz_bp_free(dbg->bp);
-		free(dbg->snap_path);
-		rz_list_free(dbg->maps);
-		rz_list_free(dbg->maps_user);
-		rz_list_free(dbg->threads);
-		rz_num_free(dbg->num);
-		sdb_free(dbg->sgnls);
-		rz_tree_free(dbg->tree);
-		ht_up_free(dbg->tracenodes);
-		ht_sp_free(dbg->plugins);
-		rz_list_free(dbg->call_frames);
-		free(dbg->btalgo);
-		rz_debug_trace_free(dbg->trace);
-		rz_debug_session_free(dbg->session);
-		rz_analysis_op_free(dbg->cur_op);
-		dbg->trace = NULL;
-		rz_egg_free(dbg->egg);
-		rz_reg_free(dbg->reg);
-		free(dbg->arch);
-		free(dbg->glob_libs);
-		free(dbg->glob_unlibs);
-		free(dbg);
+RZ_API void rz_debug_free(RzDebug *dbg) {
+	if (!dbg) {
+		return;
 	}
-	return NULL;
+	rz_hash_free(dbg->hash);
+	rz_bp_free(dbg->bp);
+	free(dbg->snap_path);
+	rz_list_free(dbg->maps);
+	rz_list_free(dbg->maps_user);
+	rz_list_free(dbg->threads);
+	rz_num_free(dbg->num);
+	sdb_free(dbg->sgnls);
+	rz_tree_free(dbg->tree);
+	ht_up_free(dbg->tracenodes);
+	ht_sp_free(dbg->plugins);
+	rz_list_free(dbg->call_frames);
+	free(dbg->btalgo);
+	rz_debug_trace_free(dbg->trace);
+	rz_debug_session_free(dbg->session);
+	rz_analysis_op_free(dbg->cur_op);
+	dbg->trace = NULL;
+	rz_egg_free(dbg->egg);
+	rz_reg_free(dbg->reg);
+	free(dbg->arch);
+	free(dbg->glob_libs);
+	free(dbg->glob_unlibs);
+	free(dbg);
 }
 
 RZ_API int rz_debug_attach(RzDebug *dbg, int pid) {
