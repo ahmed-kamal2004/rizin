@@ -12,16 +12,14 @@
 #include <rz_constructor.h>
 #include <rz_th.h>
 
-static char *portable_prefix = NULL;
-static bool portable_prefix_searched = false;
-static RzThreadLock *portable_prefix_mutex = NULL;
+RzPathPortable *rz_portable = { 0 };
 
 #ifdef RZ_DEFINE_CONSTRUCTOR_NEEDS_PRAGMA
 #pragma RZ_DEFINE_CONSTRUCTOR_PRAGMA_ARGS(init_portable_prefix)
 #endif
 RZ_DEFINE_CONSTRUCTOR(init_portable_prefix)
 static void init_portable_prefix(void) {
-	portable_prefix_mutex = rz_th_lock_new(false);
+	rz_portable->prefix_mutex = rz_th_lock_new(false);
 }
 
 #ifdef RZ_DEFINE_DESTRUCTOR_NEEDS_PRAGMA
@@ -29,9 +27,9 @@ static void init_portable_prefix(void) {
 #endif
 RZ_DEFINE_DESTRUCTOR(fini_portable_prefix)
 static void fini_portable_prefix(void) {
-	RZ_FREE(portable_prefix);
-	portable_prefix_searched = false;
-	RZ_FREE_CUSTOM(portable_prefix_mutex, rz_th_lock_free);
+	RZ_FREE(rz_portable->prefix);
+	rz_portable->prefix_searched = false;
+	RZ_FREE_CUSTOM(rz_portable->prefix_mutex, rz_th_lock_free);
 }
 
 static char *set_portable_prefix(void) {
@@ -92,15 +90,15 @@ err:
  */
 RZ_API void rz_path_set_prefix(RZ_NONNULL const char *path) {
 #if RZ_IS_PORTABLE
-	rz_th_lock_enter(portable_prefix_mutex);
-	free(portable_prefix);
+	rz_th_lock_enter(rz_portable->prefix_mutex);
+	free(rz_portable->prefix);
 	if (RZ_STR_ISNOTEMPTY(path)) {
-		portable_prefix = rz_str_dup(path);
+		rz_portable->prefix = rz_str_dup(path);
 	} else {
-		portable_prefix = set_portable_prefix();
+		rz_portable->prefix = set_portable_prefix();
 	}
-	portable_prefix_searched = true;
-	rz_th_lock_leave(portable_prefix_mutex);
+	rz_portable->prefix_searched = true;
+	rz_th_lock_leave(rz_portable->prefix_mutex);
 #endif
 }
 
@@ -116,15 +114,15 @@ RZ_API void rz_path_set_prefix(RZ_NONNULL const char *path) {
  */
 RZ_API RZ_OWN char *rz_path_prefix(RZ_NULLABLE const char *path) {
 #if RZ_IS_PORTABLE
-	rz_th_lock_enter(portable_prefix_mutex);
-	if (!portable_prefix_searched) {
-		portable_prefix = set_portable_prefix();
-		portable_prefix_searched = true;
+	rz_th_lock_enter(rz_portable->prefix_mutex);
+	if (!rz_portable->prefix_searched) {
+		rz_portable->prefix = set_portable_prefix();
+		rz_portable->prefix_searched = true;
 	}
-	rz_th_lock_leave(portable_prefix_mutex);
+	rz_th_lock_leave(rz_portable->prefix_mutex);
 
-	if (portable_prefix) {
-		return rz_file_path_join(portable_prefix, path);
+	if (rz_portable->prefix) {
+		return rz_file_path_join(rz_portable->prefix, path);
 	}
 
 #endif

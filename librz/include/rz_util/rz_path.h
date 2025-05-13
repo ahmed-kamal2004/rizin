@@ -2,6 +2,7 @@
 #define RZ_UTIL_PATH_H_
 
 #include <rz_types.h>
+#include <rz_th.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,6 +30,12 @@ RZ_API RZ_OWN char *rz_path_home_history(void);
 RZ_API RZ_OWN char *rz_path_home_expand(RZ_NULLABLE const char *path);
 
 RZ_API RZ_OWN char *rz_path_realpath(RZ_NULLABLE const char *path);
+
+typedef struct rz_path_portable {
+	char prefix;
+	bool prefix_searched;
+	RzThreadLock *prefix_mutex;
+} RzPathPortable;
 
 #ifdef __cplusplus
 }
