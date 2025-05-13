@@ -88,6 +88,7 @@ err:
  */
 RZ_API void rz_path_set_prefix(RZ_NONNULL const char *path) {
 #if RZ_IS_PORTABLE
+	rz_return_if_fail(rz_portable && rz_portable->prefix_mutex);
 	rz_th_lock_enter(rz_portable->prefix_mutex);
 	free(rz_portable->prefix);
 	if (RZ_STR_ISNOTEMPTY(path)) {
@@ -112,6 +113,7 @@ RZ_API void rz_path_set_prefix(RZ_NONNULL const char *path) {
  */
 RZ_API RZ_OWN char *rz_path_prefix(RZ_NULLABLE const char *path) {
 #if RZ_IS_PORTABLE
+	rz_return_if_fail(rz_portable && rz_portable->prefix_mutex);
 	rz_th_lock_enter(rz_portable->prefix_mutex);
 	if (!rz_portable->prefix_searched) {
 		rz_portable->prefix = set_portable_prefix();
