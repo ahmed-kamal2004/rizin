@@ -12,14 +12,14 @@
 #include <rz_constructor.h>
 #include <rz_th.h>
 
-RzPathPortable *rz_portable = { 0 };
+RzPathPortable *rz_portable;
 
 #ifdef RZ_DEFINE_CONSTRUCTOR_NEEDS_PRAGMA
 #pragma RZ_DEFINE_CONSTRUCTOR_PRAGMA_ARGS(init_portable_prefix)
 #endif
 RZ_DEFINE_CONSTRUCTOR(init_portable_prefix)
 static void init_portable_prefix(void) {
-	rz_portable->prefix_mutex = rz_th_lock_new(false);
+	rz_portable = rz_path_portable_new(false);
 }
 
 #ifdef RZ_DEFINE_DESTRUCTOR_NEEDS_PRAGMA
@@ -27,9 +27,7 @@ static void init_portable_prefix(void) {
 #endif
 RZ_DEFINE_DESTRUCTOR(fini_portable_prefix)
 static void fini_portable_prefix(void) {
-	RZ_FREE(rz_portable->prefix);
-	rz_portable->prefix_searched = false;
-	RZ_FREE_CUSTOM(rz_portable->prefix_mutex, rz_th_lock_free);
+	rz_portable = rz_path_portable_free(rz_portable);
 }
 
 static char *set_portable_prefix(void) {
@@ -314,5 +312,36 @@ RZ_API RZ_OWN char *rz_path_realpath(RZ_NULLABLE const char *path) {
 		return rz_utf16_to_utf8_l(buf, len);
 	}
 #endif
+	return NULL;
+}
+
+/**
+ * \brief Return new RzPathPortable
+ * \return New RzPathPortable
+ */
+RZ_API RZ_OWN RzPathPortable *rz_path_portable_new(bool recursive) {
+	RzPathPortable *p = RZ_NEW0(RzPathPortable);
+	if (!p) {
+		return NULL;
+	}
+	p->prefix = NULL;
+	p->prefix_searched = false;
+	p->prefix_mutex = rz_th_lock_new(recursive);
+
+	return p;
+}
+
+/**
+ * \brief Deallocate memory associated with a RzPathPortable object
+ * \return NULL
+ */
+RZ_API RZ_OWN RzPathPortable *rz_path_portable_free(RzPathPortable *p) {
+	if (!p) {
+		return NULL;
+	}
+	RZ_FREE(p->prefix);
+	p->prefix_searched = false;
+	RZ_FREE_CUSTOM(p->prefix_mutex, rz_th_lock_free);
+	free(p);
 	return NULL;
 }

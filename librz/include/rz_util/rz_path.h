@@ -32,10 +32,13 @@ RZ_API RZ_OWN char *rz_path_home_expand(RZ_NULLABLE const char *path);
 RZ_API RZ_OWN char *rz_path_realpath(RZ_NULLABLE const char *path);
 
 typedef struct rz_path_portable {
-	char prefix;
+	char *prefix;
 	bool prefix_searched;
 	RzThreadLock *prefix_mutex;
 } RzPathPortable;
+
+RZ_API RZ_OWN RzPathPortable *rz_path_portable_new(bool recursive);
+RZ_API RZ_OWN RzPathPortable *rz_path_portable_free(RzPathPortable *p);
 
 #ifdef __cplusplus
 }
