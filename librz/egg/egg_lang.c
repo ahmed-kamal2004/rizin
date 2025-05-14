@@ -162,7 +162,7 @@ RZ_API void rz_egg_lang_include_path(RzEgg *egg, const char *path) {
 }
 
 RZ_API void rz_egg_lang_include_init(RzEgg *egg) {
-	char *prefix = rz_path_prefix(NULL);
+	char *prefix = rz_path_prefix(NULL, NULL);
 	char *s = rz_str_newf(".:%s/%s", prefix, RZ_EGG_INCDIR_PATH);
 	free(prefix);
 	rz_sys_setenv(RZ_EGG_INCDIR_ENV, s);

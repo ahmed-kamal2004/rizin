@@ -12,24 +12,6 @@
 #include <rz_constructor.h>
 #include <rz_th.h>
 
-RzPathPortable *rz_portable;
-
-#ifdef RZ_DEFINE_CONSTRUCTOR_NEEDS_PRAGMA
-#pragma RZ_DEFINE_CONSTRUCTOR_PRAGMA_ARGS(init_portable_prefix)
-#endif
-RZ_DEFINE_CONSTRUCTOR(init_portable_prefix)
-static void init_portable_prefix(void) {
-	rz_portable = rz_path_portable_new(false);
-}
-
-#ifdef RZ_DEFINE_DESTRUCTOR_NEEDS_PRAGMA
-#pragma RZ_DEFINE_DESTRUCTOR_PRAGMA_ARGS(fini_portable_prefix)
-#endif
-RZ_DEFINE_DESTRUCTOR(fini_portable_prefix)
-static void fini_portable_prefix(void) {
-	rz_portable = rz_path_portable_free(rz_portable);
-}
-
 static char *set_portable_prefix(void) {
 	char *pid_to_path = rz_sys_pid_to_path(rz_sys_getpid());
 	if (!pid_to_path) {
@@ -86,18 +68,18 @@ err:
  *
  * \param path Path to use when prefixing or NULL to use the executable location
  */
-RZ_API void rz_path_set_prefix(RZ_NONNULL const char *path) {
+RZ_API void rz_path_set_prefix(RzPath *rz_path, RZ_NONNULL const char *path) {
 #if RZ_IS_PORTABLE
-	rz_return_if_fail(rz_portable && rz_portable->prefix_mutex);
-	rz_th_lock_enter(rz_portable->prefix_mutex);
-	free(rz_portable->prefix);
+	rz_return_if_fail(rz_path && rz_path->prefix_mutex);
+	rz_th_lock_enter(rz_path->prefix_mutex);
+	free(rz_path->prefix);
 	if (RZ_STR_ISNOTEMPTY(path)) {
-		rz_portable->prefix = rz_str_dup(path);
+		rz_path->prefix = rz_str_dup(path);
 	} else {
-		rz_portable->prefix = set_portable_prefix();
+		rz_path->prefix = set_portable_prefix();
 	}
-	rz_portable->prefix_searched = true;
-	rz_th_lock_leave(rz_portable->prefix_mutex);
+	rz_path->prefix_searched = true;
+	rz_th_lock_leave(rz_path->prefix_mutex);
 #endif
 }
 
@@ -111,18 +93,18 @@ RZ_API void rz_path_set_prefix(RZ_NONNULL const char *path) {
  * \param path Path to put in the install prefix context or NULL to just get the install prefix
  * \return \p path prefixed by the Rizin install prefix or just the install prefix
  */
-RZ_API RZ_OWN char *rz_path_prefix(RZ_NULLABLE const char *path) {
+RZ_API RZ_OWN char *rz_path_prefix(RzPath *rz_path, RZ_NULLABLE const char *path) {
 #if RZ_IS_PORTABLE
-	rz_return_if_fail(rz_portable && rz_portable->prefix_mutex);
-	rz_th_lock_enter(rz_portable->prefix_mutex);
-	if (!rz_portable->prefix_searched) {
-		rz_portable->prefix = set_portable_prefix();
-		rz_portable->prefix_searched = true;
+	rz_return_if_fail(rz_path && rz_path->prefix_mutex);
+	rz_th_lock_enter(rz_path->prefix_mutex);
+	if (!rz_path->prefix_searched) {
+		rz_path->prefix = set_portable_prefix();
+		rz_path->prefix_searched = true;
 	}
-	rz_th_lock_leave(rz_portable->prefix_mutex);
+	rz_th_lock_leave(rz_path->prefix_mutex);
 
-	if (rz_portable->prefix) {
-		return rz_file_path_join(rz_portable->prefix, path);
+	if (rz_path->prefix) {
+		return rz_file_path_join(rz_path->prefix, path);
 	}
 
 #endif
@@ -133,28 +115,28 @@ RZ_API RZ_OWN char *rz_path_prefix(RZ_NULLABLE const char *path) {
  * \brief Return the directory where include files are placed
  */
 RZ_API RZ_OWN char *rz_path_incdir(void) {
-	return rz_path_prefix(RZ_INCDIR);
+	return rz_path_prefix(NULL, RZ_INCDIR);
 }
 
 /**
  * \brief Return the directory where the Rizin binaries are placed
  */
 RZ_API RZ_OWN char *rz_path_bindir(void) {
-	return rz_path_prefix(RZ_BINDIR);
+	return rz_path_prefix(NULL, RZ_BINDIR);
 }
 
 /**
  * \brief Return the directory where the Rizin libraries are placed
  */
 RZ_API RZ_OWN char *rz_path_libdir(void) {
-	return rz_path_prefix(RZ_LIBDIR);
+	return rz_path_prefix(NULL, RZ_LIBDIR);
 }
 
 /**
  * \brief Return the full system path of the given subpath \p path
  */
 RZ_API RZ_OWN char *rz_path_system(RZ_NULLABLE const char *path) {
-	return rz_path_prefix(path);
+	return rz_path_prefix(NULL, path);
 }
 
 /**
@@ -174,7 +156,7 @@ RZ_API RZ_OWN char *rz_path_extra(RZ_NULLABLE const char *path) {
  * \brief Return the system path of the global rizinrc file
  */
 RZ_API RZ_OWN char *rz_path_system_rc(void) {
-	return rz_path_prefix(RZ_GLOBAL_RC);
+	return rz_path_prefix(NULL, RZ_GLOBAL_RC);
 }
 
 /**
@@ -318,32 +300,29 @@ RZ_API RZ_OWN char *rz_path_realpath(RZ_NULLABLE const char *path) {
 }
 
 /**
- * \brief Return new RzPathPortable
- * \return New RzPathPortable
+ * \brief Return new RzPath pointer
+ * \return New RzPath*
  */
-RZ_API RZ_OWN RzPathPortable *rz_path_portable_new(bool recursive) {
-	RzPathPortable *p = RZ_NEW0(RzPathPortable);
+RZ_API RZ_OWN RzPath *rz_path_new(void) {
+	RzPath *p = RZ_NEW0(RzPath);
 	if (!p) {
 		return NULL;
 	}
 	p->prefix = NULL;
 	p->prefix_searched = false;
-	p->prefix_mutex = rz_th_lock_new(recursive);
+	p->prefix_mutex = rz_th_lock_new(false);
 
 	return p;
 }
 
 /**
- * \brief Deallocate memory associated with a RzPathPortable object
+ * \brief Deallocate memory associated with a RzPath pointer
  * \return NULL
  */
-RZ_API RZ_OWN RzPathPortable *rz_path_portable_free(RzPathPortable *p) {
-	if (!p) {
-		return NULL;
+RZ_API void rz_path_free(RzPath *p) {
+	if (p) {
+		free(p->prefix);
+		rz_th_lock_free(p->prefix_mutex);
+		free(p);
 	}
-	RZ_FREE(p->prefix);
-	p->prefix_searched = false;
-	RZ_FREE_CUSTOM(p->prefix_mutex, rz_th_lock_free);
-	free(p);
-	return NULL;
 }

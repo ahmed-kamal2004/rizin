@@ -352,6 +352,8 @@ struct rz_core_t {
 	int (*rz_main_rz_gg)(int argc, const char **argv);
 	int (*rz_main_rz_asm)(int argc, const char **argv);
 	int (*rz_main_rz_ax)(int argc, const char **argv);
+
+	RzPath *rz_path;
 };
 
 // maybe move into RzAnalysis

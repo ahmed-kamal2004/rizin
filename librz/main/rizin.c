@@ -86,7 +86,7 @@ static int rz_main_version_verify(int show) {
 	return ret;
 }
 
-static int main_help(int line) {
+static int main_help(RzCore *core, int line) {
 
 	if (line < 2) {
 		printf("%s%s", Color_CYAN, "Usage: ");
@@ -175,7 +175,7 @@ static int main_help(int line) {
 		char *extra_plugins = rz_path_extra(RZ_PLUGINS);
 		char *system_sigdb = rz_path_system(RZ_SIGDB);
 		char *extra_sigdb = rz_path_extra(RZ_SIGDB);
-		char *dirPrefix = rz_path_prefix(NULL);
+		char *dirPrefix = rz_path_prefix(core->rz_path, NULL);
 		char *extra_prefix = rz_path_extra(NULL);
 		// clang-format off
 		printf(
@@ -256,9 +256,9 @@ static int main_help(int line) {
 	return 0;
 }
 
-static int main_print_var(const char *var_name) {
+static int main_print_var(RzCore *core, const char *var_name) {
 	int i = 0;
-	char *prefix = rz_path_prefix(NULL);
+	char *prefix = rz_path_prefix(core->rz_path, NULL);
 	char *extra_prefix = rz_path_extra(NULL);
 	char *incdir = rz_path_incdir();
 	char *libdir = rz_path_libdir();
@@ -525,7 +525,7 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 
 	// -H option without argument
 	if (argc == 2 && !strcmp(argv[1], "-H")) {
-		main_print_var(NULL);
+		main_print_var(r, NULL);
 		LISTS_FREE();
 		return 0;
 	}
@@ -629,7 +629,7 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 			help++;
 			break;
 		case 'H':
-			main_print_var(opt.arg);
+			main_print_var(r, opt.arg);
 			LISTS_FREE();
 			return 0;
 		case 'i':
@@ -838,7 +838,7 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 		LISTS_FREE();
 		free(pfile);
 		RZ_FREE(debugbackend);
-		return main_help(help > 1 ? 2 : 0);
+		return main_help(r, help > 1 ? 2 : 0);
 	}
 	if (customRarunProfile) {
 		char *tfn = rz_file_temp(".rz-run");
