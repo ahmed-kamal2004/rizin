@@ -166,7 +166,7 @@ static int main_help(RzCore *core, int line) {
 		char *home_rc = rz_path_home_rc();
 		char *home_config_rc = rz_path_home_config_rc();
 		char *home_config_rcdir = rz_path_home_config_rcdir();
-		char *system_rc = rz_path_system_rc();
+		char *system_rc = rz_path_system_rc(core->sys_path);
 		char *binrc_dir = rz_path_home_prefix(RZ_BINRC);
 		char *binrc = rz_file_path_join(binrc_dir, "bin-<format>");
 		char *system_magic = rz_path_system(RZ_SDB_MAGIC);
@@ -175,7 +175,7 @@ static int main_help(RzCore *core, int line) {
 		char *extra_plugins = rz_path_extra(RZ_PLUGINS);
 		char *system_sigdb = rz_path_system(RZ_SIGDB);
 		char *extra_sigdb = rz_path_extra(RZ_SIGDB);
-		char *dirPrefix = rz_path_prefix(core->rz_path, NULL);
+		char *dirPrefix = rz_path_prefix(core->sys_path, NULL);
 		char *extra_prefix = rz_path_extra(NULL);
 		// clang-format off
 		printf(
@@ -258,7 +258,7 @@ static int main_help(RzCore *core, int line) {
 
 static int main_print_var(RzCore *core, const char *var_name) {
 	int i = 0;
-	char *prefix = rz_path_prefix(core->rz_path, NULL);
+	char *prefix = rz_path_prefix(core->sys_path, NULL);
 	char *extra_prefix = rz_path_extra(NULL);
 	char *incdir = rz_path_incdir();
 	char *libdir = rz_path_libdir();
@@ -1384,7 +1384,7 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 		}
 	}
 	{
-		char *global_rc = rz_path_system_rc();
+		char *global_rc = rz_path_system_rc(r->sys_path);
 		if (rz_file_exists(global_rc)) {
 			(void)rz_core_run_script(r, global_rc);
 		}

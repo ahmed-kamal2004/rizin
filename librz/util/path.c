@@ -65,21 +65,21 @@ err:
  * unless Rizin was compiled as "portable". In such a case the prefix is either
  * provided via the path argument or discovered from the path of the executable
  * calling this function.
- *
+ * \param sys_path RzPath* contains mutex and install prefix.
  * \param path Path to use when prefixing or NULL to use the executable location
  */
-RZ_API void rz_path_set_prefix(RzPath *rz_path, RZ_NONNULL const char *path) {
+RZ_API void rz_path_set_prefix(RzPath *sys_path, RZ_NONNULL const char *path) {
 #if RZ_IS_PORTABLE
-	rz_return_if_fail(rz_path && rz_path->prefix_mutex);
-	rz_th_lock_enter(rz_path->prefix_mutex);
-	free(rz_path->prefix);
+	rz_return_if_fail(sys_path && sys_path->prefix_mutex);
+	rz_th_lock_enter(sys_path->prefix_mutex);
+	free(sys_path->prefix);
 	if (RZ_STR_ISNOTEMPTY(path)) {
-		rz_path->prefix = rz_str_dup(path);
+		sys_path->prefix = rz_str_dup(path);
 	} else {
-		rz_path->prefix = set_portable_prefix();
+		sys_path->prefix = set_portable_prefix();
 	}
-	rz_path->prefix_searched = true;
-	rz_th_lock_leave(rz_path->prefix_mutex);
+	sys_path->prefix_searched = true;
+	rz_th_lock_leave(sys_path->prefix_mutex);
 #endif
 }
 
@@ -89,22 +89,22 @@ RZ_API void rz_path_set_prefix(RzPath *rz_path, RZ_NONNULL const char *path) {
  * The install prefix is taken from the build-time configuration RZ_PREFIX,
  * unless Rizin was compiled as "portable". In such a case the prefix is
  * discovered from the path of the executable calling this function.
- *
+ * \param sys_path RzPath* contains mutex and install prefix.
  * \param path Path to put in the install prefix context or NULL to just get the install prefix
  * \return \p path prefixed by the Rizin install prefix or just the install prefix
  */
-RZ_API RZ_OWN char *rz_path_prefix(RzPath *rz_path, RZ_NULLABLE const char *path) {
+RZ_API RZ_OWN char *rz_path_prefix(RzPath *sys_path, RZ_NULLABLE const char *path) {
 #if RZ_IS_PORTABLE
-	rz_return_if_fail(rz_path && rz_path->prefix_mutex);
-	rz_th_lock_enter(rz_path->prefix_mutex);
-	if (!rz_path->prefix_searched) {
-		rz_path->prefix = set_portable_prefix();
-		rz_path->prefix_searched = true;
+	rz_return_if_fail(sys_path && sys_path->prefix_mutex);
+	rz_th_lock_enter(sys_path->prefix_mutex);
+	if (!sys_path->prefix_searched) {
+		sys_path->prefix = set_portable_prefix();
+		sys_path->prefix_searched = true;
 	}
-	rz_th_lock_leave(rz_path->prefix_mutex);
+	rz_th_lock_leave(sys_path->prefix_mutex);
 
-	if (rz_path->prefix) {
-		return rz_file_path_join(rz_path->prefix, path);
+	if (sys_path->prefix) {
+		return rz_file_path_join(sys_path->prefix, path);
 	}
 
 #endif
@@ -154,9 +154,10 @@ RZ_API RZ_OWN char *rz_path_extra(RZ_NULLABLE const char *path) {
 
 /**
  * \brief Return the system path of the global rizinrc file
+ * \param sys_path RzPath* contains mutex and install prefix.
  */
-RZ_API RZ_OWN char *rz_path_system_rc(void) {
-	return rz_path_prefix(NULL, RZ_GLOBAL_RC);
+RZ_API RZ_OWN char *rz_path_system_rc(RzPath *sys_path) {
+	return rz_path_prefix(sys_path, RZ_GLOBAL_RC);
 }
 
 /**

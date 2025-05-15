@@ -1732,7 +1732,7 @@ RZ_API bool rz_core_init(RzCore *core) {
 	// Initialize visual modes after everything else but before config init
 	core->visual = rz_core_visual_new();
 	// Initailiza path
-	core->rz_path = rz_path_new();
+	core->sys_path = rz_path_new();
 	// initialize config before any corebind
 	rz_core_config_init(core);
 
@@ -1843,7 +1843,7 @@ RZ_API void rz_core_fini(RzCore *c) {
 	RZ_FREE(c->curtheme);
 	RZ_FREE_CUSTOM(c->visual, rz_core_visual_free);
 	RZ_FREE_CUSTOM(c->warnings_after, rz_list_free);
-	RZ_FREE_CUSTOM(c->rz_path, rz_path_free);
+	RZ_FREE_CUSTOM(c->sys_path, rz_path_free);
 }
 
 RZ_API void rz_core_free(RzCore *c) {

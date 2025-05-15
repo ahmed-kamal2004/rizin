@@ -16,8 +16,8 @@ typedef struct rz_path_t {
 
 #ifdef RZ_API
 
-RZ_API void rz_path_set_prefix(RzPath *rz_path, RZ_NONNULL const char *path);
-RZ_API RZ_OWN char *rz_path_prefix(RzPath *rz_path, RZ_NULLABLE const char *path);
+RZ_API void rz_path_set_prefix(RzPath *sys_path, RZ_NONNULL const char *path);
+RZ_API RZ_OWN char *rz_path_prefix(RzPath *sys_path, RZ_NULLABLE const char *path);
 RZ_API RZ_OWN char *rz_path_incdir(void);
 RZ_API RZ_OWN char *rz_path_bindir(void);
 RZ_API RZ_OWN char *rz_path_libdir(void);
@@ -27,7 +27,7 @@ RZ_API RZ_OWN char *rz_path_extra(RZ_NULLABLE const char *path);
 RZ_API RZ_OWN char *rz_path_home_prefix(RZ_NULLABLE const char *path);
 RZ_API RZ_OWN char *rz_path_home(RZ_NULLABLE const char *path);
 
-RZ_API RZ_OWN char *rz_path_system_rc(void);
+RZ_API RZ_OWN char *rz_path_system_rc(RzPath *sys_path);
 RZ_API RZ_OWN char *rz_path_home_rc(void);
 RZ_API RZ_OWN char *rz_path_home_config_rc(void);
 RZ_API RZ_OWN char *rz_path_home_config_rcdir(void);

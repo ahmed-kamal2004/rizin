@@ -3009,7 +3009,7 @@ RZ_API int rz_core_config_init(RzCore *core) {
 	{
 		char *pfx = rz_sys_getenv("RZ_PREFIX");
 		if (!pfx) {
-			pfx = rz_path_prefix(core->rz_path, NULL);
+			pfx = rz_path_prefix(core->sys_path, NULL);
 		}
 		SETCB("dir.prefix", pfx, NULL, "Default prefix rizin was compiled for");
 		free(pfx);
