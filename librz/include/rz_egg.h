@@ -107,6 +107,7 @@ typedef struct rz_egg_t {
 	int bits;
 	ut32 os;
 	int context;
+	RzPath *sys_path;
 } RzEgg;
 
 #define RZ_EGG_OS_LINUX   0x5ca62a43
@@ -221,7 +222,7 @@ RZ_API bool rz_egg_patch_num(RzEgg *egg, int off, ut64 val, ut32 bits);
 RZ_API void rz_egg_finalize(RzEgg *egg);
 
 /* rz_egg_Cfile.c */
-RZ_API char *rz_egg_Cfile_parser(const char *file, const char *arch, const char *os, int bits);
+RZ_API char *rz_egg_Cfile_parser(RzPath *sys_path, const char *file, const char *arch, const char *os, int bits);
 
 /* lang.c */
 RZ_API char *rz_egg_mkvar(RzEgg *egg, char *out, const char *_str, int delta);

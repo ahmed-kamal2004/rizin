@@ -7,8 +7,8 @@
 extern "C" {
 #endif
 
-RZ_API RZ_OWN char *rz_version_gittip();
-RZ_API RZ_OWN char *rz_version_str(const char *program);
+RZ_API RZ_OWN char *rz_version_gittip(RzPath *sys_path);
+RZ_API RZ_OWN char *rz_version_str(RzPath *sys_path, const char *program);
 
 #ifdef __cplusplus
 }

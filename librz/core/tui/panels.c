@@ -503,7 +503,7 @@ static int __watch_points_cb(void *user);
 static int __references_cb(void *user);
 static int __help_cb(void *user);
 static int __fortune_cb(void *user);
-static int __version_cb(void *user);
+static int __version_cb(RzPath *sys_path, void *user);
 static int __quit_cb(void *user);
 static int __io_cache_on_cb(void *user);
 static int __io_cache_off_cb(void *user);
@@ -3643,8 +3643,8 @@ int __help_cb(void *user) {
 	return 0;
 }
 
-int __version_cb(void *user) {
-	char *v = rz_version_str(NULL);
+int __version_cb(RzPath *sys_path, void *user) {
+	char *v = rz_version_str(sys_path, NULL);
 	rz_cons_message(v);
 	free(v);
 	return 0;

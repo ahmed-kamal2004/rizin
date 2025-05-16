@@ -192,9 +192,13 @@ int rz_test_main(int argc, const char **argv) {
 	int ret = 0;
 	char *cwd = NULL;
 	RzTestState state = { 0 };
+<<<<<<< HEAD
 
 	eprintf("Running rz-test on %s\n", RZ_TEST_ARCH_OS);
 
+=======
+	RzPath *sys_path = rz_path_new();
+>>>>>>> a1ffa69898 (Add RzPath* to multiple functions in path.c)
 	if (!except_dir) {
 		RZ_LOG_ERROR("Fail to create RzPVector\n");
 		ret = -1;
@@ -231,7 +235,7 @@ int rz_test_main(int argc, const char **argv) {
 			if (quiet) {
 				printf(RZ_VERSION "\n");
 			} else {
-				char *s = rz_version_str("rz-test");
+				char *s = rz_version_str(sys_path, "rz-test");
 				printf("%s\n", s);
 				free(s);
 			}
@@ -601,6 +605,7 @@ beach:
 	rz_th_lock_free(state.lock);
 	rz_th_cond_free(state.cond);
 	rz_pvector_free(except_dir);
+	rz_path_free(sys_path);
 #if __WINDOWS__
 	if (old_cp) {
 		(void)SetConsoleOutputCP(old_cp);

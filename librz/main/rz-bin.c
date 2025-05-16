@@ -735,7 +735,7 @@ RZ_API int rz_main_rz_bin(int argc, const char **argv) {
 	bin = core.bin;
 	if (!(tmp = rz_sys_getenv("RZ_NOPLUGINS"))) {
 		char *homeplugindir = rz_path_home_prefix(RZ_PLUGINS);
-		char *plugindir = rz_path_system(RZ_PLUGINS);
+		char *plugindir = rz_path_system(core->sys_path, RZ_PLUGINS);
 		char *extraplugindir = rz_path_extra(RZ_PLUGINS);
 		RzLib *l = rz_lib_new(NULL, NULL);
 		rz_lib_add_handler(l, RZ_LIB_TYPE_DEMANGLER, "demangler plugins",
@@ -962,7 +962,7 @@ RZ_API int rz_main_rz_bin(int argc, const char **argv) {
 		case 'r': out_mode = RZ_MODE_RIZINCMD; break;
 		case 'v':
 			rz_core_fini(&core);
-			return rz_main_version_print("rz-bin");
+			return rz_main_version_print(core.sys_path, "rz-bin");
 		case 'L':
 			set_action(RZ_BIN_REQ_LISTPLUGINS);
 			break;

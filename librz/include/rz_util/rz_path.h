@@ -16,13 +16,13 @@ typedef struct rz_path_t {
 
 #ifdef RZ_API
 
-RZ_API void rz_path_set_prefix(RzPath *sys_path, RZ_NONNULL const char *path);
-RZ_API RZ_OWN char *rz_path_prefix(RzPath *sys_path, RZ_NULLABLE const char *path);
-RZ_API RZ_OWN char *rz_path_incdir(void);
-RZ_API RZ_OWN char *rz_path_bindir(void);
-RZ_API RZ_OWN char *rz_path_libdir(void);
+RZ_API void rz_path_set_prefix(RZ_NONNULL RzPath *sys_path, RZ_NONNULL const char *path);
+RZ_API RZ_OWN char *rz_path_prefix(RZ_NONNULL RzPath *sys_path, RZ_NULLABLE const char *path);
+RZ_API RZ_OWN char *rz_path_incdir(RZ_NONNULL RzPath *sys_path);
+RZ_API RZ_OWN char *rz_path_bindir(RZ_NONNULL RzPath *sys_path);
+RZ_API RZ_OWN char *rz_path_libdir(RZ_NONNULL RzPath *sys_path);
 
-RZ_API RZ_OWN char *rz_path_system(RZ_NULLABLE const char *path);
+RZ_API RZ_OWN char *rz_path_system(RZ_NONNULL RzPath *sys_path, RZ_NULLABLE const char *path);
 RZ_API RZ_OWN char *rz_path_extra(RZ_NULLABLE const char *path);
 RZ_API RZ_OWN char *rz_path_home_prefix(RZ_NULLABLE const char *path);
 RZ_API RZ_OWN char *rz_path_home(RZ_NULLABLE const char *path);
@@ -40,7 +40,7 @@ RZ_API RZ_OWN char *rz_path_home_expand(RZ_NULLABLE const char *path);
 RZ_API RZ_OWN char *rz_path_realpath(RZ_NULLABLE const char *path);
 
 RZ_API RZ_OWN RzPath *rz_path_new(void);
-RZ_API void rz_path_free(RzPath *p);
+RZ_API void rz_path_free(RZ_NULLABLE RzPath *p);
 
 #endif
 

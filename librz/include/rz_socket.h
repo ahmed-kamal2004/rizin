@@ -222,6 +222,7 @@ typedef struct rz_run_profile_t {
 	int _timeout;
 	int _timeout_sig;
 	int _nice;
+	RzPath *sys_path;
 } RzRunProfile;
 
 RZ_API RzRunProfile *rz_run_new(const char *str);

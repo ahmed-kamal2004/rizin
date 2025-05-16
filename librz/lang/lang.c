@@ -40,6 +40,8 @@ RZ_API RzLang *rz_lang_new(void) {
 		rz_lang_plugin_add(lang, lang_static_plugins[i]);
 	}
 
+	lang->sys_path = rz_path_new();
+
 	return lang;
 }
 
@@ -57,6 +59,7 @@ RZ_API void rz_lang_free(RzLang *lang) {
 	rz_lang_undef(lang, NULL);
 	rz_list_free(lang->langs);
 	rz_list_free(lang->defs);
+	rz_path_free(lang->sys_path);
 	free(lang);
 }
 

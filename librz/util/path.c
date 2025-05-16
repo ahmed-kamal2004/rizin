@@ -68,7 +68,7 @@ err:
  * \param sys_path RzPath* contains mutex and install prefix.
  * \param path Path to use when prefixing or NULL to use the executable location
  */
-RZ_API void rz_path_set_prefix(RzPath *sys_path, RZ_NONNULL const char *path) {
+RZ_API void rz_path_set_prefix(RZ_NONNULL RzPath *sys_path, RZ_NONNULL const char *path) {
 #if RZ_IS_PORTABLE
 	rz_return_if_fail(sys_path && sys_path->prefix_mutex);
 	rz_th_lock_enter(sys_path->prefix_mutex);
@@ -93,7 +93,7 @@ RZ_API void rz_path_set_prefix(RzPath *sys_path, RZ_NONNULL const char *path) {
  * \param path Path to put in the install prefix context or NULL to just get the install prefix
  * \return \p path prefixed by the Rizin install prefix or just the install prefix
  */
-RZ_API RZ_OWN char *rz_path_prefix(RzPath *sys_path, RZ_NULLABLE const char *path) {
+RZ_API RZ_OWN char *rz_path_prefix(RZ_NONNULL RzPath *sys_path, RZ_NULLABLE const char *path) {
 #if RZ_IS_PORTABLE
 	rz_return_if_fail(sys_path && sys_path->prefix_mutex);
 	rz_th_lock_enter(sys_path->prefix_mutex);
@@ -114,29 +114,29 @@ RZ_API RZ_OWN char *rz_path_prefix(RzPath *sys_path, RZ_NULLABLE const char *pat
 /**
  * \brief Return the directory where include files are placed
  */
-RZ_API RZ_OWN char *rz_path_incdir(void) {
-	return rz_path_prefix(NULL, RZ_INCDIR);
+RZ_API RZ_OWN char *rz_path_incdir(RZ_NONNULL RzPath *sys_path) {
+	return rz_path_prefix(sys_path, RZ_INCDIR);
 }
 
 /**
  * \brief Return the directory where the Rizin binaries are placed
  */
-RZ_API RZ_OWN char *rz_path_bindir(void) {
-	return rz_path_prefix(NULL, RZ_BINDIR);
+RZ_API RZ_OWN char *rz_path_bindir(RZ_NONNULL RzPath *sys_path) {
+	return rz_path_prefix(sys_path, RZ_BINDIR);
 }
 
 /**
  * \brief Return the directory where the Rizin libraries are placed
  */
-RZ_API RZ_OWN char *rz_path_libdir(void) {
-	return rz_path_prefix(NULL, RZ_LIBDIR);
+RZ_API RZ_OWN char *rz_path_libdir(RZ_NONNULL RzPath *sys_path) {
+	return rz_path_prefix(sys_path, RZ_LIBDIR);
 }
 
 /**
  * \brief Return the full system path of the given subpath \p path
  */
-RZ_API RZ_OWN char *rz_path_system(RZ_NULLABLE const char *path) {
-	return rz_path_prefix(NULL, path);
+RZ_API RZ_OWN char *rz_path_system(RZ_NONNULL RzPath *sys_path, RZ_NULLABLE const char *path) {
+	return rz_path_prefix(sys_path, path);
 }
 
 /**
@@ -320,10 +320,11 @@ RZ_API RZ_OWN RzPath *rz_path_new(void) {
  * \brief Deallocate memory associated with a RzPath pointer
  * \return NULL
  */
-RZ_API void rz_path_free(RzPath *p) {
-	if (p) {
-		free(p->prefix);
-		rz_th_lock_free(p->prefix_mutex);
-		free(p);
+RZ_API void rz_path_free(RZ_NULLABLE RzPath *p) {
+	if (!p) {
+		return;
 	}
+	free(p->prefix);
+	rz_th_lock_free(p->prefix_mutex);
+	free(p);
 }

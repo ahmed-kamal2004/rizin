@@ -768,7 +768,7 @@ static bool try_loadlib(RzCore *core, const char *lib, ut64 addr) {
 
 RZ_API bool rz_core_file_loadlib(RzCore *core, const char *lib, ut64 libaddr) {
 	const char *dirlibs = rz_config_get(core->config, "dir.libs");
-	char *libdir = rz_path_libdir();
+	char *libdir = rz_path_libdir(core->sys_path);
 	if (!dirlibs || !*dirlibs) {
 		dirlibs = "." RZ_SYS_DIR;
 	}

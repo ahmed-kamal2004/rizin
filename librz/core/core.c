@@ -1751,7 +1751,7 @@ RZ_API bool rz_core_init(RzCore *core) {
 	rz_config_set(core->config, "asm.arch", RZ_SYS_ARCH);
 	update_sdb(core);
 	{
-		char *a = rz_path_system(RZ_FLAGS);
+		char *a = rz_path_system(core->sys_path, RZ_FLAGS);
 		if (a) {
 			char *file = rz_file_path_join(a, "tags.rz");
 			(void)rz_core_run_script(core, file);

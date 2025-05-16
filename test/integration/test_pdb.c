@@ -347,7 +347,8 @@ bool test_pdb_tpi_rust(void) {
 
 bool test_pdb_type_save(void) {
 	RzAnalysis *analysis = rz_analysis_new();
-	char *types_dir = rz_path_system(RZ_SDB_TYPES);
+	RzPath *sys_path = rz_path_new();
+	char *types_dir = rz_path_system(sys_path, RZ_SDB_TYPES);
 	rz_type_db_init(analysis->typedb, types_dir, "x86", 32, "windows");
 	free(types_dir);
 
@@ -424,6 +425,7 @@ bool test_pdb_type_save(void) {
 	mu_assert_false(has_struct_member(localeinfo, "noSuchMember"), "no such struct member");
 
 	rz_analysis_free(analysis);
+	rz_path_free(sys_path);
 	mu_end;
 }
 

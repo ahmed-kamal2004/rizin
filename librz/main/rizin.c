@@ -161,19 +161,19 @@ static int main_help(RzCore *core, int line) {
 	}
 	if (line == 2) {
 		char *datahome = rz_path_home_prefix(RZ_DATADIR);
-		char *incdir = rz_path_incdir();
-		char *libdir = rz_path_libdir();
+		char *incdir = rz_path_incdir(core->sys_path);
+		char *libdir = rz_path_libdir(core->sys_path);
 		char *home_rc = rz_path_home_rc();
 		char *home_config_rc = rz_path_home_config_rc();
 		char *home_config_rcdir = rz_path_home_config_rcdir();
 		char *system_rc = rz_path_system_rc(core->sys_path);
 		char *binrc_dir = rz_path_home_prefix(RZ_BINRC);
 		char *binrc = rz_file_path_join(binrc_dir, "bin-<format>");
-		char *system_magic = rz_path_system(RZ_SDB_MAGIC);
+		char *system_magic = rz_path_system(core->sys_path, RZ_SDB_MAGIC);
 		char *home_plugins = rz_path_home_prefix(RZ_PLUGINS);
-		char *system_plugins = rz_path_system(RZ_PLUGINS);
+		char *system_plugins = rz_path_system(core->sys_path, RZ_PLUGINS);
 		char *extra_plugins = rz_path_extra(RZ_PLUGINS);
-		char *system_sigdb = rz_path_system(RZ_SIGDB);
+		char *system_sigdb = rz_path_system(core->sys_path, RZ_SIGDB);
 		char *extra_sigdb = rz_path_extra(RZ_SIGDB);
 		char *dirPrefix = rz_path_prefix(core->sys_path, NULL);
 		char *extra_prefix = rz_path_extra(NULL);
@@ -260,17 +260,17 @@ static int main_print_var(RzCore *core, const char *var_name) {
 	int i = 0;
 	char *prefix = rz_path_prefix(core->sys_path, NULL);
 	char *extra_prefix = rz_path_extra(NULL);
-	char *incdir = rz_path_incdir();
-	char *libdir = rz_path_libdir();
+	char *incdir = rz_path_incdir(core->sys_path);
+	char *libdir = rz_path_libdir(core->sys_path);
 	char *confighome = rz_path_home_config();
 	char *datahome = rz_path_home_prefix(RZ_DATADIR);
 	char *cachehome = rz_path_home_cache();
 	char *homeplugins = rz_path_home_prefix(RZ_PLUGINS);
-	char *sigdbdir = rz_path_system(RZ_SIGDB);
+	char *sigdbdir = rz_path_system(core->sys_path, RZ_SIGDB);
 	char *extrasigdbdir = rz_path_extra(RZ_SIGDB);
-	char *plugins = rz_path_system(RZ_PLUGINS);
+	char *plugins = rz_path_system(core->sys_path, RZ_PLUGINS);
 	char *extraplugins = rz_path_extra(RZ_PLUGINS);
-	char *magicpath = rz_path_system(RZ_SDB_MAGIC);
+	char *magicpath = rz_path_system(core->sys_path, RZ_SDB_MAGIC);
 	const char *is_portable = RZ_IS_PORTABLE ? "1" : "0";
 	struct rizin_var_t {
 		const char *name;
@@ -732,7 +732,7 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 				LISTS_FREE();
 				RZ_FREE(debugbackend);
 				free(customRarunProfile);
-				return rz_main_version_print("rizin");
+				return rz_main_version_print(r->sys_path, "rizin");
 			}
 		case 'V':
 			return rz_main_version_verify(1);
