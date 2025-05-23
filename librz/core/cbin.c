@@ -2686,7 +2686,44 @@ RZ_API bool rz_core_bin_segments_print(RZ_NONNULL RzCore *core, RZ_NONNULL RzBin
 	return true;
 }
 
-static bool strings_print(RzCore *core, RzCmdStateOutput *state, const RzPVector /*<RzBinString *>*/ *vec) {
+/**
+ * \brief Collect cross-references and flags for strings_print
+ *
+ * \param core Pointer to RzCore
+ * \param paddr Physical address
+ * \param xref_address_str Output parameter for cross-reference address string
+ * \param flag_name_str Output parameter for flag name string
+ */
+static void collect_string_xrefs_and_flags(RzCore *core, ut64 paddr, char **xref_address_str, char **flag_name_str) {
+	// search xrefs to string
+	RzList *xrefs = rz_analysis_xrefs_get_to(core->analysis, paddr);
+	RzAnalysisXRef *xref;
+	RzListIter *xrefIter;
+	RzStrBuf *xref_addresses = rz_strbuf_new("");
+	rz_list_foreach (xrefs, xrefIter, xref) {
+		if (rz_strbuf_length(xref_addresses) > 0) {
+			rz_strbuf_append(xref_addresses, ",");
+		}
+		RzFlagItem *f = rz_flag_get_at(core->flags, xref->from, false);
+		if (f) {
+			const char *name = core->flags->realnames && f->realname ? f->realname : f->name;
+			if (f->offset != xref->from) {
+				rz_strbuf_appendf(xref_addresses, "%s + %d\n", name, (int)(xref->from - f->offset));
+			} else {
+				rz_strbuf_append(xref_addresses, name);
+			}
+		} else {
+			char addr_str[32];
+			rz_strf(addr_str, "0x%08" PFMT64x, xref->from);
+			rz_strbuf_append(xref_addresses, addr_str);
+		}
+	}
+	rz_list_free(xrefs);
+	*xref_address_str = rz_strbuf_drain(xref_addresses);
+	*flag_name_str = rz_flag_get_liststr(core->flags, paddr);
+}
+
+static bool strings_print(RzCore *core, RzCmdStateOutput *state, const RzPVector /*<RzBinString *>*/ *vec, bool print_xref) {
 	bool b64str = rz_config_get_i(core->config, "bin.b64str");
 	int va = (core->io->va || core->bin->is_debugger) ? VA_TRUE : VA_FALSE;
 	RzBinObject *obj = rz_bin_cur_object(core->bin);
@@ -2696,7 +2733,11 @@ static bool strings_print(RzCore *core, RzCmdStateOutput *state, const RzPVector
 	RzBinSection *section;
 
 	rz_cmd_state_output_array_start(state);
-	rz_cmd_state_output_set_columnsf(state, "nXXnnsss", "nth", "paddr", "vaddr", "len", "size", "section", "type", "string");
+	if (print_xref) {
+		rz_cmd_state_output_set_columnsf(state, "XXsnnssss", "paddr", "vaddr", "flag", "len", "size", "section", "type", "xref-from", "string");
+	} else {
+		rz_cmd_state_output_set_columnsf(state, "XXnnsss", "paddr", "vaddr", "len", "size", "section", "type", "string");
+	}
 
 	RzBinString b64 = { 0 };
 	rz_pvector_foreach (vec, iter) {
@@ -2705,6 +2746,13 @@ static bool strings_print(RzCore *core, RzCmdStateOutput *state, const RzPVector
 		char quiet_val[20];
 		ut64 paddr, vaddr;
 		paddr = string->paddr;
+
+		char *xref_address_str = NULL;
+		char *flag_name_str = NULL;
+		if (print_xref) {
+			collect_string_xrefs_and_flags(core, paddr, &xref_address_str, &flag_name_str);
+		}
+
 		vaddr = obj ? rva(obj, paddr, string->vaddr, va) : paddr;
 		if (!rz_bin_string_filter(core->bin, string->string, vaddr)) {
 			continue;
@@ -2742,12 +2790,15 @@ static bool strings_print(RzCore *core, RzCmdStateOutput *state, const RzPVector
 			pj_o(state->d.pj);
 			pj_kn(state->d.pj, "vaddr", vaddr);
 			pj_kn(state->d.pj, "paddr", paddr);
-			pj_kn(state->d.pj, "ordinal", string->ordinal);
 			pj_kn(state->d.pj, "size", string->size);
 			pj_kn(state->d.pj, "length", string->length);
 			pj_ks(state->d.pj, "section", section_name);
 			pj_ks(state->d.pj, "type", type_string);
 			// data itself may be encoded so use pj_ks
+			if (print_xref) {
+				pj_ks(state->d.pj, "flag", flag_name_str);
+				pj_ks(state->d.pj, "xref-from", xref_address_str);
+			}
 			pj_ks(state->d.pj, "string", string->string);
 
 			switch (string->type) {
@@ -2836,9 +2887,15 @@ static bool strings_print(RzCore *core, RzCmdStateOutput *state, const RzPVector
 				break;
 			}
 			char *bufstr = rz_strbuf_drain(buf);
-			rz_table_add_rowf(state->d.t, "nXXddsss", (ut64)string->ordinal, paddr, vaddr,
-				(int)string->length, (int)string->size, section_name,
-				type_string, bufstr);
+			if (print_xref) {
+				rz_table_add_rowf(state->d.t, "XXsddssss", paddr, vaddr, flag_name_str,
+					(int)string->length, (int)string->size, section_name,
+					type_string, xref_address_str, bufstr);
+			} else {
+				rz_table_add_rowf(state->d.t, "XXddsss", paddr, vaddr,
+					(int)string->length, (int)string->size, section_name,
+					type_string, bufstr);
+			}
 			free(bufstr);
 			free(no_dbl_bslash_str);
 			break;
@@ -2860,6 +2917,8 @@ static bool strings_print(RzCore *core, RzCmdStateOutput *state, const RzPVector
 			break;
 		}
 		free(escaped_string);
+		free(flag_name_str);
+		free(xref_address_str);
 	}
 	RZ_FREE(b64.string);
 	rz_cmd_state_output_array_end(state);
@@ -2870,7 +2929,7 @@ RZ_API bool rz_core_bin_strings_print(RZ_NONNULL RzCore *core, RZ_NONNULL RzBinF
 	rz_return_val_if_fail(core && bf && state, false);
 
 	const RzPVector *vec = rz_bin_object_get_strings(bf->o);
-	return strings_print(core, state, vec);
+	return strings_print(core, state, vec, false);
 }
 
 /***
@@ -2941,7 +3000,7 @@ RZ_API bool rz_core_bin_whole_strings_print(RZ_NONNULL RzCore *core, RZ_NONNULL 
 	if (!l) {
 		return false;
 	}
-	bool res = strings_print(core, state, l);
+	bool res = strings_print(core, state, l, false);
 	rz_pvector_free(l);
 	return res;
 }
@@ -2982,7 +3041,7 @@ RZ_API bool rz_core_bin_xrefs_strings_print(RZ_NONNULL RzCore *core, RZ_NONNULL 
 		}
 		rz_list_free(list);
 	}
-	bool res = strings_print(core, state, xrefs_strings);
+	bool res = strings_print(core, state, xrefs_strings, true);
 	rz_pvector_free(whole_strings);
 	rz_pvector_free(xrefs_strings);
 	return res;
