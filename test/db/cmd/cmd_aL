@@ -61,7 +61,7 @@ _dAeI 32         v810        LGPL3   NEC V810 disassembler (by pancake)
 _dAeI 32         v850        LGPL3   NEC/Renesas V850 disassembler
 _dA__ 8 32       vax         GPL3    DEC VAX disassembler
 adA__ 32         wasm        MIT     WebAssembly disassembler (by cgvwzq) v0.1.0
-_dAeI 16 32 64   x86         BSD     X86/X86_64 Capstone-based disassembler
+_dAeI 16 32 64   x86         MIT     X86/X86_64 Zydis-based disassembler
 a____ 16 32 64   x86.as      LGPL3   Intel X86 GNU Assembler (Use RZ_X86_AS env)
 a____ 16 32 64   x86.nasm    LGPL3   X86 nasm assembler
 a____ 16 32 64   x86.nz      LGPL3   x86 handmade assembler

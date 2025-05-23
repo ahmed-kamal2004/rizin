@@ -184,10 +184,10 @@ r13 = 0xffff850429891ee8
 r14 = 0xffff850429891560
 r15 = 0xfffff8047ba00000
 rip = 0xfffff8047bdf5a80
-mov qword [rsp + 8], rcx
-mov qword [rsp + 0x10], rdx
-mov qword [rsp + 0x18], r8
-mov qword [rsp + 0x20], r9
+mov qword [rsp+0x08], rcx
+mov qword [rsp+0x10], rdx
+mov qword [rsp+0x18], r8
+mov qword [rsp+0x20], r9
 0  0xfffff8047bdf5a80 sp: 0xffff850429890ee8  0    [??]  pdb.ntkrnlmp.KeBugCheckEx
 1  0xfffff8047be0f4e1 sp: 0xffff850429890ef0  56   [??]  pdb.ntkrnlmp.string_::3655334267::_Kernel_MUI_Lang_::1575215452+5649
 2  0xfffff8047bdcc052 sp: 0xffff850429890f30  104  [??]  pdb.ntkrnlmp.__C_specific_handler+162

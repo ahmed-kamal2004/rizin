@@ -1161,15 +1161,15 @@ echo ---
 pd 4
 EOF
 EXPECT=<<EOF
-mov eax, dword [eax + foo.b]
-mov dword [ecx + foo.b], edx
-lea edx, [eax + foo.c]
-cmp dword [eax + foo.c], 0
+mov eax, dword [eax+foo.b]
+mov dword [ecx+foo.b], edx
+lea edx, dword [eax+foo.c]
+cmp dword [eax+foo.c], 0x00
 ---
-            0x00000000      8b4004         mov   eax, dword [eax + foo.b]
-            0x00000003      895104         mov   dword [ecx + foo.b], edx
-            0x00000006      8d5008         lea   edx, [eax + foo.c]
-            0x00000009      83780800       cmp   dword [eax + foo.c], 0
+            0x00000000      8b4004         mov   eax, dword [eax+foo.b]
+            0x00000003      895104         mov   dword [ecx+foo.b], edx
+            0x00000006      8d5008         lea   edx, dword [eax+foo.c]
+            0x00000009      83780800       cmp   dword [eax+foo.c], 0x00
 EOF
 RUN
 
@@ -1188,10 +1188,10 @@ aat
 pdf~bar.
 EOF
 EXPECT=<<EOF
-|           0x00000007      488b5004       mov   rdx, qword [rax + bar.b]
-|           0x0000000b      488b4808       mov   rcx, qword [rax + bar.c]
-|           0x0000000f      483b5004       cmp   rdx, qword [rax + bar.b]
-|           0x0000001d      48895808       mov   qword [rax + bar.c], rbx
+|           0x00000007      488b5004       mov   rdx, qword [rax+bar.b]
+|           0x0000000b      488b4808       mov   rcx, qword [rax+bar.c]
+|           0x0000000f      483b5004       cmp   rdx, qword [rax+bar.b]
+|           0x0000001d      48895808       mov   qword [rax+bar.c], rbx
 EOF
 RUN
 
@@ -1212,10 +1212,10 @@ pdf~bar.
 EOF
 EXPECT=<<EOF
 
-|           0x00000007      488b5004       mov   rdx, qword [rax + bar.b]
-|           0x0000000b      488b4808       mov   rcx, qword [rax + bar.c]
-|           0x0000000f      483b5004       cmp   rdx, qword [rax + bar.b]
-|           0x0000001d      48895808       mov   qword [rax + bar.c], rbx
+|           0x00000007      488b5004       mov   rdx, qword [rax+bar.b]
+|           0x0000000b      488b4808       mov   rcx, qword [rax+bar.c]
+|           0x0000000f      483b5004       cmp   rdx, qword [rax+bar.b]
+|           0x0000001d      48895808       mov   qword [rax+bar.c], rbx
 EOF
 RUN
 
@@ -1239,11 +1239,11 @@ EOF
 EXPECT=<<EOF
 / fcn.00000000();
 |           0x00000000      48c7c0000100.  mov   rax, 0x100
-|           0x00000007      488b5008       mov   rdx, qword [rax + foo.c]
-|           0x0000000b      488b4804       mov   rcx, qword [rax + foo.b]
+|           0x00000007      488b5008       mov   rdx, qword [rax+foo.c]
+|           0x0000000b      488b4804       mov   rcx, qword [rax+foo.b]
 |           0x0000000f      48c7c0000200.  mov   rax, 0x200
-|           0x00000016      488b5008       mov   rdx, qword [rax + bar.z]
-|           0x0000001a      488b4804       mov   rcx, qword [rax + bar.y]
+|           0x00000016      488b5008       mov   rdx, qword [rax+bar.z]
+|           0x0000001a      488b4804       mov   rcx, qword [rax+bar.y]
 |           0x0000001e      90             nop
 |           0x0000001f      90             nop
 \           0x00000020      c3             ret
@@ -1263,14 +1263,14 @@ pdf~Books
 EOF
 EXPECT=<<EOF
 |           ; var struct Books Books @ stack - 0xe8
-|           0x00000684      488d8520ffff.  lea   rax, [Books.title]
+|           0x00000684      488d8520ffff.  lea   rax, qword [Books.title]
 |           0x00000695      488910         mov   qword [rax], rdx      ; Books.title[0]
-|           0x00000698      488d8520ffff.  lea   rax, [Books.title]
+|           0x00000698      488d8520ffff.  lea   rax, qword [Books.title]
 |           0x000006ad      488908         mov   qword [rax], rcx      ; Books.author[0]
-|           0x000006b0      488d8520ffff.  lea   rax, [Books.title]
+|           0x000006b0      488d8520ffff.  lea   rax, qword [Books.title]
 |           0x000006c5      488930         mov   qword [rax], rsi      ; Books.subject[0]
-|           0x000006c8      66c740086700   mov   word [rax + Books.subject[8]], 0x67 ; 'g'
-|           0x000006d5      b800000000     mov   eax, 0                ; Books.subject[0]
+|           0x000006c8      66c740086700   mov   word [rax+Books.subject[8]], 0x67 ; 'g'
+|           0x000006d5      b800000000     mov   eax, 0x00             ; Books.subject[0]
 EOF
 RUN
 
@@ -1288,9 +1288,9 @@ s 0x000005a8
 pd 3
 EOF
 EXPECT=<<EOF
-|           0x000005a8      c70206000000   mov   dword [edx], 6        ; Test.a
+|           0x000005a8      c70206000000   mov   dword [edx], 0x06     ; Test.a
 |           0x000005ae      8b55f4         mov   edx, dword [Test.a]   ; Test.a
-|           0x000005b1      c74204070000.  mov   dword [edx + Test.b], 7
+|           0x000005b1      c74204070000.  mov   dword [edx+Test.b], 0x07
 EOF
 RUN
 
@@ -1311,7 +1311,7 @@ EOF
 EXPECT=<<EOF
 pf "0[50]c[50]c[100]c title author subject"
 var union Books books @ stack - 0x78
-|           0x000006d2      488d4590       lea   rax, [books.title]
+|           0x000006d2      488d4590       lea   rax, qword [books.title]
 EOF
 RUN
 
