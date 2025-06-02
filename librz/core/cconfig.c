@@ -425,11 +425,11 @@ static bool cb_asmcpu(void *user, void *data) {
 	rz_asm_set_cpu(core->rasm, node->value);
 	rz_config_set(core->config, "analysis.cpu", node->value);
 
-	char *cpus_dir = rz_path_system(RZ_SDB_ARCH_CPUS);
+	char *cpus_dir = rz_path_system(core->sys_path, RZ_SDB_ARCH_CPUS);
 	rz_platform_profiles_init(core->analysis->arch_target, node->value, rz_config_get(core->config, "asm.arch"), cpus_dir);
 	free(cpus_dir);
 	const char *platform = rz_config_get(core->config, "asm.platform");
-	char *platforms_dir = rz_path_system(RZ_SDB_ARCH_PLATFORMS);
+	char *platforms_dir = rz_path_system(core->sys_path, RZ_SDB_ARCH_PLATFORMS);
 	rz_platform_target_index_init(core->analysis->platform_target, rz_config_get(core->config, "asm.arch"), node->value, platform, platforms_dir);
 	free(platforms_dir);
 
@@ -3009,7 +3009,7 @@ RZ_API int rz_core_config_init(RzCore *core) {
 	{
 		char *pfx = rz_sys_getenv("RZ_PREFIX");
 		if (!pfx) {
-			pfx = rz_path_prefix(core->sys_path, NULL);
+			pfx = rz_path_prefix(core->sys_path);
 		}
 		SETCB("dir.prefix", pfx, NULL, "Default prefix rizin was compiled for");
 		free(pfx);

@@ -175,7 +175,7 @@ static int main_help(RzCore *core, int line) {
 		char *extra_plugins = rz_path_extra(RZ_PLUGINS);
 		char *system_sigdb = rz_path_system(core->sys_path, RZ_SIGDB);
 		char *extra_sigdb = rz_path_extra(RZ_SIGDB);
-		char *dirPrefix = rz_path_prefix(core->sys_path, NULL);
+		char *dirPrefix = rz_path_prefix(core->sys_path);
 		char *extra_prefix = rz_path_extra(NULL);
 		// clang-format off
 		printf(
@@ -258,7 +258,7 @@ static int main_help(RzCore *core, int line) {
 
 static int main_print_var(RzCore *core, const char *var_name) {
 	int i = 0;
-	char *prefix = rz_path_prefix(core->sys_path, NULL);
+	char *prefix = rz_path_prefix(core->sys_path);
 	char *extra_prefix = rz_path_extra(NULL);
 	char *incdir = rz_path_incdir(core->sys_path);
 	char *libdir = rz_path_libdir(core->sys_path);

@@ -8,9 +8,9 @@ static const char *fortunes[] = {
 	"tips", "fun"
 };
 
-static char *rizin_fortune_file(const char *type) {
+static char *rizin_fortune_file(RzPath *sys_path, const char *type) {
 	if (!strncmp(type, "tips", 4) || !strncmp(type, "fun", 3)) {
-		char *fortunes_dir = rz_path_system(RZ_FORTUNES);
+		char *fortunes_dir = rz_path_system(sys_path, RZ_FORTUNES);
 		char buf[100];
 		char *res = rz_file_path_join(fortunes_dir, rz_strf(buf, "fortunes.%s", type));
 		free(fortunes_dir);
@@ -29,7 +29,7 @@ RZ_API void rz_core_fortune_list_types(void) {
 RZ_API void rz_core_fortune_list(RzCore *core) {
 	const char *types = (char *)rz_config_get(core->config, "cfg.fortunes.file");
 
-	char *file = rizin_fortune_file(types);
+	char *file = rizin_fortune_file(core->sys_path, types);
 	char *str = rz_file_slurp(file, NULL);
 	if (!str) {
 		free(file);
@@ -51,7 +51,7 @@ RZ_API RZ_OWN char *rz_core_fortune_get_random(RzCore *core) {
 	int lines = 0;
 	const char *types = (char *)rz_config_get(core->config, "cfg.fortunes.file");
 
-	char *file = rizin_fortune_file(types);
+	char *file = rizin_fortune_file(core->sys_path, types);
 	char *line = rz_file_slurp_random_line_count(file, &lines);
 
 	free(file);

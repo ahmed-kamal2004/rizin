@@ -1641,7 +1641,11 @@ RZ_API bool rz_core_init(RzCore *core) {
 	core->rasm = rz_asm_new();
 	core->rasm->num = core->num;
 	core->rasm->core = core;
-	core->analysis = rz_analysis_new();
+	// Initailiza path
+	core->sys_path = rz_path_new();
+	const char *sys_path_prefix = rz_path_prefix(core->sys_path);
+	core->analysis = rz_analysis_new(sys_path_prefix);
+	free(sys_path_prefix);
 	core->gadgets = rz_list_newf((RzListFree)rz_core_gadget_free);
 	core->analysis->ev = core->ev;
 	core->analysis->read_at = rz_core_analysis_read_at;
@@ -1731,8 +1735,6 @@ RZ_API bool rz_core_init(RzCore *core) {
 	core->dbg->ev = core->ev;
 	// Initialize visual modes after everything else but before config init
 	core->visual = rz_core_visual_new();
-	// Initailiza path
-	core->sys_path = rz_path_new();
 	// initialize config before any corebind
 	rz_core_config_init(core);
 

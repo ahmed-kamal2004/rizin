@@ -540,6 +540,7 @@ typedef struct rz_analysis_t {
 	RBTree global_var_tree; // global variables by address. must not overlap
 	RzHash *hash;
 	RzAnalysisDebugInfo *debug_info; ///< store all debug info parsed from DWARF, etc..
+	char *sys_path_prefix;
 	ut64 cmpval; ///< last compare value for jump table.
 	ut64 lea_jmptbl_ip; ///< jump table x86 lea ip
 } RzAnalysis;
@@ -1592,7 +1593,7 @@ RZ_API bool rz_analysis_function_is_autonamed(RZ_NONNULL char *name);
 RZ_API RZ_OWN char *rz_analysis_function_name_guess(RzTypeDB *typedb, RZ_NONNULL char *name);
 
 /* analysis.c */
-RZ_API RzAnalysis *rz_analysis_new(void);
+RZ_API RzAnalysis *rz_analysis_new(char *sys_path_prefix);
 RZ_API void rz_analysis_purge(RzAnalysis *analysis);
 RZ_API RzAnalysis *rz_analysis_free(RzAnalysis *r);
 RZ_API bool rz_analysis_plugin_add(RzAnalysis *analysis, RZ_NONNULL RzAnalysisPlugin *foo);

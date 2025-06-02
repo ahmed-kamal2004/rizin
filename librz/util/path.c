@@ -93,7 +93,7 @@ RZ_API void rz_path_set_prefix(RZ_NONNULL RzPath *sys_path, RZ_NONNULL const cha
  * \param path Path to put in the install prefix context or NULL to just get the install prefix
  * \return \p path prefixed by the Rizin install prefix or just the install prefix
  */
-RZ_API RZ_OWN char *rz_path_prefix(RZ_NONNULL RzPath *sys_path, RZ_NULLABLE const char *path) {
+RZ_API RZ_OWN char *rz_path_prefix(RZ_NONNULL RzPath *sys_path) {
 #if RZ_IS_PORTABLE
 	rz_return_if_fail(sys_path && sys_path->prefix_mutex);
 	rz_th_lock_enter(sys_path->prefix_mutex);
@@ -104,39 +104,43 @@ RZ_API RZ_OWN char *rz_path_prefix(RZ_NONNULL RzPath *sys_path, RZ_NULLABLE cons
 	rz_th_lock_leave(sys_path->prefix_mutex);
 
 	if (sys_path->prefix) {
-		return rz_file_path_join(sys_path->prefix, path);
+		return sys_path->prefix;
 	}
 
 #endif
-	return rz_file_path_join(RZ_PREFIX, path);
+	return RZ_PREFIX;
 }
 
 /**
  * \brief Return the directory where include files are placed
  */
 RZ_API RZ_OWN char *rz_path_incdir(RZ_NONNULL RzPath *sys_path) {
-	return rz_path_prefix(sys_path, RZ_INCDIR);
+	char *prefix = rz_path_prefix(sys_path);
+	return rz_file_path_join(prefix, RZ_INCDIR);
 }
 
 /**
  * \brief Return the directory where the Rizin binaries are placed
  */
 RZ_API RZ_OWN char *rz_path_bindir(RZ_NONNULL RzPath *sys_path) {
-	return rz_path_prefix(sys_path, RZ_BINDIR);
+	char *prefix = rz_path_prefix(sys_path);
+	return rz_file_path_join(prefix, RZ_BINDIR);
 }
 
 /**
  * \brief Return the directory where the Rizin libraries are placed
  */
 RZ_API RZ_OWN char *rz_path_libdir(RZ_NONNULL RzPath *sys_path) {
-	return rz_path_prefix(sys_path, RZ_LIBDIR);
+	char *prefix = rz_path_prefix(sys_path);
+	return rz_file_path_join(prefix, RZ_LIBDIR);
 }
 
 /**
  * \brief Return the full system path of the given subpath \p path
  */
 RZ_API RZ_OWN char *rz_path_system(RZ_NONNULL RzPath *sys_path, RZ_NULLABLE const char *path) {
-	return rz_path_prefix(sys_path, path);
+	char *prefix = rz_path_prefix(sys_path);
+	return rz_file_path_join(prefix, path);
 }
 
 /**
@@ -157,7 +161,8 @@ RZ_API RZ_OWN char *rz_path_extra(RZ_NULLABLE const char *path) {
  * \param sys_path RzPath* contains mutex and install prefix.
  */
 RZ_API RZ_OWN char *rz_path_system_rc(RzPath *sys_path) {
-	return rz_path_prefix(sys_path, RZ_GLOBAL_RC);
+	char *prefix = rz_path_prefix(sys_path);
+	return rz_file_path_join(prefix, RZ_GLOBAL_RC);
 }
 
 /**

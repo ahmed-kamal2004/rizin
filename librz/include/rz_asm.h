@@ -123,6 +123,7 @@ typedef struct rz_asm_t {
 	HtSS *flags;
 	int seggrn;
 	bool pseudo;
+	RzPath *sys_path;
 } RzAsm;
 
 typedef struct rz_asm_plugin_t {

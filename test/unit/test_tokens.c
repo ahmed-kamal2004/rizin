@@ -42,21 +42,21 @@ static RzAsm *setup_x86_asm(ut32 bits) {
 }
 
 static RzAnalysis *setup_x86_analysis(ut32 bits) {
-	RzAnalysis *a = rz_analysis_new();
+	RzAnalysis *a = rz_analysis_new(NULL);
 	rz_analysis_use(a, "x86");
 	rz_analysis_set_bits(a, bits);
 	return a;
 }
 
 static RzAnalysis *setup_arm_analysis(ut32 bits) {
-	RzAnalysis *a = rz_analysis_new();
+	RzAnalysis *a = rz_analysis_new(NULL);
 	rz_analysis_use(a, "arm");
 	rz_analysis_set_bits(a, bits);
 	return a;
 }
 
 static RzAnalysis *setup_hexagon_analysis() {
-	RzAnalysis *a = rz_analysis_new();
+	RzAnalysis *a = rz_analysis_new(NULL);
 	rz_analysis_use(a, "hexagon");
 	rz_analysis_set_bits(a, 32);
 	return a;
@@ -79,7 +79,7 @@ static ut32 hexagon_set_next_pc(RZ_BORROW RzAsm *a) {
 }
 
 static RzAnalysis *setup_tms_analysis(const char *cpu) {
-	RzAnalysis *a = rz_analysis_new();
+	RzAnalysis *a = rz_analysis_new(NULL);
 	rz_analysis_use(a, "tms320");
 	rz_analysis_set_bits(a, 32);
 	rz_analysis_set_cpu(a, cpu);

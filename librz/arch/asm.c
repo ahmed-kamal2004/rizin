@@ -284,6 +284,7 @@ RZ_API RzAsm *rz_asm_new(void) {
 	a->bitshift = 0;
 	a->syntax = RZ_ASM_SYNTAX_INTEL;
 	a->plugins = ht_sp_new(HT_STR_DUP, NULL, NULL);
+	a->sys_path = rz_path_new();
 	if (!a->plugins) {
 		free(a);
 		return NULL;
@@ -346,6 +347,7 @@ RZ_API void rz_asm_free(RzAsm *a) {
 	free(a->features);
 	sdb_free(a->pair);
 	ht_ss_free(a->flags);
+	rz_path_free(a->sys_path);
 	a->pair = NULL;
 	free(a);
 }
@@ -466,7 +468,7 @@ RZ_API bool rz_asm_use(RzAsm *a, RZ_NULLABLE const char *name) {
 		if (h->arch && h->name && !strcmp(h->name, name)) {
 			if (!a->cur || (a->cur && strcmp(a->cur->arch, h->arch))) {
 				plugin_fini(a);
-				char *opcodes_dir = rz_path_system(RZ_SDB_OPCODES);
+				char *opcodes_dir = rz_path_system(core->sys_path, RZ_SDB_OPCODES);
 				char *file = rz_str_newf("%s/%s.sdb", opcodes_dir, h->arch);
 				if (file) {
 					rz_asm_set_cpu(a, NULL);

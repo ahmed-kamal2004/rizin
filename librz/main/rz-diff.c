@@ -3095,7 +3095,9 @@ RZ_API int rz_main_rz_diff(int argc, const char **argv) {
 		success = rz_diff_hex_visual(&ctx);
 		break;
 	case DIFF_OPT_VERSION:
-		rz_main_version_print("rz-diff");
+		RzPath *sys_path = rz_path_new();
+		rz_main_version_print(sys_path, "rz-diff");
+		free(sys_path);
 		success = true;
 		break;
 	case DIFF_OPT_USAGE:

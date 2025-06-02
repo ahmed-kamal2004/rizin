@@ -346,9 +346,8 @@ bool test_pdb_tpi_rust(void) {
 }
 
 bool test_pdb_type_save(void) {
-	RzAnalysis *analysis = rz_analysis_new();
-	RzPath *sys_path = rz_path_new();
-	char *types_dir = rz_path_system(sys_path, RZ_SDB_TYPES);
+	RzAnalysis *analysis = rz_analysis_new(NULL);
+	char *types_dir = rz_file_path_join(analysis->sys_path_prefix,RZ_SDB_TYPES);
 	rz_type_db_init(analysis->typedb, types_dir, "x86", 32, "windows");
 	free(types_dir);
 

@@ -41,7 +41,7 @@ static RzAsmState *__as_new(void) {
 		if (as->a) {
 			as->a->num = rz_num_new(NULL, NULL, NULL);
 		}
-		as->analysis = rz_analysis_new();
+		as->analysis = rz_analysis_new(NULL);
 		__load_plugins(as);
 		__as_set_archbits(as);
 	}
