@@ -85,25 +85,13 @@
 #define RZ_FLAGS    "@FLAGS@"
 #define RZ_HUD      "@HUD@"
 
-#define RZ_SDB_ARCH_PLATFORMS_ONL RZ_JOIN_2_PATHS("arch", "platforms")
-#define RZ_SDB_ARCH_CPUS_ONL      RZ_JOIN_2_PATHS("asm", "cpus")
-#define RZ_SDB_TYPES_ONL          "types"
-#define RZ_SDB_OPCODES_ONL        "opcodes"
-#define RZ_SDB_REG_ONL            "reg"
-#define RZ_SDB_MAGIC_ONL          "magic"
-#define RZ_SDB_FORMAT_ONL         "format"
-
-
-#define RZ_SDB_ARCH_PLATFORMS RZ_JOIN_2_PATHS(RZ_SDB, RZ_SDB_ARCH_PLATFORMS_ONL)
-#define RZ_SDB_ARCH_CPUS      RZ_JOIN_2_PATHS(RZ_SDB, RZ_SDB_ARCH_CPUS_ONL)
-#define RZ_SDB_TYPES          RZ_JOIN_2_PATHS(RZ_SDB, RZ_SDB_TYPES_ONL)
-#define RZ_SDB_OPCODES        RZ_JOIN_2_PATHS(RZ_SDB, RZ_SDB_OPCODES_ONL)
-#define RZ_SDB_REG            RZ_JOIN_2_PATHS(RZ_SDB, RZ_SDB_REG_ONL)
-#define RZ_SDB_MAGIC          RZ_JOIN_2_PATHS(RZ_SDB, RZ_SDB_MAGIC_ONL)
-#define RZ_SDB_FORMAT         RZ_JOIN_2_PATHS(RZ_SDB, RZ_SDB_FORMAT_ONL)
-#define RZ_PDB                RZ_JOIN_2_PATHS(RZ_DATADIR, "pdb")
-#define RZ_PROJECTS           RZ_JOIN_2_PATHS(RZ_DATADIR, "projects")
-#define RZ_BINRC              RZ_JOIN_2_PATHS(RZ_DATADIR, "rc.d")
+#define RZ_SDB_ARCH_PLATFORMS RZ_JOIN_3_PATHS(RZ_SDB, "arch", "platforms")
+#define RZ_SDB_ARCH_CPUS      RZ_JOIN_3_PATHS(RZ_SDB, "asm", "cpus")
+#define RZ_SDB_TYPES          RZ_JOIN_2_PATHS(RZ_SDB, "types")
+#define RZ_SDB_OPCODES        RZ_JOIN_2_PATHS(RZ_SDB, "opcodes")
+#define RZ_SDB_REG            RZ_JOIN_2_PATHS(RZ_SDB, "reg")
+#define RZ_SDB_MAGIC          RZ_JOIN_2_PATHS(RZ_SDB, "magic")
+#define RZ_SDB_FORMAT         RZ_JOIN_2_PATHS(RZ_SDB, "format")
 
 #define RZ_HOME_PREFIX    ".local"
 #define RZ_HOME_CONFIGDIR RZ_JOIN_2_PATHS(".config", "rizin")
