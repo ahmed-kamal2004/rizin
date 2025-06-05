@@ -3012,7 +3012,6 @@ RZ_API int rz_core_config_init(RzCore *core) {
 			pfx = rz_path_prefix(core->sys_path);
 		}
 		SETCB("dir.prefix", pfx, NULL, "Default prefix rizin was compiled for");
-		free(pfx);
 	}
 #if __ANDROID__
 	{ // use dir.home and also adjust check for permissions in directory before choosing a home

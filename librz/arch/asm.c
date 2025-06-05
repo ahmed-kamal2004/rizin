@@ -473,7 +473,7 @@ RZ_API bool rz_asm_use(RzAsm *a, RZ_NULLABLE const char *name) {
 		if (h->arch && h->name && !strcmp(h->name, name)) {
 			if (!a->cur || (a->cur && strcmp(a->cur->arch, h->arch))) {
 				plugin_fini(a);
-				char *opcodes_dir = rz_path_system(core->sys_path, RZ_SDB_OPCODES);
+				char *opcodes_dir = rz_path_system(a->sys_path, RZ_SDB_OPCODES);
 				char *file = rz_str_newf("%s/%s.sdb", opcodes_dir, h->arch);
 				if (file) {
 					rz_asm_set_cpu(a, NULL);

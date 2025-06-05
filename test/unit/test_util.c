@@ -64,12 +64,10 @@ bool test_leading_zeros(void) {
 
 bool test_path_prefix(void) {
 	RzPath *sys_path = rz_path_new();
-	if (!sys_path) {
-		return false;
-	}
-
 	char *output = rz_path_prefix(sys_path);
-	// Need to be completed
+	size_t equal = strcmp(output, "/usr/local");
+	mu_assert_eq(equal, 0, "not equal");
+	rz_path_free(sys_path);
 	mu_end;
 }
 

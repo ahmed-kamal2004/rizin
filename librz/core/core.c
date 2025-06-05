@@ -1643,9 +1643,8 @@ RZ_API bool rz_core_init(RzCore *core) {
 	core->rasm->core = core;
 	// Initailiza path
 	core->sys_path = rz_path_new();
-	const char *sys_path_prefix = rz_path_prefix(core->sys_path);
+	char *sys_path_prefix = rz_path_prefix(core->sys_path);
 	core->analysis = rz_analysis_new(sys_path_prefix);
-	free(sys_path_prefix);
 	core->gadgets = rz_list_newf((RzListFree)rz_core_gadget_free);
 	core->analysis->ev = core->ev;
 	core->analysis->read_at = rz_core_analysis_read_at;
