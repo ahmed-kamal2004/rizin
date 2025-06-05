@@ -100,7 +100,7 @@ RZ_API void rz_sysreg_item_free(RzSysregItem *s) {
 	free(s);
 }
 
-static bool load_sdb(Sdb **db, RzPath *sys_path, const char *name) {
+static bool load_sdb(Sdb **db, RZ_BORROW RzPath *sys_path, const char *name) {
 	rz_return_val_if_fail(db, false);
 	char *sdb_path = rz_path_system(sys_path, RZ_SDB);
 	char *file_name = rz_str_newf("%s.sdb", name);
@@ -226,7 +226,7 @@ RZ_API bool rz_sysreg_set_arch(RzSyscall *s, RZ_NONNULL const char *arch, RZ_NON
 }
 
 // TODO: should be renamed to rz_syscall_use();
-RZ_API bool rz_syscall_setup(RzSyscall *s, RzPath *sys_path, const char *arch, int bits, const char *cpu, const char *os) {
+RZ_API bool rz_syscall_setup(RzSyscall *s, RZ_BORROW RzPath *sys_path, const char *arch, int bits, const char *cpu, const char *os) {
 	bool syscall_changed, sysregs_changed;
 
 	if (!os || !*os) {

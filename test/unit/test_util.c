@@ -63,9 +63,13 @@ bool test_leading_zeros(void) {
 }
 
 bool test_path_prefix(void) {
+	size_t equal;
 	RzPath *sys_path = rz_path_new();
+	if (!sys_path) {
+		mu_assert_eq(1, 0, "initialization error");
+	}
 	char *output = rz_path_prefix(sys_path);
-	size_t equal = strcmp(output, "/usr/local");
+	equal = strcmp(output, RZ_PREFIX);
 	mu_assert_eq(equal, 0, "not equal");
 	rz_path_free(sys_path);
 	mu_end;

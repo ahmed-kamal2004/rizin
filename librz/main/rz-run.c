@@ -205,6 +205,10 @@ RZ_API int rz_main_rz_run(int argc, const char **argv) {
 	}
 	if (!strcmp(argv[1], "-v")) {
 		RzPath *sys_path = rz_path_new();
+		if(!sys_path){
+			ret = 1;
+			goto finish;
+		}
 		ret =  rz_main_version_print(sys_path, "rz-run");
 		rz_path_free(sys_path);
 		goto finish;

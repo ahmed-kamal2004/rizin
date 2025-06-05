@@ -960,10 +960,11 @@ RZ_API int rz_main_rz_bin(int argc, const char **argv) {
 		case 'o': output = opt.arg; break;
 		case 'p': core.io->va = false; break;
 		case 'r': out_mode = RZ_MODE_RIZINCMD; break;
-		case 'v':
-			int print_val = rz_main_version_print(core.sys_path, "rz-bin");
+		case 'v': {
+			size_t print_val = rz_main_version_print(core.sys_path, "rz-bin");
 			rz_core_fini(&core);
 			return print_val;
+		}
 		case 'L':
 			set_action(RZ_BIN_REQ_LISTPLUGINS);
 			break;

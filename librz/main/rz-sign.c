@@ -120,11 +120,16 @@ RZ_API int rz_main_rz_sign(int argc, const char **argv) {
 		case 'q':
 			quiet = true;
 			break;
-		case 'v':
+		case 'v': {
 			RzPath *sys_path = rz_path_new();
-			int print_val = rz_main_version_print(sys_path, "rz-sign");
+			if (!sys_path) {
+				ret = -1;
+				goto rz_sign_end;
+			}
+			size_t print_val = rz_main_version_print(sys_path, "rz-sign");
 			rz_path_free(sys_path);
 			return print_val;
+		}
 		case 'h':
 			rz_sign_show_help();
 			goto rz_sign_end;

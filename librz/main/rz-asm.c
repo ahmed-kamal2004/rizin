@@ -717,15 +717,19 @@ RZ_API int rz_main_rz_asm(int argc, const char *argv[]) {
 				rz_asm_set_syntax(as->a, syntax);
 			}
 			break;
-		case 'v':
+		case 'v': {
 			if (as->quiet) {
 				printf("%s\n", RZ_VERSION);
 			} else {
 				RzPath *sys_path = rz_path_new();
+				if (!sys_path) {
+					break;
+				}
 				ret = rz_main_version_print(sys_path, "rz-asm");
 				rz_path_free(sys_path);
 			}
 			goto beach;
+		}
 		case 'w':
 			whatsop = true;
 			break;

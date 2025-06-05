@@ -296,11 +296,12 @@ static int rax(RzNum *num, char *str, int len, int last, ut64 *_flags, int *fm) 
 			case 'I': flags ^= RZ_AX_FLAG_IPADDR_TO_LONG; break;
 			case 'm': flags ^= RZ_AX_FLAG_DOS_TIMESTAMP_TO_STR; break;
 			case 'W': flags ^= RZ_AX_FLAG_WIN_TIMESTAMP_TO_STR; break;
-			case 'v':
+			case 'v': {
 				RzPath *sys_path = rz_path_new();
-				int print_val = rz_main_version_print(sys_path, "rz-ax");
+				size_t print_val = rz_main_version_print(sys_path, "rz-ax");
 				rz_path_free(sys_path);
 				return print_val;
+			}
 			case '\0':
 				*_flags = flags;
 				return !use_stdin(num, _flags, fm);

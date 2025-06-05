@@ -23,6 +23,11 @@ RZ_API RzLang *rz_lang_new(void) {
 	if (!lang) {
 		return NULL;
 	}
+	lang->sys_path = rz_path_new();
+	if (!lang) {
+		free(lang);
+		return NULL;
+	}
 	lang->user = NULL;
 	lang->langs = rz_list_new();
 	if (!lang->langs) {
@@ -39,8 +44,6 @@ RZ_API RzLang *rz_lang_new(void) {
 	for (int i = 0; i < RZ_ARRAY_SIZE(lang_static_plugins); i++) {
 		rz_lang_plugin_add(lang, lang_static_plugins[i]);
 	}
-
-	lang->sys_path = rz_path_new();
 
 	return lang;
 }

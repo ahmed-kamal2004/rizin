@@ -10,7 +10,6 @@
 #include <rz_project.h>
 #include <rz_flirt.h>
 #include <rz_socket.h>
-#include <librz/rz_userconf.h>
 
 static bool is_valid_gdb_file(RzCoreFile *fh) {
 	RzIODesc *d = fh && fh->core ? rz_io_desc_get(fh->core->io, fh->fd) : NULL;

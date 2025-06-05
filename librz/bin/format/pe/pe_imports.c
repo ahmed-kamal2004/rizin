@@ -52,7 +52,7 @@ static char *resolveModuleOrdinal(Sdb *sdb, const char *module, int ordinal) {
 	return NULL;
 }
 
-static int bin_pe_parse_imports(RzPath *sys_path,
+static int bin_pe_parse_imports(RZ_BORROW RZ_NONNULL RzPath *sys_path,
 	RzBinPEObj *bin,
 	struct rz_bin_pe_import_t **importp, int *nimp,
 	const char *dll_name,

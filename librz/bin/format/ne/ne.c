@@ -52,7 +52,7 @@ static char *__read_nonnull_str_at(RzBuffer *buf, ut64 offset) {
 	return str;
 }
 
-static char *__func_name_from_ord(RzPath *sys_path, char *module, ut16 ordinal) {
+static char *__func_name_from_ord(RZ_BORROW RZ_NONNULL RzPath *sys_path, char *module, ut16 ordinal) {
 	char *formats_dir = rz_path_system(sys_path, RZ_SDB_FORMAT);
 	char *path = rz_str_newf(RZ_JOIN_3_PATHS("%s", "dll", "%s.sdb"), formats_dir, module);
 	free(formats_dir);
@@ -541,7 +541,7 @@ RzPVector /*<RzBinReloc *>*/ *rz_bin_ne_get_relocs(rz_bin_ne_obj_t *bin) {
 		return NULL;
 	}
 	RzPath *sys_path = rz_path_new();
-	if (sys_path) {
+	if (!sys_path) {
 		free(relocs);
 		free(modref);
 		return NULL;

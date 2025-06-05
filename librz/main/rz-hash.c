@@ -1278,11 +1278,15 @@ RZ_API int rz_main_rz_hash(int argc, const char **argv) {
 			goto rz_main_rz_hash_end;
 		}
 		break;
-	case RZ_HASH_OP_VERSION:
+	case RZ_HASH_OP_VERSION: {
 		RzPath *sys_path = rz_path_new();
+		if (!sys_path) {
+			break;
+		}
 		rz_main_version_print(sys_path, "rz-hash");
 		rz_path_free(sys_path);
 		break;
+	}
 	case RZ_HASH_OP_USAGE:
 		rz_hash_show_help(true);
 		goto rz_main_rz_hash_end;
