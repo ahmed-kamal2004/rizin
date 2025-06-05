@@ -52,7 +52,8 @@ static char *resolveModuleOrdinal(Sdb *sdb, const char *module, int ordinal) {
 	return NULL;
 }
 
-static int bin_pe_parse_imports(RzBinPEObj *bin,
+static int bin_pe_parse_imports(RzPath *sys_path,
+	RzBinPEObj *bin,
 	struct rz_bin_pe_import_t **importp, int *nimp,
 	const char *dll_name,
 	PE_DWord OriginalFirstThunk,
@@ -114,7 +115,7 @@ static int bin_pe_parse_imports(RzBinPEObj *bin,
 					if (filename && rz_file_exists(filename)) {
 						db = sdb_new(NULL, filename, 0);
 					} else {
-						char *formats_dir = rz_path_system(RZ_SDB_FORMAT);
+						char *formats_dir = rz_path_system(sys_path, RZ_SDB_FORMAT);
 						free(filename);
 						filename = rz_str_newf(RZ_JOIN_3_PATHS("%s", "dll", "%s.sdb"), formats_dir, symdllname);
 						free(formats_dir);
@@ -219,19 +220,27 @@ struct rz_bin_pe_import_t *PE_(rz_bin_pe_get_imports)(RzBinPEObj *bin) {
 		return NULL;
 	}
 
+	RzPath *sys_path = rz_path_new();
+	if (!sys_path) {
+		return NULL;
+	}
+
 	off = bin->import_directory_offset;
 	if (off < bin->size && off > 0) {
 		ut64 last;
 		int idi = 0;
 		if (off + sizeof(PE_(image_import_directory)) > bin->size) {
+			rz_path_free(sys_path);
 			return NULL;
 		}
 		int r = PE_(read_image_import_directory)(bin->b, bin->import_directory_offset + idi * sizeof(curr_import_dir), &curr_import_dir);
 		if (r < 0) {
+			rz_path_free(sys_path);
 			return NULL;
 		}
 
 		if (bin->import_directory_size < 1) {
+			rz_path_free(sys_path);
 			return NULL;
 		}
 		if (off + bin->import_directory_size > bin->size) {
@@ -260,7 +269,7 @@ struct rz_bin_pe_import_t *PE_(rz_bin_pe_get_imports)(RzBinPEObj *bin) {
 				}
 				dll_name[PE_NAME_LENGTH] = '\0';
 			}
-			if (!bin_pe_parse_imports(bin, &imports, &nimp, dll_name,
+			if (!bin_pe_parse_imports(sys_path, bin, &imports, &nimp, dll_name,
 				    curr_import_dir.Characteristics,
 				    curr_import_dir.FirstThunk)) {
 				break;
@@ -269,6 +278,7 @@ struct rz_bin_pe_import_t *PE_(rz_bin_pe_get_imports)(RzBinPEObj *bin) {
 			r = PE_(read_image_import_directory)(bin->b, bin->import_directory_offset + idi * sizeof(curr_import_dir), &curr_import_dir);
 			if (r < 0) {
 				free(imports);
+				rz_path_free(sys_path);
 				return NULL;
 			}
 		}
@@ -303,13 +313,14 @@ struct rz_bin_pe_import_t *PE_(rz_bin_pe_get_imports)(RzBinPEObj *bin) {
 				goto beach;
 			}
 			dll_name[PE_NAME_LENGTH] = '\0';
-			if (!bin_pe_parse_imports(bin, &imports, &nimp, dll_name, import_func_name_offset,
+			if (!bin_pe_parse_imports(sys_path, bin, &imports, &nimp, dll_name, import_func_name_offset,
 				    curr_delay_import_dir.DelayImportAddressTable)) {
 				break;
 			}
 		}
 	}
 beach:
+	rz_path_free(sys_path);
 	if (nimp) {
 		imps = realloc(imports, (nimp + 1) * sizeof(struct rz_bin_pe_import_t));
 		if (!imps) {

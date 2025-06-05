@@ -580,7 +580,7 @@ static bool cb_asmarch(void *user, void *data) {
 		const char *asmcpu = rz_config_get(core->config, "asm.cpu");
 		const char *platform = rz_config_get(core->config, "asm.platform");
 		rz_config_set(core->config, "analysis.cpu", asmcpu);
-		rz_syscall_setup(core->analysis->syscall, node->value, core->analysis->bits, asmcpu, asmos);
+		rz_syscall_setup(core->analysis->syscall, core->sys_path, node->value, core->analysis->bits, asmcpu, asmos);
 		update_syscall_ns(core);
 		char *platforms_dir = rz_path_system(core->sys_path, RZ_SDB_ARCH_PLATFORMS);
 		char *cpus_dir = rz_path_system(core->sys_path, RZ_SDB_ARCH_CPUS);
@@ -684,7 +684,7 @@ static bool cb_asmbits(void *user, void *data) {
 	const char *asmcpu = rz_config_get(core->config, "asm.cpu");
 	if (core->analysis) {
 		rz_config_set(core->config, "analysis.cpu", asmcpu);
-		if (!rz_syscall_setup(core->analysis->syscall, asmarch, bits, asmcpu, asmos)) {
+		if (!rz_syscall_setup(core->analysis->syscall, core->sys_path, asmarch, bits, asmcpu, asmos)) {
 			// eprintf ("asm.arch: Cannot setup syscall '%s/%s' from '%s'\n",
 			//	node->value, asmos, RZ_LIBDIR"/rizin/"RZ_VERSION"/syscall");
 		}
@@ -857,7 +857,7 @@ static bool cb_asmos(void *user, void *data) {
 	asmarch = rz_config_node_get(core->config, "asm.arch");
 	if (asmarch) {
 		const char *asmcpu = rz_config_get(core->config, "asm.cpu");
-		rz_syscall_setup(core->analysis->syscall, asmarch->value, core->analysis->bits, asmcpu, node->value);
+		rz_syscall_setup(core->analysis->syscall, core->sys_path, asmarch->value, core->analysis->bits, asmcpu, node->value);
 		update_syscall_ns(core);
 		__setsegoff(core->config, asmarch->value, asmbits);
 	}

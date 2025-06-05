@@ -541,7 +541,7 @@ static void __load_plugins(RzAsmState *as) {
 	}
 
 	char *homeplugindir = rz_path_home_prefix(RZ_PLUGINS);
-	char *sysplugindir = rz_path_system(RZ_PLUGINS);
+	char *sysplugindir = rz_file_path_join(as->analysis->sys_path_prefix, RZ_PLUGINS);
 	char *extraplugindir = rz_path_extra(RZ_PLUGINS);
 	rz_lib_opendir(as->l, homeplugindir, false);
 	rz_lib_opendir(as->l, sysplugindir, false);
@@ -766,7 +766,7 @@ RZ_API int rz_main_rz_asm(int argc, const char *argv[]) {
 	rz_asm_set_bits(as->a, (env_bits && *env_bits) ? atoi(env_bits) : bits);
 	rz_analysis_set_bits(as->analysis, (env_bits && *env_bits) ? atoi(env_bits) : bits);
 	as->a->syscall = rz_syscall_new();
-	rz_syscall_setup(as->a->syscall, arch, bits, cpu, kernel);
+	rz_syscall_setup(as->a->syscall, as->a->sys_path, arch, bits, cpu, kernel);
 	{
 		bool canbebig = rz_asm_set_big_endian(as->a, isbig);
 		if (isbig && !canbebig) {

@@ -424,7 +424,6 @@ bool test_pdb_type_save(void) {
 	mu_assert_false(has_struct_member(localeinfo, "noSuchMember"), "no such struct member");
 
 	rz_analysis_free(analysis);
-	rz_path_free(sys_path);
 	mu_end;
 }
 

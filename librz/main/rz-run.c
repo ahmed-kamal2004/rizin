@@ -204,7 +204,9 @@ RZ_API int rz_main_rz_run(int argc, const char **argv) {
 		goto finish;
 	}
 	if (!strcmp(argv[1], "-v")) {
-		ret =  rz_main_version_print(p->sys_path, "rz-run");
+		RzPath *sys_path = rz_path_new();
+		ret =  rz_main_version_print(sys_path, "rz-run");
+		rz_path_free(sys_path);
 		goto finish;
 	}
 	if (!strcmp(argv[1], "-t")) {

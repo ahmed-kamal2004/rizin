@@ -7,6 +7,7 @@
 #include <rz_util/rz_strbuf.h>
 #include <rz_util/rz_regex.h>
 #include <rz_util/rz_assert.h>
+#include <rz_util/rz_path.h>
 #include <rz_list.h>
 #include <stdio.h>
 #include <rz_core.h>
@@ -283,8 +284,12 @@ RZ_API RzAsm *rz_asm_new(void) {
 	a->bits = RZ_SYS_BITS;
 	a->bitshift = 0;
 	a->syntax = RZ_ASM_SYNTAX_INTEL;
-	a->plugins = ht_sp_new(HT_STR_DUP, NULL, NULL);
 	a->sys_path = rz_path_new();
+	if (!a->sys_path) {
+		free(a);
+		return NULL;
+	}
+	a->plugins = ht_sp_new(HT_STR_DUP, NULL, NULL);
 	if (!a->plugins) {
 		free(a);
 		return NULL;
@@ -1105,11 +1110,11 @@ RZ_API RzAsmCode *rz_asm_massemble(RzAsm *a, const char *assembly) {
 				} else if (!strncmp(ptr, ".fill ", 6)) {
 					ret = rz_asm_pseudo_fill(&op, ptr + 6);
 				} else if (!strncmp(ptr, ".kernel ", 8)) {
-					rz_syscall_setup(a->syscall, a->cur->arch, a->bits, asmcpu, ptr + 8);
+					rz_syscall_setup(a->syscall, a->sys_path, a->cur->arch, a->bits, asmcpu, ptr + 8);
 				} else if (!strncmp(ptr, ".cpu ", 5)) {
 					rz_asm_set_cpu(a, ptr + 5);
 				} else if (!strncmp(ptr, ".os ", 4)) {
-					rz_syscall_setup(a->syscall, a->cur->arch, a->bits, asmcpu, ptr + 4);
+					rz_syscall_setup(a->syscall, a->sys_path, a->cur->arch, a->bits, asmcpu, ptr + 4);
 				} else if (!strncmp(ptr, ".hex ", 5)) {
 					ret = rz_asm_op_set_hex(&op, ptr + 5);
 				} else if ((!strncmp(ptr, ".int16 ", 7)) || !strncmp(ptr, ".short ", 7)) {

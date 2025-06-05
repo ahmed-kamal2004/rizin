@@ -111,6 +111,7 @@ typedef struct rz_asm_t {
 	Sdb *pair;
 	RzSyscall *syscall;
 	RzNum *num;
+	RzPath *sys_path;
 	char *features;
 	char *platforms;
 	int invhex; // invalid instructions displayed in hex
@@ -123,7 +124,7 @@ typedef struct rz_asm_t {
 	HtSS *flags;
 	int seggrn;
 	bool pseudo;
-	RzPath *sys_path;
+
 } RzAsm;
 
 typedef struct rz_asm_plugin_t {

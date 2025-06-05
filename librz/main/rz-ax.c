@@ -246,7 +246,6 @@ static int rax(RzNum *num, char *str, int len, int last, ut64 *_flags, int *fm) 
 	ut8 *buf;
 	char *p, out_mode = has_flag(flags, RZ_AX_FLAG_FORCE_INTEGER) ? 'I' : '0';
 	int i;
-	RzPath *sys_path = rz_path_new();
 	if (!has_flag(flags, RZ_AX_FLAG_RAW_TO_HEX) || !len) {
 		len = strlen(str);
 	}
@@ -297,7 +296,11 @@ static int rax(RzNum *num, char *str, int len, int last, ut64 *_flags, int *fm) 
 			case 'I': flags ^= RZ_AX_FLAG_IPADDR_TO_LONG; break;
 			case 'm': flags ^= RZ_AX_FLAG_DOS_TIMESTAMP_TO_STR; break;
 			case 'W': flags ^= RZ_AX_FLAG_WIN_TIMESTAMP_TO_STR; break;
-			case 'v': return rz_main_version_print(sys_path, "rz-ax");
+			case 'v':
+				RzPath *sys_path = rz_path_new();
+				int print_val = rz_main_version_print(sys_path, "rz-ax");
+				rz_path_free(sys_path);
+				return print_val;
 			case '\0':
 				*_flags = flags;
 				return !use_stdin(num, _flags, fm);
@@ -734,8 +737,6 @@ dotherax:
 	if (*str) {
 		format_output(num, out_mode, str, *fm, flags);
 	}
-
-	rz_path_free(sys_path);
 	return true;
 }
 

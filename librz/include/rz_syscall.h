@@ -75,7 +75,7 @@ RZ_API RzSyscall *rz_syscall_new(void);
 RZ_API void rz_sysregs_db_free(RzSysregsDB *sysregdb);
 RZ_API void rz_syscall_free(RzSyscall *ctx);
 RZ_API RzSyscall *rz_syscall_ref(RzSyscall *sc);
-RZ_API bool rz_syscall_setup(RzSyscall *s, const char *arch, int bits, const char *cpu, const char *os);
+RZ_API bool rz_syscall_setup(RzSyscall *s, RzPath *sys_path, const char *arch, int bits, const char *cpu, const char *os);
 RZ_API RzSyscallItem *rz_syscall_get(RzSyscall *ctx, int num, int swi);
 RZ_API int rz_syscall_get_num(RzSyscall *ctx, const char *str);
 RZ_API const char *rz_syscall_get_i(RzSyscall *ctx, int num, int swi);

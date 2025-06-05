@@ -82,7 +82,6 @@ RZ_API RzRunProfile *rz_run_new(const char *str) {
 		if (str) {
 			rz_run_parsefile(p, str);
 		}
-		p->sys_path = rz_path_new();
 	}
 	return p;
 }
@@ -114,7 +113,6 @@ RZ_API bool rz_run_parse(RzRunProfile *pf, const char *profile) {
 
 RZ_API void rz_run_free(RzRunProfile *r) {
 	if (r) {
-		free(r->sys_path);
 		free(r->_system);
 		free(r->_program);
 		free(r->_runlib);
@@ -1001,7 +999,9 @@ RZ_API int rz_run_config_env(RzRunProfile *p) {
 			RZ_LOG_WARN("rz-run: only one library can be opened at a time\n");
 			free(p->_preload);
 		}
-		char *libdir = rz_path_libdir(p->sys_path);
+		RzPath *sys_path = rz_path_new();
+		char *libdir = rz_path_libdir(sys_path);
+		rz_path_free(sys_path);
 		p->_preload = rz_file_path_join(libdir, "librz." RZ_LIB_EXT);
 		free(libdir);
 	}

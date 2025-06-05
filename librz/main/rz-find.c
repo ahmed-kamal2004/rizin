@@ -632,7 +632,10 @@ RZ_API int rz_main_rz_find(int argc, const char **argv) {
 			ro.quiet = true;
 			break;
 		case 'v':
-			return rz_main_version_print("rz-find");
+			RzPath *sys_path = rz_path_new();
+			int print_val = rz_main_version_print(sys_path, "rz-find");
+			rz_path_free(sys_path);
+			return print_val;
 		case 'h':
 			return show_help(argv[0], 0);
 		case 'z':

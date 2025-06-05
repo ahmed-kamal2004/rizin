@@ -145,12 +145,12 @@ RZ_API bool rz_egg_setup(RzEgg *egg, const char *arch, int bits, int endian, con
 		egg->arch = RZ_SYS_ARCH_X86;
 		switch (bits) {
 		case 32:
-			rz_syscall_setup(egg->syscall, arch, bits, asmcpu, os);
+			rz_syscall_setup(egg->syscall, egg->sys_path, arch, bits, asmcpu, os);
 			egg->remit = &emit_x86;
 			egg->bits = bits;
 			break;
 		case 64:
-			rz_syscall_setup(egg->syscall, arch, bits, asmcpu, os);
+			rz_syscall_setup(egg->syscall, egg->sys_path, arch, bits, asmcpu, os);
 			egg->remit = &emit_x64;
 			egg->bits = bits;
 			break;
@@ -161,7 +161,7 @@ RZ_API bool rz_egg_setup(RzEgg *egg, const char *arch, int bits, int endian, con
 		case 16:
 		case 32:
 		case 64:
-			rz_syscall_setup(egg->syscall, arch, bits, asmcpu, os);
+			rz_syscall_setup(egg->syscall, egg->sys_path, arch, bits, asmcpu, os);
 			egg->remit = &emit_arm;
 			egg->bits = bits;
 			egg->endian = endian;

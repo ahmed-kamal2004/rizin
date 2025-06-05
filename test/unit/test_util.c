@@ -62,9 +62,21 @@ bool test_leading_zeros(void) {
 	mu_end;
 }
 
+bool test_path_prefix(void) {
+	RzPath *sys_path = rz_path_new();
+	if (!sys_path) {
+		return false;
+	}
+
+	char *output = rz_path_prefix(sys_path);
+	// Need to be completed
+	mu_end;
+}
+
 int all_tests() {
 	mu_run_test(test_file_slurp);
 	mu_run_test(test_leading_zeros);
+	mu_run_test(test_path_prefix);
 	return tests_passed != tests_run;
 }
 

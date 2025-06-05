@@ -15,9 +15,14 @@ static char *get_filetype(RzBuffer *b) {
 	if (!ck) {
 		return NULL;
 	}
+	RzPath *sys_path = rz_path_new();
+	if (!sys_path) {
+		rz_magic_free(ck);
+		return NULL;
+	}
 	const char *tmp = NULL;
 	// TODO: dir.magic not honored here
-	char *m = rz_path_system(RZ_SDB_MAGIC); //// I AM STUCK HERE
+	char *m = rz_path_system(sys_path, RZ_SDB_MAGIC); //// I AM STUCK HERE
 	rz_magic_load(ck, m);
 	free(m);
 	rz_buf_read_at(b, 0, buf, sizeof(buf));
@@ -26,6 +31,7 @@ static char *get_filetype(RzBuffer *b) {
 		res = rz_str_dup(tmp);
 	}
 	rz_magic_free(ck);
+	rz_path_free(sys_path);
 	return res;
 }
 
