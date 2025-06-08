@@ -58,6 +58,7 @@ static int bin_pe_parse_imports(RZ_BORROW RZ_NONNULL RzPath *sys_path,
 	const char *dll_name,
 	PE_DWord OriginalFirstThunk,
 	PE_DWord FirstThunk) {
+	rz_return_val_if_fail(sys_path, 0);
 	char import_name[PE_NAME_LENGTH + 1];
 	char name[PE_NAME_LENGTH + 1];
 	PE_Word import_hint, import_ordinal = 0;

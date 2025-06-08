@@ -86,8 +86,8 @@ static int rz_main_version_verify(int show) {
 	return ret;
 }
 
-static int main_help(RzCore *core, int line) {
-
+static int main_help(RZ_BORROW RZ_NONNULL RzCore *core, int line) {
+	rz_return_val_if_fail(core, 1);
 	if (line < 2) {
 		printf("%s%s", Color_CYAN, "Usage: ");
 		printf(Color_RESET "rizin [-ACdfLMnNqStuvwzX] [-P patch] [-p prj] [-a arch] [-b bits] [-i file]\n"
@@ -256,7 +256,8 @@ static int main_help(RzCore *core, int line) {
 	return 0;
 }
 
-static int main_print_var(RzCore *core, const char *var_name) {
+static int main_print_var(RZ_BORROW RZ_NONNULL RzCore *core, const char *var_name) {
+	rz_return_val_if_fail(core, 1);
 	int i = 0;
 	char *prefix = rz_path_prefix(core->sys_path);
 	char *extra_prefix = rz_path_extra(NULL);

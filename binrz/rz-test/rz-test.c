@@ -233,7 +233,7 @@ int rz_test_main(int argc, const char **argv) {
 			} else {
 				RzPath *sys_path = rz_path_new();
 				if (!sys_path) {
-					break;
+					goto beach;
 				}
 				char *s = rz_version_str(sys_path, "rz-test");
 				printf("%s\n", s);

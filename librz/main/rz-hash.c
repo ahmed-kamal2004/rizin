@@ -1225,6 +1225,9 @@ static void hash_load_plugins(RzHashContext *ctx) {
 	}
 	RzPath *sys_path = rz_path_new();
 	if (!sys_path) {
+		free(path);
+		rz_lib_free(rl);
+		free(tmp);
 		return;
 	}
 	char *homeplugindir = rz_path_home_prefix(RZ_PLUGINS);
@@ -1281,7 +1284,7 @@ RZ_API int rz_main_rz_hash(int argc, const char **argv) {
 	case RZ_HASH_OP_VERSION: {
 		RzPath *sys_path = rz_path_new();
 		if (!sys_path) {
-			break;
+			goto rz_main_rz_hash_end;
 		}
 		rz_main_version_print(sys_path, "rz-hash");
 		rz_path_free(sys_path);

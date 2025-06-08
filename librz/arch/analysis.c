@@ -81,10 +81,10 @@ RZ_API RzAnalysis *rz_analysis_new(RZ_BORROW RZ_NULLABLE const char *sys_path_pr
 			rz_path_free(path);
 			return NULL;
 		}
-		analysis->sys_path_prefix = rz_str_dup(prefix);
+		analysis->sys_path_prefix = rz_file_path_join(prefix, RZ_SDB);
 		rz_path_free(path);
 	} else {
-		analysis->sys_path_prefix = rz_str_dup(sys_path_prefix);
+		analysis->sys_path_prefix = rz_file_path_join(sys_path_prefix, RZ_SDB);
 	}
 	if (!analysis) {
 		return NULL;
@@ -313,7 +313,7 @@ static bool analysis_set_os(RzAnalysis *analysis, const char *os) {
 	}
 	free(analysis->os);
 	analysis->os = rz_str_dup(os);
-	char *types_dir = rz_file_path_join(analysis->sys_path_prefix, RZ_SDB_TYPES);
+	char *types_dir = rz_file_path_join(analysis->sys_path_prefix, RZ_SDB_TYPES_ONL);
 	rz_type_db_set_os(analysis->typedb, os);
 	rz_type_db_reload(analysis->typedb, types_dir);
 	free(types_dir);
@@ -362,7 +362,7 @@ RZ_API bool rz_analysis_set_bits(RzAnalysis *analysis, int bits) {
 			rz_type_db_set_bits(analysis->typedb, bits);
 			rz_type_db_set_address_bits(analysis->typedb, rz_analysis_get_address_bits(analysis));
 			if (!is_hack) {
-				char *types_dir = rz_file_path_join(analysis->sys_path_prefix, RZ_SDB_TYPES);
+				char *types_dir = rz_file_path_join(analysis->sys_path_prefix, RZ_SDB_TYPES_ONL);
 				rz_type_db_reload(analysis->typedb, types_dir);
 				free(types_dir);
 			}
@@ -404,7 +404,7 @@ RZ_API void rz_analysis_set_cpu(RzAnalysis *analysis, const char *cpu) {
 	}
 
 	rz_type_db_set_cpu(analysis->typedb, cpu);
-	char *types_dir = rz_file_path_join(analysis->sys_path_prefix, RZ_SDB_TYPES);
+	char *types_dir = rz_file_path_join(analysis->sys_path_prefix, RZ_SDB_TYPES_ONL);
 	rz_type_db_reload(analysis->typedb, types_dir);
 	free(types_dir);
 }

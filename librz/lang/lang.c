@@ -24,7 +24,7 @@ RZ_API RzLang *rz_lang_new(void) {
 		return NULL;
 	}
 	lang->sys_path = rz_path_new();
-	if (!lang) {
+	if (!lang->sys_path) {
 		free(lang);
 		return NULL;
 	}

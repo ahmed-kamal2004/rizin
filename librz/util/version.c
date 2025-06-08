@@ -20,6 +20,7 @@
  * \return The saved git commit hash as a string, or NULL if it's not available.
  */
 RZ_API RZ_OWN char *rz_version_gittip(RZ_BORROW RZ_NONNULL RzPath *sys_path) {
+	rz_return_val_if_fail(sys_path, NULL);
 	char *datadir = rz_path_system(sys_path, RZ_DATADIR);
 	if (!datadir) {
 		return NULL;
@@ -48,7 +49,8 @@ RZ_API RZ_OWN char *rz_version_gittip(RZ_BORROW RZ_NONNULL RzPath *sys_path) {
  * \param program The program name, or NULL if it's not needed.
  * \return The version string.
  */
-RZ_API RZ_OWN char *rz_version_str(RZ_BORROW RZ_NONNULL RzPath *sys_path, const char *program) {
+RZ_API RZ_OWN char *rz_version_str(RZ_BORROW RZ_NONNULL RzPath *sys_path, RZ_BORROW RZ_NULLABLE const char *program) {
+	rz_return_val_if_fail(sys_path, NULL);
 	RzStrBuf *sb = rz_strbuf_new(NULL);
 	if (program) {
 		rz_strbuf_appendf(sb, "%s ", program);

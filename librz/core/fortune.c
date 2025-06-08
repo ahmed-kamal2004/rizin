@@ -8,7 +8,8 @@ static const char *fortunes[] = {
 	"tips", "fun"
 };
 
-static char *rizin_fortune_file(RzPath *sys_path, const char *type) {
+static char *rizin_fortune_file(RZ_BORROW RZ_NONNULL RzPath *sys_path, const char *type) {
+	rz_return_val_if_fail(sys_path, NULL);
 	if (!strncmp(type, "tips", 4) || !strncmp(type, "fun", 3)) {
 		char *fortunes_dir = rz_path_system(sys_path, RZ_FORTUNES);
 		char buf[100];

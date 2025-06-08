@@ -541,7 +541,7 @@ static void __load_plugins(RzAsmState *as) {
 	}
 
 	char *homeplugindir = rz_path_home_prefix(RZ_PLUGINS);
-	char *sysplugindir = rz_file_path_join(as->analysis->sys_path_prefix, RZ_PLUGINS);
+	char *sysplugindir = rz_path_system(as->a->sys_path, RZ_PLUGINS);
 	char *extraplugindir = rz_path_extra(RZ_PLUGINS);
 	rz_lib_opendir(as->l, homeplugindir, false);
 	rz_lib_opendir(as->l, sysplugindir, false);
@@ -723,7 +723,7 @@ RZ_API int rz_main_rz_asm(int argc, const char *argv[]) {
 			} else {
 				RzPath *sys_path = rz_path_new();
 				if (!sys_path) {
-					break;
+					goto beach;
 				}
 				ret = rz_main_version_print(sys_path, "rz-asm");
 				rz_path_free(sys_path);

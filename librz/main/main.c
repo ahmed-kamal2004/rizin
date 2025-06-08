@@ -36,7 +36,8 @@ RZ_API RzMainCallback rz_main_find(const char *name) {
 	return NULL;
 }
 
-RZ_API int rz_main_version_print(RZ_BORROW RzPath *sys_path, const char *progname) {
+RZ_API int rz_main_version_print(RZ_BORROW RZ_NONNULL RzPath *sys_path, const char *progname) {
+	rz_return_val_if_fail(sys_path, -1);
 	char *s = rz_version_str(sys_path, progname);
 	printf("%s\n", s);
 	free(s);

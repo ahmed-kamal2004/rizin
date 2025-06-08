@@ -69,7 +69,7 @@ err:
  */
 RZ_API void rz_path_set_prefix(RZ_BORROW RZ_NONNULL RzPath *sys_path, RZ_NONNULL const char *path) {
 #if RZ_IS_PORTABLE
-	rz_return_if_fail(sys_path & sys_path->prefix_mutex);
+	rz_return_if_fail(sys_path && sys_path->prefix_mutex);
 	rz_th_lock_enter(sys_path->prefix_mutex);
 	free(sys_path->prefix);
 	if (RZ_STR_ISNOTEMPTY(path)) {
@@ -94,12 +94,7 @@ RZ_API void rz_path_set_prefix(RZ_BORROW RZ_NONNULL RzPath *sys_path, RZ_NONNULL
  */
 RZ_API RZ_OWN char *rz_path_prefix(RZ_BORROW RZ_NONNULL RzPath *sys_path) {
 #if RZ_IS_PORTABLE
-	if (!sys_path) {
-		return RZ_PREFIX;
-	}
-	if (!sys_path->prefix_mutex) {
-		return RZ_PREFIX;
-	}
+	rz_return_val_if_fail(sys_path && sys_path->prefix_mutex, RZ_PREFIX);
 	rz_th_lock_enter(sys_path->prefix_mutex);
 	if (!sys_path->prefix_searched) {
 		sys_path->prefix = set_portable_prefix();

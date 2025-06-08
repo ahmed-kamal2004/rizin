@@ -540,7 +540,7 @@ typedef struct rz_analysis_t {
 	RBTree global_var_tree; // global variables by address. must not overlap
 	RzHash *hash;
 	RzAnalysisDebugInfo *debug_info; ///< store all debug info parsed from DWARF, etc..
-	char *sys_path_prefix; // system path prefix, whether created in initialization or passed by RzCore.
+	char *sys_path_prefix; ///<  system path prefix, whether created in initialization or passed by RzCore.
 	ut64 cmpval; ///< last compare value for jump table.
 	ut64 lea_jmptbl_ip; ///< jump table x86 lea ip
 } RzAnalysis;
