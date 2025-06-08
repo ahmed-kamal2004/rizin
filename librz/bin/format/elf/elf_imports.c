@@ -16,6 +16,10 @@
 #define X86_OFFSET_PLT_ENTRY_FROM_GOT_ADDR   -0x6
 #define X86_PLT_ENTRY_SIZE                   0x10
 
+#define UNHANDL_IMPORT(NAME, NUM) \
+	RZ_LOG_WARN(NAME ": Unhandled ELF relocation for import %d\n", NUM); \
+	return UT64_MAX
+
 #define COMPUTE_PLTGOT_POSITION(rel, pltgot_addr, n_initial_unused_entries) \
 	((rel->vaddr - pltgot_addr - n_initial_unused_entries * sizeof(Elf_(Addr))) / sizeof(Elf_(Addr)))
 
@@ -84,9 +88,7 @@ static ut64 get_import_addr_hexagon(ELFOBJ *eo, RzBinElfReloc *rel) {
 	const ut64 pos = COMPUTE_PLTGOT_POSITION(rel, got_addr, 0x3);
 
 	switch (rel->type) {
-	default:
-		RZ_LOG_WARN("Unhandled hexagon reloc type %d\n", rel->type);
-		return UT64_MAX;
+	default: UNHANDL_IMPORT("Hexagon", rel->type);
 	case R_HEX_JMP_SLOT:
 		return plt_addr + pos * 16 + 32;
 	}
@@ -125,9 +127,8 @@ static ut64 get_import_addr_riscv(ELFOBJ *bin, RzBinElfReloc *rel) {
 }
 
 static ut64 get_import_addr_sparc(ELFOBJ *bin, RzBinElfReloc *rel) {
-	if (rel->type != RZ_SPARC_JMP_SLOT) {
-		RZ_LOG_WARN("Unknown sparc reloc type %d\n", rel->type);
-		return UT64_MAX;
+	if (rel->type != R_SPARC_JMP_SLOT) {
+		UNHANDL_IMPORT("SPARC", rel->type);
 	}
 	ut64 tmp = get_got_entry(bin, rel);
 
@@ -266,34 +267,54 @@ static ut64 get_import_addr_arm(ELFOBJ *bin, RzBinElfReloc *rel) {
 	ut64 pos = COMPUTE_PLTGOT_POSITION(rel, got_addr, 0x3);
 
 	switch (rel->type) {
-	case RZ_ARM_JUMP_SLOT:
+	case R_ARM_JUMP_SLOT:
 		plt_addr += pos * 12 + 20;
 		if (Elf_(rz_bin_elf_is_thumb_addr)(plt_addr)) {
 			plt_addr--;
 		}
 		return plt_addr;
-	case RZ_AARCH64_RELATIVE:
-		RZ_LOG_WARN("Unsupported relocation type for imports %d\n", rel->type);
+	default: UNHANDL_IMPORT("ARM", rel->type);
+	}
+	return UT64_MAX;
+}
+
+static ut64 get_import_addr_aarch64(ELFOBJ *bin, RzBinElfReloc *rel) {
+	ut64 got_addr;
+
+	if (!Elf_(rz_bin_elf_get_dt_info)(bin, DT_PLTGOT, &got_addr)) {
 		return UT64_MAX;
-	case RZ_AARCH64_IRELATIVE:
+	}
+
+	ut64 plt_addr = get_got_entry(bin, rel);
+	if (plt_addr == UT64_MAX) {
+		return UT64_MAX;
+	}
+
+	ut64 pos = COMPUTE_PLTGOT_POSITION(rel, got_addr, 0x3);
+
+	switch (rel->type) {
+	case R_ARM_JUMP_SLOT: // AArch64 supports ARM32 relocs.
+		plt_addr += pos * 12 + 20;
+		if (Elf_(rz_bin_elf_is_thumb_addr)(plt_addr)) {
+			plt_addr--;
+		}
+		return plt_addr;
+	case R_AARCH64_IRELATIVE:
 		if (rel->addend > plt_addr) { // start
 			return (plt_addr + pos * 16 + 32) + rel->addend;
 		}
 		// same as fallback to JUMP_SLOT
 		return plt_addr + pos * 16 + 32;
-	case RZ_AARCH64_JUMP_SLOT:
+	case R_AARCH64_JUMP_SLOT:
 		return plt_addr + pos * 16 + 32;
-	default:
-		RZ_LOG_WARN("Unsupported relocation type for imports %d\n", rel->type);
-		return UT64_MAX;
+	default: UNHANDL_IMPORT("AArch64", rel->type);
 	}
 	return UT64_MAX;
 }
 
 static ut64 get_import_addr_alpha(ELFOBJ *bin, RzBinElfReloc *rel) {
-	if (rel->type != RZ_ALPHA_JMP_SLOT) {
-		RZ_LOG_WARN("Unknown alpha reloc type %d\n", rel->type);
-		return UT64_MAX;
+	if (rel->type != R_ALPHA_JMP_SLOT) {
+		UNHANDL_IMPORT("Alpha", rel->type);
 	}
 	ut64 got_addr;
 	if (!Elf_(rz_bin_elf_get_dt_info)(bin, DT_PLTGOT, &got_addr)) {
@@ -319,8 +340,9 @@ static ut64 get_import_addr_alpha(ELFOBJ *bin, RzBinElfReloc *rel) {
 static ut64 get_import_addr_aux(ELFOBJ *bin, RzBinElfReloc *reloc) {
 	switch (bin->ehdr.e_machine) {
 	case EM_ARM:
-	case EM_AARCH64:
 		return get_import_addr_arm(bin, reloc);
+	case EM_AARCH64:
+		return get_import_addr_aarch64(bin, reloc);
 	case EM_ALPHA:
 		return get_import_addr_alpha(bin, reloc);
 	case EM_MIPS: // MIPS32 BIG ENDIAN relocs
