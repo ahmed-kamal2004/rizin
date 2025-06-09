@@ -1146,3 +1146,20 @@ err:
 	op->txt = rz_strbuf_drain(sb);
 	return op->len;
 }
+
+RZ_IPI RZ_OWN WasmContext *wasm_new(void) {
+	WasmContext *wasm = RZ_NEW0(WasmContext);
+	if (!wasm) {
+		return NULL;
+	}
+	wasm->scope_hint = UT64_MAX;
+	wasm->addr_old = UT64_MAX;
+	return wasm;
+}
+RZ_IPI void wasm_free(RZ_OWN RZ_NULLABLE WasmContext *wasm) {
+
+	if (!wasm) {
+		return;
+	}
+	free(wasm);
+}
