@@ -101,13 +101,13 @@ typedef struct rz_egg_t {
 	Sdb *db;
 	HtSP /*<RzEggPlugin *>*/ *plugins;
 	RzList /*<struct egg_patch_t *>*/ *patches; // <RzBuffer>
+	RzPath *sys_path; ///< pointer to RzPath, contains path prefix of the system
 	struct rz_egg_emit_t *remit;
 	int arch;
 	int endian;
 	int bits;
 	ut32 os;
 	int context;
-	RzPath *sys_path;
 } RzEgg;
 
 #define RZ_EGG_OS_LINUX   0x5ca62a43

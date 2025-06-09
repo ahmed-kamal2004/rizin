@@ -339,6 +339,7 @@ struct rz_core_t {
 	RzCoreSeekHistory seek_history;
 	RzHash *hash;
 	RzList /*<char *>*/ *warnings_after;
+	RzPath *sys_path; ///< pointer to RzPath, contains path prefix of the system
 
 	bool marks_init;
 	ut64 marks[UT8_MAX + 1];
@@ -352,8 +353,6 @@ struct rz_core_t {
 	int (*rz_main_rz_gg)(int argc, const char **argv);
 	int (*rz_main_rz_asm)(int argc, const char **argv);
 	int (*rz_main_rz_ax)(int argc, const char **argv);
-
-	RzPath *sys_path;
 };
 
 // maybe move into RzAnalysis

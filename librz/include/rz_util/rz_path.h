@@ -8,6 +8,12 @@
 extern "C" {
 #endif
 
+/**
+ * Keep the prefix of rizin, contians:
+ * char* `prefix` for rizin prefix
+ * bool `prefix_searched` to save compution time of the prefix if already computed
+ * mutex `prefix_mutex` to prevent race conditions between threads.
+ */
 typedef struct rz_path_t {
 	char *prefix;
 	bool prefix_searched;
