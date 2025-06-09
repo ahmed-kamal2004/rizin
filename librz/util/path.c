@@ -19,7 +19,6 @@ static char *set_portable_prefix(void) {
 
 	const char *filename = rz_file_basename(pid_to_path);
 	char *it = rz_file_dirname(pid_to_path);
-	free(pid_to_path);
 
 	for (int i = 0; i < RZ_BINDIR_DEPTH && it; i++) {
 		char *tmp = it;
@@ -27,6 +26,7 @@ static char *set_portable_prefix(void) {
 		free(tmp);
 	}
 	if (!it) {
+		free(pid_to_path);
 		goto err;
 	}
 
@@ -42,6 +42,7 @@ static char *set_portable_prefix(void) {
 	}
 
 	char *exe_path = rz_file_path_join(bindir_real, filename);
+	free(pid_to_path);
 	free(bindir_real);
 	char *exe_path_real = rz_path_realpath(exe_path);
 	free(exe_path);
