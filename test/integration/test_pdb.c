@@ -347,9 +347,7 @@ bool test_pdb_tpi_rust(void) {
 
 bool test_pdb_type_save(void) {
 	RzAnalysis *analysis = rz_analysis_new(NULL);
-	char *types_dir = rz_file_path_join(analysis->sys_path_prefix,"types");
-	rz_type_db_init(analysis->typedb, types_dir, "x86", 32, "windows");
-	free(types_dir);
+	rz_type_db_init(analysis->typedb, analysis->sdb_types_path, "x86", 32, "windows");
 
 	mu_assert_true(pdb_info_save_types(analysis, "bins/pdb/Project1.pdb"), "pdb parsing failed");
 

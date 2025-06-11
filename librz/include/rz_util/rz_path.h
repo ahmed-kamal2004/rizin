@@ -9,15 +9,16 @@ extern "C" {
 #endif
 
 /**
- * Keep the prefix of rizin, contians:
- * char* `prefix` for rizin prefix
- * bool `prefix_searched` to save compution time of the prefix if already computed
- * mutex `prefix_mutex` to prevent race conditions between threads.
+ * \brief Holds Rizin's path prefix and synchronization utilities.
+ *
+ * This structure stores the computed prefix of Rizin's path, along with a flag
+ * indicating whether the prefix has already been computed to avoid redundant work.
+ * It also includes a mutex to ensure thread-safe access when computing or accessing the prefix.
  */
 typedef struct rz_path_t {
-	char *prefix;
-	bool prefix_searched;
-	RzThreadLock *prefix_mutex;
+	char *prefix; ///< the computed path prefix.
+	bool prefix_searched; ///< flag indicating if the prefix has already been computed.
+	RzThreadLock *prefix_mutex; ///< mutex to protect access to the prefix in multithreaded contexts.
 } RzPath;
 
 #ifdef RZ_API

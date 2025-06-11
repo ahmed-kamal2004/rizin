@@ -67,9 +67,9 @@ static void meta_item_free(void *item) {
 	free(it);
 }
 
-RZ_API RzAnalysis *rz_analysis_new(RZ_BORROW RZ_NULLABLE const char *sys_path_prefix) {
+RZ_API RzAnalysis *rz_analysis_new(RZ_NULLABLE const char *sdb_types_path) {
 	RzAnalysis *analysis = RZ_NEW0(RzAnalysis);
-	if (!sys_path_prefix) {
+	if (!sdb_types_path) {
 		RzPath *path = rz_path_new();
 		if (!path) {
 			free(analysis);
@@ -81,10 +81,10 @@ RZ_API RzAnalysis *rz_analysis_new(RZ_BORROW RZ_NULLABLE const char *sys_path_pr
 			rz_path_free(path);
 			return NULL;
 		}
-		analysis->sys_path_prefix = rz_file_path_join(prefix, RZ_SDB);
+		analysis->sdb_types_path = rz_file_path_join(prefix, RZ_SDB_TYPES);
 		rz_path_free(path);
 	} else {
-		analysis->sys_path_prefix = rz_file_path_join(sys_path_prefix, RZ_SDB);
+		analysis->sdb_types_path = rz_str_dup(sdb_types_path);
 	}
 	if (!analysis) {
 		return NULL;
@@ -211,7 +211,7 @@ RZ_API RzAnalysis *rz_analysis_free(RzAnalysis *a) {
 	ht_up_free(a->ht_rop_semantics);
 	ht_sp_free(a->plugins);
 	rz_analysis_debug_info_free(a->debug_info);
-	free(a->sys_path_prefix);
+	free(a->sdb_types_path);
 	free(a);
 	return NULL;
 }
@@ -313,10 +313,8 @@ static bool analysis_set_os(RzAnalysis *analysis, const char *os) {
 	}
 	free(analysis->os);
 	analysis->os = rz_str_dup(os);
-	char *types_dir = rz_file_path_join(analysis->sys_path_prefix, "types");
 	rz_type_db_set_os(analysis->typedb, os);
-	rz_type_db_reload(analysis->typedb, types_dir);
-	free(types_dir);
+	rz_type_db_reload(analysis->typedb, analysis->sdb_types_path);
 	return true;
 }
 
@@ -362,9 +360,7 @@ RZ_API bool rz_analysis_set_bits(RzAnalysis *analysis, int bits) {
 			rz_type_db_set_bits(analysis->typedb, bits);
 			rz_type_db_set_address_bits(analysis->typedb, rz_analysis_get_address_bits(analysis));
 			if (!is_hack) {
-				char *types_dir = rz_file_path_join(analysis->sys_path_prefix, "types");
-				rz_type_db_reload(analysis->typedb, types_dir);
-				free(types_dir);
+				rz_type_db_reload(analysis->typedb, analysis->sdb_types_path);
 			}
 			rz_analysis_set_reg_profile(analysis);
 		}
@@ -404,9 +400,7 @@ RZ_API void rz_analysis_set_cpu(RzAnalysis *analysis, const char *cpu) {
 	}
 
 	rz_type_db_set_cpu(analysis->typedb, cpu);
-	char *types_dir = rz_file_path_join(analysis->sys_path_prefix, "types");
-	rz_type_db_reload(analysis->typedb, types_dir);
-	free(types_dir);
+	rz_type_db_reload(analysis->typedb, analysis->sdb_types_path);
 }
 
 RZ_API int rz_analysis_set_big_endian(RzAnalysis *analysis, int bigend) {

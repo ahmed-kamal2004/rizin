@@ -61,11 +61,9 @@ err:
 /**
  * \brief Return \p path prefixed by the Rizin install prefix
  *
- * The install prefix is taken from the build-time configuration RZ_PREFIX,
- * unless Rizin was compiled as "portable". In such a case the prefix is either
- * provided via the path argument or discovered from the path of the executable
- * calling this function.
- * \param sys_path RzPath* contains mutex and install prefix.
+ * The install prefix is taken from \p path unless path is empty. In such a case the portable prefix is
+ * computed.
+ * \param sys_path RzPath* contains install prefix and mutex.
  * \param path Path to use when prefixing or NULL to use the executable location
  */
 RZ_API void rz_path_set_prefix(RZ_BORROW RZ_NONNULL RzPath *sys_path, RZ_NONNULL const char *path) {
@@ -88,10 +86,8 @@ RZ_API void rz_path_set_prefix(RZ_BORROW RZ_NONNULL RzPath *sys_path, RZ_NONNULL
  *
  * The install prefix is taken from the build-time configuration RZ_PREFIX,
  * unless Rizin was compiled as "portable". In such a case the prefix is
- * discovered from the path of the executable calling this function.
- * \param sys_path RzPath* contains mutex and install prefix.
- * \param path Path to put in the install prefix context or NULL to just get the install prefix
- * \return \p path prefixed by the Rizin install prefix or just the install prefix
+ * provided via \p sys_path->prefix
+ * \param sys_path RzPath* contains install prefix and mutex.
  */
 RZ_API RZ_OWN char *rz_path_prefix(RZ_BORROW RZ_NONNULL RzPath *sys_path) {
 #if RZ_IS_PORTABLE
@@ -307,7 +303,6 @@ RZ_API RZ_OWN char *rz_path_realpath(RZ_NULLABLE const char *path) {
 
 /**
  * \brief Return new RzPath pointer
- * \return New RzPath*
  */
 RZ_API RZ_OWN RzPath *rz_path_new(void) {
 	RzPath *p = RZ_NEW0(RzPath);
@@ -322,8 +317,8 @@ RZ_API RZ_OWN RzPath *rz_path_new(void) {
 }
 
 /**
- * \brief Deallocate memory associated with a RzPath pointer
- * \return NULL
+ * \brief Deallocate memory that the RzPath* \p p is pointing to.
+ * \param p RzPath* contains install prefix and mutex.
  */
 RZ_API void rz_path_free(RZ_OWN RZ_NULLABLE RzPath *p) {
 	if (!p) {
