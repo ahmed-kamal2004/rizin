@@ -1147,19 +1147,19 @@ err:
 	return op->len;
 }
 
-RZ_IPI RZ_OWN WasmContext *wasm_new(void) {
-	WasmContext *wasm = RZ_NEW0(WasmContext);
-	if (!wasm) {
-		return NULL;
+RZ_IPI bool wasm_init(void **user) {
+	WasmContext *ctx = RZ_NEW0(WasmContext);
+	if (!ctx) {
+		return false;
 	}
-	wasm->scope_hint = UT64_MAX;
-	wasm->addr_old = UT64_MAX;
-	return wasm;
+	ctx->scope_hint = UT64_MAX;
+	ctx->addr_old = UT64_MAX;
+	*user = ctx;
+	return true;
 }
-RZ_IPI void wasm_free(RZ_OWN RZ_NULLABLE WasmContext *wasm) {
 
-	if (!wasm) {
-		return;
-	}
-	free(wasm);
+RZ_IPI bool wasm_fini(void *user) {
+	WasmContext *ctx = user;
+	free(ctx);
+	return true;
 }
