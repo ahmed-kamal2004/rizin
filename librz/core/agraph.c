@@ -10,10 +10,6 @@
 #include <limits.h>
 #include "core_private.h"
 
-static int mousemode = 0;
-static int disMode = 0;
-static int discroll = 0;
-static bool graphCursor = false;
 static const char *mousemodes[] = {
 	"canvas-y",
 	"canvas-x",
@@ -3961,6 +3957,25 @@ RZ_API RzAGraph *rz_agraph_new(RzConsCanvas *can) {
 	agraph_init(g);
 	agraph_sdb_init(g);
 	return g;
+}
+
+RZ_OWN RzAGraphContext *rz_agraph_context_new(void) {
+	RzAGraphContext *gtx = RZ_NEW0(RzAGraphContext);
+	if (!gtx) {
+		return NULL;
+	}
+	gtx->discroll = 0;
+	gtx->disMode = 0;
+	gtx->mouseMode = 0;
+	gtx->graphCursor = false;
+	return gtx;
+}
+
+void rz_agraph_context_free(RZ_OWN RZ_NULLABLE RzAGraphContext *gcx) {
+	if (!gcx) {
+		return;
+	}
+	free(gcx);
 }
 
 static void visual_offset(RzAGraph *g, RzCore *core) {

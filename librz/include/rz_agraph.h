@@ -91,6 +91,13 @@ typedef struct rz_ascii_graph_t {
 	RzAGraphHits ghits;
 } RzAGraph;
 
+typedef struct rz_core_graph_context_t {
+	int disMode; ///<
+	int discroll; ///<
+	int mouseMode; ///<
+	bool graphCursor; ///<
+} RzAGraphContext;
+
 #ifdef RZ_API
 RZ_API RzAGraph *rz_agraph_new(RzConsCanvas *can);
 RZ_API void rz_agraph_free(RzAGraph *g);
@@ -112,6 +119,8 @@ RZ_API void rz_agraph_foreach_edge(RzAGraph *g, RAEdgeCallback cb, void *user);
 RZ_API void rz_agraph_set_curnode(RzAGraph *g, RzANode *node);
 RZ_API bool create_agraph_from_graph_at(RZ_NONNULL RzAGraph *ag, RZ_NONNULL const RzGraph /*<RzGraphNodeInfo *>*/ *g, bool free_on_fail, bool utf8);
 RZ_API RZ_OWN RzAGraph *create_agraph_from_graph(RZ_NONNULL const RzGraph /*<RzGraphNodeInfo *>*/ *graph, bool utf8);
+RZ_OWN RzAGraphContext *rz_agraph_context_new(void);
+void rz_agraph_context_free(RZ_OWN RZ_NULLABLE RzAGraphContext *gcx);
 #endif
 
 #endif
