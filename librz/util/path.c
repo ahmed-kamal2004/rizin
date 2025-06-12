@@ -312,7 +312,6 @@ RZ_API RZ_OWN RzPath *rz_path_new(void) {
 	p->prefix = NULL;
 	p->prefix_searched = false;
 	p->prefix_mutex = rz_th_lock_new(false);
-
 	return p;
 }
 

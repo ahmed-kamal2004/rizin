@@ -67,27 +67,21 @@ static void meta_item_free(void *item) {
 	free(it);
 }
 
-RZ_API RzAnalysis *rz_analysis_new(RZ_NULLABLE const char *sdb_types_path) {
+RZ_API RzAnalysis *rz_analysis_new(RZ_NULLABLE char *sdb_types_path) {
 	RzAnalysis *analysis = RZ_NEW0(RzAnalysis);
+	if (!analysis) {
+		return NULL;
+	}
 	if (!sdb_types_path) {
 		RzPath *path = rz_path_new();
 		if (!path) {
 			free(analysis);
 			return NULL;
 		}
-		const char *prefix = rz_path_prefix(path);
-		if (!prefix) {
-			free(analysis);
-			rz_path_free(path);
-			return NULL;
-		}
-		analysis->sdb_types_path = rz_file_path_join(prefix, RZ_SDB_TYPES);
+		analysis->sdb_types_path = rz_path_system(path, RZ_SDB_TYPES);
 		rz_path_free(path);
 	} else {
 		analysis->sdb_types_path = rz_str_dup(sdb_types_path);
-	}
-	if (!analysis) {
-		return NULL;
 	}
 	if (!rz_str_constpool_init(&analysis->constpool)) {
 		free(analysis);
