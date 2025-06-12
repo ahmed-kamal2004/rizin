@@ -12,6 +12,9 @@ static char *rizin_fortune_file(RZ_BORROW RZ_NONNULL RzPath *sys_path, const cha
 	rz_return_val_if_fail(sys_path, NULL);
 	if (!strncmp(type, "tips", 4) || !strncmp(type, "fun", 3)) {
 		char *fortunes_dir = rz_path_system(sys_path, RZ_FORTUNES);
+		if (!fortunes_dir) {
+			return NULL;
+		}
 		char buf[100];
 		char *res = rz_file_path_join(fortunes_dir, rz_strf(buf, "fortunes.%s", type));
 		free(fortunes_dir);

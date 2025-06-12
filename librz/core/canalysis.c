@@ -4224,6 +4224,10 @@ RZ_API RZ_OWN RzList /*<RzSigDBEntry *>*/ *rz_core_analysis_sigdb_list(RZ_NONNUL
 
 	if (rz_config_get_b(core->config, "flirt.sigdb.load.system")) {
 		char *system_sigdb = rz_path_system(core->sys_path, RZ_SIGDB);
+		if (!system_sigdb) {
+			rz_sign_sigdb_free(sigs);
+			return rz_list_new();
+		}
 		analysis_sigdb_add(sigs, system_sigdb, with_details);
 		free(system_sigdb);
 	}
@@ -4878,6 +4882,9 @@ RZ_API void rz_core_analysis_type_init(RzCore *core) {
 	const char *analysis_arch = rz_config_get(core->config, "analysis.arch");
 	const char *os = rz_config_get(core->config, "asm.os");
 	char *types_dir = rz_path_system(core->sys_path, RZ_SDB_TYPES);
+	if (!types_dir) {
+		return;
+	}
 	rz_type_db_init(core->analysis->typedb, types_dir, analysis_arch, bits, os);
 	free(types_dir);
 }
@@ -4938,6 +4945,9 @@ RZ_API void rz_core_analysis_cc_init_by_path(RzCore *core, RZ_NULLABLE const cha
 
 RZ_API void rz_core_analysis_cc_init(RzCore *core) {
 	char *types_dir = rz_path_system(core->sys_path, RZ_SDB_TYPES);
+	if (!types_dir) {
+		return;
+	}
 	char *home_types_dir = rz_path_home_prefix(RZ_SDB_TYPES);
 	rz_core_analysis_cc_init_by_path(core, types_dir, home_types_dir);
 	free(types_dir);

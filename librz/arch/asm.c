@@ -284,8 +284,8 @@ RZ_API RzAsm *rz_asm_new(void) {
 	a->bits = RZ_SYS_BITS;
 	a->bitshift = 0;
 	a->syntax = RZ_ASM_SYNTAX_INTEL;
-	a->sys_path = rz_path_new();
-	if (!a->sys_path) {
+	a->sdb_opcodes_path = rz_path_new();
+	if (!a->sdb_opcodes_path) {
 		free(a);
 		return NULL;
 	}
@@ -352,7 +352,7 @@ RZ_API void rz_asm_free(RzAsm *a) {
 	free(a->features);
 	sdb_free(a->pair);
 	ht_ss_free(a->flags);
-	rz_path_free(a->sys_path);
+	rz_path_free(a->sdb_opcodes_path);
 	a->pair = NULL;
 	free(a);
 }
@@ -473,7 +473,11 @@ RZ_API bool rz_asm_use(RzAsm *a, RZ_NULLABLE const char *name) {
 		if (h->arch && h->name && !strcmp(h->name, name)) {
 			if (!a->cur || (a->cur && strcmp(a->cur->arch, h->arch))) {
 				plugin_fini(a);
-				char *opcodes_dir = rz_path_system(a->sys_path, RZ_SDB_OPCODES);
+				char *opcodes_dir = rz_path_system(a->sdb_opcodes_path, RZ_SDB_OPCODES);
+				if (!opcodes_dir) {
+					rz_iterator_free(iter);
+					return false;
+				}
 				char *file = rz_str_newf("%s/%s.sdb", opcodes_dir, h->arch);
 				if (file) {
 					rz_asm_set_cpu(a, NULL);
@@ -1110,11 +1114,11 @@ RZ_API RzAsmCode *rz_asm_massemble(RzAsm *a, const char *assembly) {
 				} else if (!strncmp(ptr, ".fill ", 6)) {
 					ret = rz_asm_pseudo_fill(&op, ptr + 6);
 				} else if (!strncmp(ptr, ".kernel ", 8)) {
-					rz_syscall_setup(a->syscall, a->sys_path, a->cur->arch, a->bits, asmcpu, ptr + 8);
+					rz_syscall_setup(a->syscall, a->sdb_opcodes_path, a->cur->arch, a->bits, asmcpu, ptr + 8);
 				} else if (!strncmp(ptr, ".cpu ", 5)) {
 					rz_asm_set_cpu(a, ptr + 5);
 				} else if (!strncmp(ptr, ".os ", 4)) {
-					rz_syscall_setup(a->syscall, a->sys_path, a->cur->arch, a->bits, asmcpu, ptr + 4);
+					rz_syscall_setup(a->syscall, a->sdb_opcodes_path, a->cur->arch, a->bits, asmcpu, ptr + 4);
 				} else if (!strncmp(ptr, ".hex ", 5)) {
 					ret = rz_asm_op_set_hex(&op, ptr + 5);
 				} else if ((!strncmp(ptr, ".int16 ", 7)) || !strncmp(ptr, ".short ", 7)) {

@@ -1593,7 +1593,7 @@ RZ_API bool rz_analysis_function_is_autonamed(RZ_NONNULL char *name);
 RZ_API RZ_OWN char *rz_analysis_function_name_guess(RzTypeDB *typedb, RZ_NONNULL char *name);
 
 /* analysis.c */
-RZ_API RzAnalysis *rz_analysis_new(RZ_NULLABLE char *sdb_types_path);
+RZ_API RzAnalysis *rz_analysis_new(RZ_NULLABLE const char *sdb_types_path);
 RZ_API void rz_analysis_purge(RzAnalysis *analysis);
 RZ_API RzAnalysis *rz_analysis_free(RzAnalysis *r);
 RZ_API bool rz_analysis_plugin_add(RzAnalysis *analysis, RZ_NONNULL RzAnalysisPlugin *foo);

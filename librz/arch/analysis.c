@@ -67,7 +67,7 @@ static void meta_item_free(void *item) {
 	free(it);
 }
 
-RZ_API RzAnalysis *rz_analysis_new(RZ_NULLABLE char *sdb_types_path) {
+RZ_API RzAnalysis *rz_analysis_new(RZ_NULLABLE const char *sdb_types_path) {
 	RzAnalysis *analysis = RZ_NEW0(RzAnalysis);
 	if (!analysis) {
 		return NULL;
@@ -80,6 +80,10 @@ RZ_API RzAnalysis *rz_analysis_new(RZ_NULLABLE char *sdb_types_path) {
 		}
 		analysis->sdb_types_path = rz_path_system(path, RZ_SDB_TYPES);
 		rz_path_free(path);
+		if (!analysis->sdb_types_path) {
+			free(analysis);
+			return NULL;
+		}
 	} else {
 		analysis->sdb_types_path = rz_str_dup(sdb_types_path);
 	}

@@ -55,6 +55,9 @@ static char *__read_nonnull_str_at(RzBuffer *buf, ut64 offset) {
 static char *__func_name_from_ord(RZ_BORROW RZ_NONNULL RzPath *sys_path, char *module, ut16 ordinal) {
 	rz_return_val_if_fail(sys_path, NULL);
 	char *formats_dir = rz_path_system(sys_path, RZ_SDB_FORMAT);
+	if (!formats_dir) {
+		return NULL;
+	}
 	char *path = rz_str_newf(RZ_JOIN_3_PATHS("%s", "dll", "%s.sdb"), formats_dir, module);
 	free(formats_dir);
 	char *ord = rz_str_newf("%d", ordinal);

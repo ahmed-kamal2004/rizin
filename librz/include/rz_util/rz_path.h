@@ -24,17 +24,17 @@ typedef struct rz_path_t {
 #ifdef RZ_API
 
 RZ_API void rz_path_set_prefix(RZ_BORROW RZ_NONNULL RzPath *sys_path, RZ_NONNULL const char *path);
-RZ_API RZ_OWN char *rz_path_prefix(RZ_BORROW RZ_NONNULL RzPath *sys_path);
-RZ_API RZ_OWN char *rz_path_incdir(RZ_BORROW RZ_NULLABLE RzPath *sys_path);
-RZ_API RZ_OWN char *rz_path_bindir(RZ_BORROW RZ_NULLABLE RzPath *sys_path);
-RZ_API RZ_OWN char *rz_path_libdir(RZ_BORROW RZ_NULLABLE RzPath *sys_path);
+RZ_API const char *rz_path_prefix(RZ_NONNULL const RzPath *sys_path);
+RZ_API RZ_OWN char *rz_path_incdir(RZ_NULLABLE const RzPath *sys_path);
+RZ_API RZ_OWN char *rz_path_bindir(RZ_NULLABLE const RzPath *sys_path);
+RZ_API RZ_OWN char *rz_path_libdir(RZ_NULLABLE const RzPath *sys_path);
 
-RZ_API RZ_OWN char *rz_path_system(RZ_BORROW RZ_NULLABLE RzPath *sys_path, RZ_NULLABLE const char *path);
+RZ_API RZ_OWN char *rz_path_system(RZ_NULLABLE const RzPath *sys_path, RZ_NULLABLE const char *path);
 RZ_API RZ_OWN char *rz_path_extra(RZ_NULLABLE const char *path);
 RZ_API RZ_OWN char *rz_path_home_prefix(RZ_NULLABLE const char *path);
 RZ_API RZ_OWN char *rz_path_home(RZ_NULLABLE const char *path);
 
-RZ_API RZ_OWN char *rz_path_system_rc(RZ_BORROW RZ_NULLABLE RzPath *sys_path);
+RZ_API RZ_OWN char *rz_path_system_rc(RZ_NULLABLE const RzPath *sys_path);
 RZ_API RZ_OWN char *rz_path_home_rc(void);
 RZ_API RZ_OWN char *rz_path_home_config_rc(void);
 RZ_API RZ_OWN char *rz_path_home_config_rcdir(void);
