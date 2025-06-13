@@ -231,9 +231,14 @@ int rz_test_main(int argc, const char **argv) {
 			if (quiet) {
 				printf(RZ_VERSION "\n");
 			} else {
-				char *s = rz_version_str("rz-test");
+				RzPath *sys_path = rz_path_new();
+				if (!sys_path) {
+					goto beach;
+				}
+				char *s = rz_version_str(sys_path, "rz-test");
 				printf("%s\n", s);
 				free(s);
+				rz_path_free(sys_path);
 			}
 			ret = 0;
 			goto beach;

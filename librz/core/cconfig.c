@@ -425,11 +425,17 @@ static bool cb_asmcpu(void *user, void *data) {
 	rz_asm_set_cpu(core->rasm, node->value);
 	rz_config_set(core->config, "analysis.cpu", node->value);
 
-	char *cpus_dir = rz_path_system(RZ_SDB_ARCH_CPUS);
+	char *cpus_dir = rz_path_system(core->sys_path, RZ_SDB_ARCH_CPUS);
+	if (!cpus_dir) {
+		return false;
+	}
 	rz_platform_profiles_init(core->analysis->arch_target, node->value, rz_config_get(core->config, "asm.arch"), cpus_dir);
 	free(cpus_dir);
 	const char *platform = rz_config_get(core->config, "asm.platform");
-	char *platforms_dir = rz_path_system(RZ_SDB_ARCH_PLATFORMS);
+	char *platforms_dir = rz_path_system(core->sys_path, RZ_SDB_ARCH_PLATFORMS);
+	if (!platforms_dir) {
+		return false;
+	}
 	rz_platform_target_index_init(core->analysis->platform_target, rz_config_get(core->config, "asm.arch"), node->value, platform, platforms_dir);
 	free(platforms_dir);
 
@@ -580,10 +586,17 @@ static bool cb_asmarch(void *user, void *data) {
 		const char *asmcpu = rz_config_get(core->config, "asm.cpu");
 		const char *platform = rz_config_get(core->config, "asm.platform");
 		rz_config_set(core->config, "analysis.cpu", asmcpu);
-		rz_syscall_setup(core->analysis->syscall, node->value, core->analysis->bits, asmcpu, asmos);
+		rz_syscall_setup(core->analysis->syscall, core->sys_path, node->value, core->analysis->bits, asmcpu, asmos);
 		update_syscall_ns(core);
-		char *platforms_dir = rz_path_system(RZ_SDB_ARCH_PLATFORMS);
-		char *cpus_dir = rz_path_system(RZ_SDB_ARCH_CPUS);
+		char *platforms_dir = rz_path_system(core->sys_path, RZ_SDB_ARCH_PLATFORMS);
+		if (!platforms_dir) {
+			return false;
+		}
+		char *cpus_dir = rz_path_system(core->sys_path, RZ_SDB_ARCH_CPUS);
+		if (!cpus_dir) {
+			free(platforms_dir);
+			return false;
+		}
 		rz_platform_target_index_init(core->analysis->platform_target, node->value, asmcpu, platform, platforms_dir);
 		rz_platform_profiles_init(core->analysis->arch_target, asmcpu, node->value, cpus_dir);
 		free(platforms_dir);
@@ -625,8 +638,15 @@ static bool cb_asmarch(void *user, void *data) {
 
 	const char *platform = rz_config_get(core->config, "asm.platform");
 	if (asm_cpu_node) {
-		char *platforms_dir = rz_path_system(RZ_SDB_ARCH_PLATFORMS);
-		char *cpus_dir = rz_path_system(RZ_SDB_ARCH_CPUS);
+		char *platforms_dir = rz_path_system(core->sys_path, RZ_SDB_ARCH_PLATFORMS);
+		if (!platforms_dir) {
+			return false;
+		}
+		char *cpus_dir = rz_path_system(core->sys_path, RZ_SDB_ARCH_CPUS);
+		if (!cpus_dir) {
+			free(platforms_dir);
+			return false;
+		}
 		rz_platform_target_index_init(core->analysis->platform_target, node->value, asm_cpu_node->value, platform, platforms_dir);
 		rz_platform_profiles_init(core->analysis->arch_target, asm_cpu_node->value, node->value, cpus_dir);
 		free(cpus_dir);
@@ -684,7 +704,7 @@ static bool cb_asmbits(void *user, void *data) {
 	const char *asmcpu = rz_config_get(core->config, "asm.cpu");
 	if (core->analysis) {
 		rz_config_set(core->config, "analysis.cpu", asmcpu);
-		if (!rz_syscall_setup(core->analysis->syscall, asmarch, bits, asmcpu, asmos)) {
+		if (!rz_syscall_setup(core->analysis->syscall, core->sys_path, asmarch, bits, asmcpu, asmos)) {
 			// eprintf ("asm.arch: Cannot setup syscall '%s/%s' from '%s'\n",
 			//	node->value, asmos, RZ_LIBDIR"/rizin/"RZ_VERSION"/syscall");
 		}
@@ -776,7 +796,10 @@ static bool cb_asmplatform(void *user, void *data) {
 	}
 	const char *asmcpu = rz_config_get(core->config, "asm.cpu");
 	const char *asmarch = rz_config_get(core->config, "asm.arch");
-	char *platforms_dir = rz_path_system(RZ_SDB_ARCH_PLATFORMS);
+	char *platforms_dir = rz_path_system(core->sys_path, RZ_SDB_ARCH_PLATFORMS);
+	if (!platforms_dir) {
+		return false;
+	}
 	rz_platform_target_index_init(core->analysis->platform_target, asmarch, asmcpu, node->value, platforms_dir);
 	free(platforms_dir);
 	return 1;
@@ -857,7 +880,7 @@ static bool cb_asmos(void *user, void *data) {
 	asmarch = rz_config_node_get(core->config, "asm.arch");
 	if (asmarch) {
 		const char *asmcpu = rz_config_get(core->config, "asm.cpu");
-		rz_syscall_setup(core->analysis->syscall, asmarch->value, core->analysis->bits, asmcpu, node->value);
+		rz_syscall_setup(core->analysis->syscall, core->sys_path, asmarch->value, core->analysis->bits, asmcpu, node->value);
 		update_syscall_ns(core);
 		__setsegoff(core->config, asmarch->value, asmbits);
 	}
@@ -3009,10 +3032,12 @@ RZ_API int rz_core_config_init(RzCore *core) {
 	{
 		char *pfx = rz_sys_getenv("RZ_PREFIX");
 		if (!pfx) {
-			pfx = rz_path_prefix(NULL);
+			const char *pfx_const = rz_path_prefix(core->sys_path);
+			SETCB("dir.prefix", pfx_const, NULL, "Default prefix rizin was compiled for");
+		} else {
+			SETCB("dir.prefix", pfx, NULL, "Default prefix rizin was compiled for");
+			free(pfx);
 		}
-		SETCB("dir.prefix", pfx, NULL, "Default prefix rizin was compiled for");
-		free(pfx);
 	}
 #if __ANDROID__
 	{ // use dir.home and also adjust check for permissions in directory before choosing a home
@@ -3443,10 +3468,10 @@ RZ_API int rz_core_config_init(RzCore *core) {
 	/* dir */
 	SETI("dir.depth", 10, "Maximum depth when searching recursively for files");
 	{
-		char *path = rz_path_system(RZ_SDB_MAGIC);
+		char *path = rz_path_system(core->sys_path, RZ_SDB_MAGIC);
 		SETPREF("dir.magic", path, "Path to rz_magic files");
 		free(path);
-		path = rz_path_system(RZ_PLUGINS);
+		path = rz_path_system(core->sys_path, RZ_PLUGINS);
 		SETPREF("dir.plugins", path, "Path to plugin files to be loaded at startup");
 		free(path);
 	}
@@ -3611,7 +3636,7 @@ RZ_API int rz_core_config_init(RzCore *core) {
 #if __ANDROID__
 	SETPREF("http.root", "/data/data/org.rizin.rizininstaller/www", "http root directory");
 #else
-	char *wwwroot = rz_path_system(RZ_WWWROOT);
+	char *wwwroot = rz_path_system(core->sys_path, RZ_WWWROOT);
 	SETPREF("http.root", wwwroot, "http root directory");
 	free(wwwroot);
 #endif

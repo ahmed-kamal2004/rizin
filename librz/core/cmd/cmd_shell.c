@@ -559,7 +559,7 @@ RZ_IPI RzCmdStatus rz_calculate_command_time_handler(RzCore *core, int argc, con
 RZ_IPI RzCmdStatus rz_show_version_info_handler(RzCore *core, int argc, const char **argv, RzCmdStateOutput *state) {
 	switch (state->mode) {
 	case RZ_OUTPUT_MODE_STANDARD: {
-		char *v = rz_version_str(NULL);
+		char *v = rz_version_str(core->sys_path, NULL);
 		rz_cons_printf("%s\n", v);
 		free(v);
 		break;

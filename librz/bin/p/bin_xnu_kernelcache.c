@@ -1364,7 +1364,12 @@ static RzList /*<RzBinSymbol *>*/ *resolve_syscalls(RzXNUKernelCacheObj *obj, ut
 	if (!syscall) {
 		goto beach;
 	}
-	rz_syscall_setup(syscall, "arm", 64, NULL, "ios");
+	RzPath *sys_path = rz_path_new();
+	if (!sys_path) {
+		goto beach;
+	}
+	rz_syscall_setup(syscall, sys_path, "arm", 64, NULL, "ios");
+	rz_path_free(sys_path);
 	if (!syscall->db) {
 		goto beach;
 	}

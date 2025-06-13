@@ -6376,7 +6376,7 @@ RZ_IPI RzCmdStatus rz_cmd_print_format_file_handler(RzCore *core, int argc, cons
 			rz_list_free(files);
 			free(home);
 		}
-		char *path = rz_path_system(RZ_SDB_FORMAT);
+		char *path = rz_path_system(core->sys_path, RZ_SDB_FORMAT);
 		if (path) {
 			files = rz_sys_dir(path);
 			rz_list_foreach (files, iter, fn) {
@@ -6392,7 +6392,7 @@ RZ_IPI RzCmdStatus rz_cmd_print_format_file_handler(RzCore *core, int argc, cons
 	char *home_formats = rz_path_home_prefix(RZ_SDB_FORMAT);
 	char *home = rz_file_path_join(home_formats, argv[1]);
 	free(home_formats);
-	char *system_formats = rz_path_system(RZ_SDB_FORMAT);
+	char *system_formats = rz_path_system(core->sys_path, RZ_SDB_FORMAT);
 	char *path = rz_file_path_join(system_formats, argv[1]);
 	free(system_formats);
 	if (rz_str_endswith(argv[1], ".h")) {

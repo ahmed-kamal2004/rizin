@@ -83,6 +83,7 @@ RZ_API RzEgg *rz_egg_new(void) {
 	for (i = 0; i < RZ_ARRAY_SIZE(egg_static_plugins); i++) {
 		rz_egg_plugin_add(egg, egg_static_plugins[i]);
 	}
+	egg->sys_path = rz_path_new();
 	return egg;
 
 beach:
@@ -111,6 +112,7 @@ RZ_API void rz_egg_free(RzEgg *egg) {
 	if (!egg) {
 		return;
 	}
+	rz_path_free(egg->sys_path);
 	rz_buf_free(egg->src);
 	rz_buf_free(egg->buf);
 	rz_buf_free(egg->bin);
@@ -143,12 +145,12 @@ RZ_API bool rz_egg_setup(RzEgg *egg, const char *arch, int bits, int endian, con
 		egg->arch = RZ_SYS_ARCH_X86;
 		switch (bits) {
 		case 32:
-			rz_syscall_setup(egg->syscall, arch, bits, asmcpu, os);
+			rz_syscall_setup(egg->syscall, egg->sys_path, arch, bits, asmcpu, os);
 			egg->remit = &emit_x86;
 			egg->bits = bits;
 			break;
 		case 64:
-			rz_syscall_setup(egg->syscall, arch, bits, asmcpu, os);
+			rz_syscall_setup(egg->syscall, egg->sys_path, arch, bits, asmcpu, os);
 			egg->remit = &emit_x64;
 			egg->bits = bits;
 			break;
@@ -159,7 +161,7 @@ RZ_API bool rz_egg_setup(RzEgg *egg, const char *arch, int bits, int endian, con
 		case 16:
 		case 32:
 		case 64:
-			rz_syscall_setup(egg->syscall, arch, bits, asmcpu, os);
+			rz_syscall_setup(egg->syscall, egg->sys_path, arch, bits, asmcpu, os);
 			egg->remit = &emit_arm;
 			egg->bits = bits;
 			egg->endian = endian;
@@ -218,7 +220,7 @@ RZ_API bool rz_egg_load_file(RzEgg *egg, const char *file) {
 		rz_str_sanitize(fileSanitized);
 		const char *arch = rz_sys_arch_str(egg->arch);
 		const char *os = rz_egg_os_as_string(egg->os);
-		char *textFile = rz_egg_Cfile_parser(fileSanitized, arch, os, egg->bits);
+		char *textFile = rz_egg_Cfile_parser(egg->sys_path, fileSanitized, arch, os, egg->bits);
 		if (!textFile) {
 			RZ_LOG_ERROR("egg: failure while parsing '%s'\n", fileSanitized);
 			free(fileSanitized);

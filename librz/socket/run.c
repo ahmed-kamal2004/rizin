@@ -999,7 +999,9 @@ RZ_API int rz_run_config_env(RzRunProfile *p) {
 			RZ_LOG_WARN("rz-run: only one library can be opened at a time\n");
 			free(p->_preload);
 		}
-		char *libdir = rz_path_libdir();
+		RzPath *sys_path = rz_path_new();
+		char *libdir = rz_path_libdir(sys_path);
+		rz_path_free(sys_path);
 		p->_preload = rz_file_path_join(libdir, "librz." RZ_LIB_EXT);
 		free(libdir);
 	}

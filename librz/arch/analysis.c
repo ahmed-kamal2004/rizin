@@ -67,10 +67,25 @@ static void meta_item_free(void *item) {
 	free(it);
 }
 
-RZ_API RzAnalysis *rz_analysis_new(void) {
+RZ_API RzAnalysis *rz_analysis_new(RZ_NULLABLE const char *sdb_types_path) {
 	RzAnalysis *analysis = RZ_NEW0(RzAnalysis);
 	if (!analysis) {
 		return NULL;
+	}
+	if (!sdb_types_path) {
+		RzPath *path = rz_path_new();
+		if (!path) {
+			free(analysis);
+			return NULL;
+		}
+		analysis->sdb_types_path = rz_path_system(path, RZ_SDB_TYPES);
+		rz_path_free(path);
+		if (!analysis->sdb_types_path) {
+			free(analysis);
+			return NULL;
+		}
+	} else {
+		analysis->sdb_types_path = rz_str_dup(sdb_types_path);
 	}
 	if (!rz_str_constpool_init(&analysis->constpool)) {
 		free(analysis);
@@ -194,6 +209,7 @@ RZ_API RzAnalysis *rz_analysis_free(RzAnalysis *a) {
 	ht_up_free(a->ht_rop_semantics);
 	ht_sp_free(a->plugins);
 	rz_analysis_debug_info_free(a->debug_info);
+	free(a->sdb_types_path);
 	free(a);
 	return NULL;
 }
@@ -295,10 +311,8 @@ static bool analysis_set_os(RzAnalysis *analysis, const char *os) {
 	}
 	free(analysis->os);
 	analysis->os = rz_str_dup(os);
-	char *types_dir = rz_path_system(RZ_SDB_TYPES);
 	rz_type_db_set_os(analysis->typedb, os);
-	rz_type_db_reload(analysis->typedb, types_dir);
-	free(types_dir);
+	rz_type_db_reload(analysis->typedb, analysis->sdb_types_path);
 	return true;
 }
 
@@ -344,9 +358,7 @@ RZ_API bool rz_analysis_set_bits(RzAnalysis *analysis, int bits) {
 			rz_type_db_set_bits(analysis->typedb, bits);
 			rz_type_db_set_address_bits(analysis->typedb, rz_analysis_get_address_bits(analysis));
 			if (!is_hack) {
-				char *types_dir = rz_path_system(RZ_SDB_TYPES);
-				rz_type_db_reload(analysis->typedb, types_dir);
-				free(types_dir);
+				rz_type_db_reload(analysis->typedb, analysis->sdb_types_path);
 			}
 			rz_analysis_set_reg_profile(analysis);
 		}
@@ -386,9 +398,7 @@ RZ_API void rz_analysis_set_cpu(RzAnalysis *analysis, const char *cpu) {
 	}
 
 	rz_type_db_set_cpu(analysis->typedb, cpu);
-	char *types_dir = rz_path_system(RZ_SDB_TYPES);
-	rz_type_db_reload(analysis->typedb, types_dir);
-	free(types_dir);
+	rz_type_db_reload(analysis->typedb, analysis->sdb_types_path);
 }
 
 RZ_API int rz_analysis_set_big_endian(RzAnalysis *analysis, int bigend) {

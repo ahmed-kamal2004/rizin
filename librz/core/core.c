@@ -1641,7 +1641,13 @@ RZ_API bool rz_core_init(RzCore *core) {
 	core->rasm = rz_asm_new();
 	core->rasm->num = core->num;
 	core->rasm->core = core;
-	core->analysis = rz_analysis_new();
+	// initialize path
+	core->sys_path = rz_path_new();
+	char *sdb_types_path = rz_path_system(core->sys_path, RZ_SDB_TYPES);
+	core->analysis = rz_analysis_new(sdb_types_path);
+	if (sdb_types_path) {
+		free(sdb_types_path);
+	}
 	core->gadgets = rz_list_newf((RzListFree)rz_core_gadget_free);
 	core->analysis->ev = core->ev;
 	core->analysis->read_at = rz_core_analysis_read_at;
@@ -1749,7 +1755,7 @@ RZ_API bool rz_core_init(RzCore *core) {
 	rz_config_set(core->config, "asm.arch", RZ_SYS_ARCH);
 	update_sdb(core);
 	{
-		char *a = rz_path_system(RZ_FLAGS);
+		char *a = rz_path_system(core->sys_path, RZ_FLAGS);
 		if (a) {
 			char *file = rz_file_path_join(a, "tags.rz");
 			(void)rz_core_run_script(core, file);
@@ -1841,6 +1847,7 @@ RZ_API void rz_core_fini(RzCore *c) {
 	RZ_FREE(c->curtheme);
 	RZ_FREE_CUSTOM(c->visual, rz_core_visual_free);
 	RZ_FREE_CUSTOM(c->warnings_after, rz_list_free);
+	RZ_FREE_CUSTOM(c->sys_path, rz_path_free);
 }
 
 RZ_API void rz_core_free(RzCore *c) {

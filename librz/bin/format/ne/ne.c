@@ -52,8 +52,12 @@ static char *__read_nonnull_str_at(RzBuffer *buf, ut64 offset) {
 	return str;
 }
 
-static char *__func_name_from_ord(char *module, ut16 ordinal) {
-	char *formats_dir = rz_path_system(RZ_SDB_FORMAT);
+static char *__func_name_from_ord(RZ_BORROW RZ_NONNULL RzPath *sys_path, char *module, ut16 ordinal) {
+	rz_return_val_if_fail(sys_path, NULL);
+	char *formats_dir = rz_path_system(sys_path, RZ_SDB_FORMAT);
+	if (!formats_dir) {
+		return NULL;
+	}
 	char *path = rz_str_newf(RZ_JOIN_3_PATHS("%s", "dll", "%s.sdb"), formats_dir, module);
 	free(formats_dir);
 	char *ord = rz_str_newf("%d", ordinal);
@@ -540,6 +544,12 @@ RzPVector /*<RzBinReloc *>*/ *rz_bin_ne_get_relocs(rz_bin_ne_obj_t *bin) {
 		free(modref);
 		return NULL;
 	}
+	RzPath *sys_path = rz_path_new();
+	if (!sys_path) {
+		free(relocs);
+		free(modref);
+		return NULL;
+	}
 
 	ut64 bufsz = rz_buf_size(bin->buf);
 	void **it;
@@ -595,7 +605,7 @@ RzPVector /*<RzBinReloc *>*/ *rz_bin_ne_get_relocs(rz_bin_ne_obj_t *bin) {
 				}
 				if (rel.flags & IMPORTED_ORD) {
 					imp->ordinal = rel.func_ord;
-					imp->name = rz_str_newf("%s.%s", name, __func_name_from_ord(name, rel.func_ord));
+					imp->name = rz_str_newf("%s.%s", name, __func_name_from_ord(sys_path, name, rel.func_ord));
 				} else {
 					offset = bin->header_offset + bin->ne_header->ImportNameTable + rel.name_off;
 					char *func = __read_nonnull_str_at(bin->buf, offset);
@@ -663,6 +673,7 @@ RzPVector /*<RzBinReloc *>*/ *rz_bin_ne_get_relocs(rz_bin_ne_obj_t *bin) {
 		}
 	}
 	free(modref);
+	rz_path_free(sys_path);
 	return relocs;
 }
 

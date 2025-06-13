@@ -603,7 +603,10 @@ RZ_API bool rz_core_bin_apply_config(RzCore *r, RzBinFile *binfile) {
 	if (info->default_cc && rz_analysis_cc_exist(r->analysis, info->default_cc)) {
 		rz_config_set(r->config, "analysis.cc", info->default_cc);
 	}
-	char *types_dir = rz_path_system(RZ_SDB_TYPES);
+	char *types_dir = rz_path_system(r->sys_path, RZ_SDB_TYPES);
+	if (!types_dir) {
+		return false;
+	}
 	char *spath = rz_file_path_join(types_dir, "spec.sdb");
 	free(types_dir);
 	if (spath && rz_file_exists(spath)) {
@@ -697,7 +700,10 @@ RZ_API bool rz_core_bin_apply_dwarf(RzCore *core, RzBinFile *binfile) {
 	}
 
 	rz_type_db_purge(core->analysis->typedb);
-	char *types_dir = rz_path_system(RZ_SDB_TYPES);
+	char *types_dir = rz_path_system(core->sys_path, RZ_SDB_TYPES);
+	if (!types_dir) {
+		return false;
+	}
 	rz_type_db_reload(core->analysis->typedb, types_dir);
 	free(types_dir);
 
@@ -1206,8 +1212,11 @@ static void set_bin_relocs(RzCore *r, RzBinObject *o, RzBinReloc *reloc, bool va
 				if (rz_file_exists(filename)) {
 					*db = sdb_new(NULL, filename, 0);
 				} else {
-					char *formats_dir = rz_path_system(RZ_SDB_FORMAT);
 					free(filename);
+					char *formats_dir = rz_path_system(r->sys_path, RZ_SDB_FORMAT);
+					if (!formats_dir) {
+						return;
+					}
 					filename = rz_str_newf(RZ_JOIN_3_PATHS("%s", "dll", "%s.sdb"), formats_dir, module);
 					free(formats_dir);
 					if (rz_file_exists(filename)) {

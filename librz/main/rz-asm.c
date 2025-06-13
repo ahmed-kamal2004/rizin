@@ -41,7 +41,7 @@ static RzAsmState *__as_new(void) {
 		if (as->a) {
 			as->a->num = rz_num_new(NULL, NULL, NULL);
 		}
-		as->analysis = rz_analysis_new();
+		as->analysis = rz_analysis_new(NULL);
 		__load_plugins(as);
 		__as_set_archbits(as);
 	}
@@ -541,7 +541,7 @@ static void __load_plugins(RzAsmState *as) {
 	}
 
 	char *homeplugindir = rz_path_home_prefix(RZ_PLUGINS);
-	char *sysplugindir = rz_path_system(RZ_PLUGINS);
+	char *sysplugindir = rz_path_system(as->a->sdb_opcodes_path, RZ_PLUGINS);
 	char *extraplugindir = rz_path_extra(RZ_PLUGINS);
 	rz_lib_opendir(as->l, homeplugindir, false);
 	rz_lib_opendir(as->l, sysplugindir, false);
@@ -717,13 +717,19 @@ RZ_API int rz_main_rz_asm(int argc, const char *argv[]) {
 				rz_asm_set_syntax(as->a, syntax);
 			}
 			break;
-		case 'v':
+		case 'v': {
 			if (as->quiet) {
 				printf("%s\n", RZ_VERSION);
 			} else {
-				ret = rz_main_version_print("rz-asm");
+				RzPath *sys_path = rz_path_new();
+				if (!sys_path) {
+					goto beach;
+				}
+				ret = rz_main_version_print(sys_path, "rz-asm");
+				rz_path_free(sys_path);
 			}
 			goto beach;
+		}
 		case 'w':
 			whatsop = true;
 			break;
@@ -764,7 +770,7 @@ RZ_API int rz_main_rz_asm(int argc, const char *argv[]) {
 	rz_asm_set_bits(as->a, (env_bits && *env_bits) ? atoi(env_bits) : bits);
 	rz_analysis_set_bits(as->analysis, (env_bits && *env_bits) ? atoi(env_bits) : bits);
 	as->a->syscall = rz_syscall_new();
-	rz_syscall_setup(as->a->syscall, arch, bits, cpu, kernel);
+	rz_syscall_setup(as->a->syscall, as->a->sdb_opcodes_path, arch, bits, cpu, kernel);
 	{
 		bool canbebig = rz_asm_set_big_endian(as->a, isbig);
 		if (isbig && !canbebig) {

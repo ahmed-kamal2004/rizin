@@ -86,8 +86,8 @@ static int rz_main_version_verify(int show) {
 	return ret;
 }
 
-static int main_help(int line) {
-
+static int main_help(RZ_BORROW RZ_NONNULL RzCore *core, int line) {
+	rz_return_val_if_fail(core, 1);
 	if (line < 2) {
 		printf("%s%s", Color_CYAN, "Usage: ");
 		printf(Color_RESET "rizin [-ACdfLMnNqStuvwzX] [-P patch] [-p prj] [-a arch] [-b bits] [-i file]\n"
@@ -161,21 +161,21 @@ static int main_help(int line) {
 	}
 	if (line == 2) {
 		char *datahome = rz_path_home_prefix(RZ_DATADIR);
-		char *incdir = rz_path_incdir();
-		char *libdir = rz_path_libdir();
+		char *incdir = rz_path_incdir(core->sys_path);
+		char *libdir = rz_path_libdir(core->sys_path);
 		char *home_rc = rz_path_home_rc();
 		char *home_config_rc = rz_path_home_config_rc();
 		char *home_config_rcdir = rz_path_home_config_rcdir();
-		char *system_rc = rz_path_system_rc();
+		char *system_rc = rz_path_system_rc(core->sys_path);
 		char *binrc_dir = rz_path_home_prefix(RZ_BINRC);
 		char *binrc = rz_file_path_join(binrc_dir, "bin-<format>");
-		char *system_magic = rz_path_system(RZ_SDB_MAGIC);
+		char *system_magic = rz_path_system(core->sys_path, RZ_SDB_MAGIC);
 		char *home_plugins = rz_path_home_prefix(RZ_PLUGINS);
-		char *system_plugins = rz_path_system(RZ_PLUGINS);
+		char *system_plugins = rz_path_system(core->sys_path, RZ_PLUGINS);
 		char *extra_plugins = rz_path_extra(RZ_PLUGINS);
-		char *system_sigdb = rz_path_system(RZ_SIGDB);
+		char *system_sigdb = rz_path_system(core->sys_path, RZ_SIGDB);
 		char *extra_sigdb = rz_path_extra(RZ_SIGDB);
-		char *dirPrefix = rz_path_prefix(NULL);
+		const char *dirPrefix = rz_path_prefix(core->sys_path);
 		char *extra_prefix = rz_path_extra(NULL);
 		// clang-format off
 		printf(
@@ -250,27 +250,27 @@ static int main_help(int line) {
 		free(extra_plugins);
 		free(system_sigdb);
 		free(extra_sigdb);
-		free(dirPrefix);
 		free(extra_prefix);
 	}
 	return 0;
 }
 
-static int main_print_var(const char *var_name) {
+static int main_print_var(RZ_BORROW RZ_NONNULL RzCore *core, const char *var_name) {
+	rz_return_val_if_fail(core, 1);
 	int i = 0;
-	char *prefix = rz_path_prefix(NULL);
+	const char *prefix = rz_path_prefix(core->sys_path);
 	char *extra_prefix = rz_path_extra(NULL);
-	char *incdir = rz_path_incdir();
-	char *libdir = rz_path_libdir();
+	char *incdir = rz_path_incdir(core->sys_path);
+	char *libdir = rz_path_libdir(core->sys_path);
 	char *confighome = rz_path_home_config();
 	char *datahome = rz_path_home_prefix(RZ_DATADIR);
 	char *cachehome = rz_path_home_cache();
 	char *homeplugins = rz_path_home_prefix(RZ_PLUGINS);
-	char *sigdbdir = rz_path_system(RZ_SIGDB);
+	char *sigdbdir = rz_path_system(core->sys_path, RZ_SIGDB);
 	char *extrasigdbdir = rz_path_extra(RZ_SIGDB);
-	char *plugins = rz_path_system(RZ_PLUGINS);
+	char *plugins = rz_path_system(core->sys_path, RZ_PLUGINS);
 	char *extraplugins = rz_path_extra(RZ_PLUGINS);
-	char *magicpath = rz_path_system(RZ_SDB_MAGIC);
+	char *magicpath = rz_path_system(core->sys_path, RZ_SDB_MAGIC);
 	const char *is_portable = RZ_IS_PORTABLE ? "1" : "0";
 	struct rizin_var_t {
 		const char *name;
@@ -324,7 +324,6 @@ static int main_print_var(const char *var_name) {
 	free(plugins);
 	free(magicpath);
 	free(extra_prefix);
-	free(prefix);
 	return 0;
 }
 
@@ -525,7 +524,7 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 
 	// -H option without argument
 	if (argc == 2 && !strcmp(argv[1], "-H")) {
-		main_print_var(NULL);
+		main_print_var(r, NULL);
 		LISTS_FREE();
 		return 0;
 	}
@@ -629,7 +628,7 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 			help++;
 			break;
 		case 'H':
-			main_print_var(opt.arg);
+			main_print_var(r, opt.arg);
 			LISTS_FREE();
 			return 0;
 		case 'i':
@@ -732,7 +731,7 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 				LISTS_FREE();
 				RZ_FREE(debugbackend);
 				free(customRarunProfile);
-				return rz_main_version_print("rizin");
+				return rz_main_version_print(r->sys_path, "rizin");
 			}
 		case 'V':
 			return rz_main_version_verify(1);
@@ -838,7 +837,7 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 		LISTS_FREE();
 		free(pfile);
 		RZ_FREE(debugbackend);
-		return main_help(help > 1 ? 2 : 0);
+		return main_help(r, help > 1 ? 2 : 0);
 	}
 	if (customRarunProfile) {
 		char *tfn = rz_file_temp(".rz-run");
@@ -1384,7 +1383,7 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 		}
 	}
 	{
-		char *global_rc = rz_path_system_rc();
+		char *global_rc = rz_path_system_rc(r->sys_path);
 		if (rz_file_exists(global_rc)) {
 			(void)rz_core_run_script(r, global_rc);
 		}

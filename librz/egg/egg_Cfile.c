@@ -63,7 +63,8 @@ static inline bool isXNU(const char *os) {
 	return (!strcmp(os, "darwin") || !strcmp(os, "macos") || !strcmp(os, "tvos") || !strcmp(os, "watchos") || !strcmp(os, "ios"));
 }
 
-static struct cEnv_t *rz_egg_Cfile_set_cEnv(const char *arch, const char *os, int bits) {
+static struct cEnv_t *rz_egg_Cfile_set_cEnv(RZ_BORROW RZ_NONNULL RzPath *sys_path, const char *arch, const char *os, int bits) {
+	rz_return_val_if_fail(sys_path, NULL);
 	struct cEnv_t *cEnv = calloc(1, sizeof(struct cEnv_t));
 	bool use_clang;
 	char *buffer = NULL;
@@ -79,7 +80,7 @@ static struct cEnv_t *rz_egg_Cfile_set_cEnv(const char *arch, const char *os, in
 
 	cEnv->SFLIBPATH = rz_sys_getenv("SFLIBPATH");
 	if (!cEnv->SFLIBPATH) {
-		incdir = rz_path_incdir();
+		incdir = rz_path_incdir(sys_path);
 
 		if (!(cEnv->SFLIBPATH = rz_str_newf("%s/sflib", incdir))) {
 			goto fail;
@@ -238,10 +239,11 @@ fail:
 	return false;
 }
 
-RZ_API char *rz_egg_Cfile_parser(const char *file, const char *arch, const char *os, int bits) {
+RZ_API char *rz_egg_Cfile_parser(RZ_BORROW RZ_NONNULL RzPath *sys_path, const char *file, const char *arch, const char *os, int bits) {
+	rz_return_val_if_fail(sys_path, NULL);
 	char *output = NULL;
 	char *fileExt = NULL; // "file" with extension (.s, .text, ...)
-	struct cEnv_t *cEnv = rz_egg_Cfile_set_cEnv(arch, os, bits);
+	struct cEnv_t *cEnv = rz_egg_Cfile_set_cEnv(sys_path, arch, os, bits);
 
 	if (!cEnv) {
 		goto fail;

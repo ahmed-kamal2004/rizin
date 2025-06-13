@@ -101,6 +101,7 @@ typedef struct rz_egg_t {
 	Sdb *db;
 	HtSP /*<RzEggPlugin *>*/ *plugins;
 	RzList /*<struct egg_patch_t *>*/ *patches; // <RzBuffer>
+	RzPath *sys_path; ///< pointer to RzPath, contains path prefix of the system
 	struct rz_egg_emit_t *remit;
 	int arch;
 	int endian;
@@ -221,7 +222,7 @@ RZ_API bool rz_egg_patch_num(RzEgg *egg, int off, ut64 val, ut32 bits);
 RZ_API void rz_egg_finalize(RzEgg *egg);
 
 /* rz_egg_Cfile.c */
-RZ_API char *rz_egg_Cfile_parser(const char *file, const char *arch, const char *os, int bits);
+RZ_API char *rz_egg_Cfile_parser(RZ_BORROW RZ_NONNULL RzPath *sys_path, const char *file, const char *arch, const char *os, int bits);
 
 /* lang.c */
 RZ_API char *rz_egg_mkvar(RzEgg *egg, char *out, const char *_str, int delta);

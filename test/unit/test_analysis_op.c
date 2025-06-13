@@ -10,7 +10,7 @@
 	rz_analysis_set_bits(analysis, bits);
 
 bool test_rz_analysis_op_val() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 	RzAnalysisOp op;
 	SWITCH_TO_ARCH_BITS("x86", 64);
 	// mov rax, [rbx+rcx+4]

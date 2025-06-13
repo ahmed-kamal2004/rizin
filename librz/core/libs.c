@@ -89,7 +89,10 @@ static void loadSystemPlugins(RzCore *core, int where) {
 		free(hpd);
 	}
 	if (where & RZ_CORE_LOADLIBS_SYSTEM) {
-		char *spd = rz_path_system(RZ_PLUGINS);
+		char *spd = rz_path_system(core->sys_path, RZ_PLUGINS);
+		if (!spd) {
+			return;
+		}
 		rz_lib_opendir(core->lib, spd, false);
 		free(spd);
 	}

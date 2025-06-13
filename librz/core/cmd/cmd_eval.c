@@ -36,7 +36,7 @@ RZ_API bool rz_core_theme_load(RzCore *core, const char *name) {
 
 	char *tmp = NULL;
 	char *home_themes = rz_path_home_prefix(RZ_THEMES);
-	char *system_themes = rz_path_system(RZ_THEMES);
+	char *system_themes = rz_path_system(core->sys_path, RZ_THEMES);
 	char *extra_themes = rz_path_extra(RZ_THEMES);
 	char *home_file = rz_file_path_join(home_themes, name);
 	char *system_file = rz_file_path_join(system_themes, name);
@@ -116,7 +116,7 @@ RZ_API RZ_OWN RzPVector /*<char *>*/ *rz_core_get_themes(RZ_NONNULL RzCore *core
 		RZ_FREE(path);
 	}
 
-	path = rz_path_system(RZ_THEMES);
+	path = rz_path_system(core->sys_path, RZ_THEMES);
 	if (path) {
 		list_themes_in_path(themes, path);
 		RZ_FREE(path);

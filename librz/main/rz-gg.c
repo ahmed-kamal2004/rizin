@@ -331,10 +331,12 @@ RZ_API int rz_main_rz_gg(int argc, const char **argv) {
 			rz_egg_free(egg);
 			free(sequence);
 			return usage(1);
-		case 'v':
+		case 'v': {
+			size_t print_val = rz_main_version_print(egg->sys_path, "rz-gg");
 			free(sequence);
 			rz_egg_free(egg);
-			return rz_main_version_print("rz-gg");
+			return print_val;
+		}
 		case 'z':
 			show_str = 1;
 			break;

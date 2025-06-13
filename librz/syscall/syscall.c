@@ -100,9 +100,12 @@ RZ_API void rz_sysreg_item_free(RzSysregItem *s) {
 	free(s);
 }
 
-static bool load_sdb(Sdb **db, const char *name) {
-	rz_return_val_if_fail(db, false);
-	char *sdb_path = rz_path_system(RZ_SDB);
+static bool load_sdb(Sdb **db, RZ_BORROW RZ_NONNULL RzPath *sys_path, const char *name) {
+	rz_return_val_if_fail(db && sys_path, false);
+	char *sdb_path = rz_path_system(sys_path, RZ_SDB);
+	if (!sdb_path) {
+		return false;
+	}
 	char *file_name = rz_str_newf("%s.sdb", name);
 	char *file = rz_file_path_join(sdb_path, file_name);
 	free(file_name);
@@ -226,7 +229,8 @@ RZ_API bool rz_sysreg_set_arch(RzSyscall *s, RZ_NONNULL const char *arch, RZ_NON
 }
 
 // TODO: should be renamed to rz_syscall_use();
-RZ_API bool rz_syscall_setup(RzSyscall *s, const char *arch, int bits, const char *cpu, const char *os) {
+RZ_API bool rz_syscall_setup(RzSyscall *s, RZ_BORROW RZ_NONNULL RzPath *sys_path, const char *arch, int bits, const char *cpu, const char *os) {
+	rz_return_val_if_fail(sys_path, false);
 	bool syscall_changed, sysregs_changed;
 
 	if (!os || !*os) {
@@ -262,7 +266,7 @@ RZ_API bool rz_syscall_setup(RzSyscall *s, const char *arch, int bits, const cha
 		char *dbName = rz_str_newf(RZ_JOIN_2_PATHS("syscall", "%s-%s-%d"),
 			os, arch, bits);
 		if (dbName) {
-			if (!load_sdb(&s->db, dbName)) {
+			if (!load_sdb(&s->db, sys_path, dbName)) {
 				sdb_free(s->db);
 				s->db = NULL;
 			}
@@ -271,7 +275,11 @@ RZ_API bool rz_syscall_setup(RzSyscall *s, const char *arch, int bits, const cha
 	}
 
 	if (sysregs_changed) {
-		char *regs_dir = rz_path_system(RZ_SDB_REG);
+		char *regs_dir = rz_path_system(sys_path, RZ_SDB_REG);
+		if (!regs_dir) {
+			free(regs_dir);
+			return false;
+		}
 		rz_sysreg_set_arch(s, arch, regs_dir);
 		free(regs_dir);
 	}

@@ -91,7 +91,7 @@ static bool function_check_invariants(RzAnalysis *analysis) {
 	} while (0)
 
 bool test_rz_analysis_function_relocate() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 	assert_invariants(analysis);
 
 	RzAnalysisFunction *fa = rz_analysis_create_function(analysis, "do_something", 0x1337, RZ_ANALYSIS_FCN_TYPE_NULL);
@@ -117,7 +117,7 @@ bool test_rz_analysis_function_relocate() {
 }
 
 bool test_rz_analysis_function_labels() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	RzAnalysisFunction *f = rz_analysis_create_function(analysis, "do_something", 0x1337, RZ_ANALYSIS_FCN_TYPE_NULL);
 
@@ -325,7 +325,7 @@ bool test_initial_underscore(void) {
 }
 
 bool test_rz_analysis_function_set_type() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 	rz_analysis_use(analysis, "x86");
 	rz_analysis_set_bits(analysis, 32);
 	rz_analysis_cc_set(analysis, "eax sectarian(ecx, edx, stack)");
@@ -434,7 +434,7 @@ bool test_rz_analysis_function_set_type() {
 }
 
 bool test_noreturn_functions_list() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	rz_analysis_noreturn_add(analysis, NULL, 0x800800);
 
@@ -470,7 +470,7 @@ bool test_noreturn_functions_list() {
 }
 
 bool test_analysis_function_rename() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	// we know b does not exist, rename a to b
 	RzAnalysisFunction *a = rz_analysis_create_function(analysis, "a", 0xcafe, RZ_ANALYSIS_FCN_TYPE_FCN);
@@ -488,7 +488,7 @@ bool test_analysis_function_rename() {
 }
 
 bool test_analysis_function_force_rename() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	RzAnalysisFunction *a = rz_analysis_create_function(analysis, "a", 0xcafe, RZ_ANALYSIS_FCN_TYPE_FCN);
 	rz_analysis_create_function(analysis, "b", 0xbabe, RZ_ANALYSIS_FCN_TYPE_FCN);

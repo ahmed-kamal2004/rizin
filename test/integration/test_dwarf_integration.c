@@ -30,7 +30,8 @@ static bool test_parse_dwarf_types(void) {
 	// TODO fix, how to correctly promote binary info to the RzAnalysis in unit tests?
 	rz_analysis_set_cpu(analysis, "x86");
 	rz_analysis_set_bits(analysis, 32);
-	char *types_dir = rz_path_system(RZ_SDB_TYPES);
+	char *types_dir = rz_path_system(core->sys_path, RZ_SDB_TYPES);
+	mu_assert_notnull(types_dir, "couldn't allocate types_dir");
 	rz_type_db_init(analysis->typedb, types_dir, "x86", 32, "linux");
 	free(types_dir);
 
@@ -214,7 +215,8 @@ static bool test_dwarf_function_parsing_rust(void) {
 	// TODO fix, how to correctly promote binary info to the RzAnalysis in unit tests?
 	rz_analysis_set_cpu(analysis, "x86");
 	rz_analysis_set_bits(analysis, 64);
-	char *types_dir = rz_path_system(RZ_SDB_TYPES);
+	char *types_dir = rz_path_system(core->sys_path, RZ_SDB_TYPES);
+	mu_assert_notnull(types_dir, "couldn't allocate types_dir");
 	rz_type_db_init(analysis->typedb, types_dir, "x86", 64, "linux");
 	free(types_dir);
 

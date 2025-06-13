@@ -157,21 +157,6 @@ static void rz_run_help(int v) {
 RZ_API int rz_main_rz_run(int argc, const char **argv) {
 	RzRunProfile *p;
 	int i, ret;
-	if (argc == 1 || !strcmp(argv[1], "-h")) {
-		rz_run_help(0);
-		return 1;
-	}
-	if (!strcmp(argv[1], "-v")) {
-		return rz_main_version_print("rz-run");
-	}
-	if (!strcmp(argv[1], "-t")) {
-		rz_run_help(1);
-		return 0;
-	}
-	if (!strcmp(argv[1], "-l")) {
-		rz_run_help(2);
-		return 0;
-	}
 	const char *file = argv[1];
 	if (!strcmp(file, "-w")) {
 #if __UNIX__
@@ -213,6 +198,31 @@ RZ_API int rz_main_rz_run(int argc, const char **argv) {
 	if (!p) {
 		return 1;
 	}
+	if (argc == 1 || !strcmp(argv[1], "-h")) {
+		rz_run_help(0);
+		ret = 1;
+		goto finish;
+	}
+	if (!strcmp(argv[1], "-v")) {
+		RzPath *sys_path = rz_path_new();
+		if(!sys_path){
+			ret = 1;
+			goto finish;
+		}
+		ret =  rz_main_version_print(sys_path, "rz-run");
+		rz_path_free(sys_path);
+		goto finish;
+	}
+	if (!strcmp(argv[1], "-t")) {
+		rz_run_help(1);
+		ret = 0;
+		goto finish;
+	}
+	if (!strcmp(argv[1], "-l")) {
+		rz_run_help(2);
+		ret = 0;
+		goto finish;
+	}
 	ret = rz_run_config_env(p);
 	if (ret) {
 		printf("error while configuring the environment.\n");
@@ -220,6 +230,7 @@ RZ_API int rz_main_rz_run(int argc, const char **argv) {
 		return 1;
 	}
 	ret = rz_run_start(p);
+finish:
 	rz_run_free(p);
 	return ret;
 }

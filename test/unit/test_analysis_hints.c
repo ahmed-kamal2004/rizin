@@ -62,7 +62,7 @@ bool hint_equals(const RzAnalysisHint *a, const RzAnalysisHint *b) {
 	} while (0)
 
 bool test_rz_analysis_addr_hints() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 	RzAnalysisHint *hint = rz_analysis_hint_get(analysis, 0x1337);
 	assert_hint_eq(hint, &empty_hint);
 	rz_analysis_hint_free(hint);
@@ -221,7 +221,7 @@ bool test_rz_analysis_addr_hints() {
 
 #define RANGED_TEST(name, val, resetval, assert_val) \
 	bool test_rz_analysis_hints_##name() { \
-		RzAnalysis *analysis = rz_analysis_new(); \
+		RzAnalysis *analysis = rz_analysis_new(NULL); \
 \
 		ut64 hint_addr = 0xdead; \
 		assert_val(rz_analysis_hint_##name##_at(analysis, 0x1337, &hint_addr), resetval, "no " #name ""); \

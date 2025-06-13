@@ -74,7 +74,7 @@ Sdb *blocks_ref_db() {
 }
 
 bool test_analysis_block_save() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	rz_analysis_create_block(analysis, 1337, 42);
 
@@ -107,7 +107,7 @@ bool test_analysis_block_save() {
 }
 
 bool test_analysis_block_load() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	Sdb *db = blocks_ref_db();
 	bool succ = rz_serialize_analysis_blocks_load(db, analysis, NULL);
@@ -161,7 +161,7 @@ bool test_analysis_block_load() {
 	mu_assert_ptreq(b->cmpreg, rz_str_constpool_get(&analysis->constpool, "rax"), "cmpreg from pool");
 
 	rz_analysis_free(analysis);
-	analysis = rz_analysis_new();
+	analysis = rz_analysis_new(NULL);
 	// This could lead to a buffer overflow if unchecked:
 	sdb_set(db, "0x539", "{\"size\":42,\"ninstr\":4,\"op_pos\":[4,7]}");
 	succ = rz_serialize_analysis_blocks_load(db, analysis, NULL);
@@ -191,7 +191,7 @@ Sdb *functions_ref_db() {
 }
 
 bool test_analysis_function_save() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	RzAnalysisBlock *ba = rz_analysis_create_block(analysis, 1337, 42);
 	RzAnalysisBlock *bb = rz_analysis_create_block(analysis, 1234, 32);
@@ -243,7 +243,7 @@ bool test_analysis_function_save() {
 }
 
 bool test_analysis_function_load() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	Sdb *db = functions_ref_db();
 
@@ -377,7 +377,7 @@ static Sdb *noreturn_ref_db() {
 }
 
 bool test_analysis_function_noreturn_save() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	rz_analysis_noreturn_add(analysis, NULL, 0x800800);
 	bool has = sdb_bool_get(analysis->sdb_noret, "addr.800800.noreturn");
@@ -402,7 +402,7 @@ bool test_analysis_function_noreturn_save() {
 }
 
 bool test_analysis_function_noreturn_load() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 	Sdb *db = noreturn_ref_db();
 	bool succ = rz_serialize_analysis_function_noreturn_load(db, analysis, NULL);
 	sdb_free(db);
@@ -457,7 +457,7 @@ static RzAnalysisVarStorage *composite_stor(RzAnalysisVarStorage *stor) {
 }
 
 bool test_analysis_var_save() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 	rz_analysis_use(analysis, "x86");
 	rz_analysis_set_bits(analysis, 64);
 	const char *types_dir = TEST_BUILD_TYPES_DIR;
@@ -525,7 +525,7 @@ bool test_analysis_var_save() {
 }
 
 bool test_analysis_var_load() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 	rz_analysis_use(analysis, "x86");
 	rz_analysis_set_bits(analysis, 64);
 	const char *types_dir = TEST_BUILD_TYPES_DIR;
@@ -640,7 +640,7 @@ Sdb *xrefs_ref_db() {
 }
 
 bool test_analysis_xrefs_save() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	rz_analysis_xrefs_set(analysis, 0x1337, 4242, RZ_ANALYSIS_XREF_TYPE_NULL);
 	rz_analysis_xrefs_set(analysis, 0x1337, 4243, RZ_ANALYSIS_XREF_TYPE_CODE);
@@ -660,7 +660,7 @@ bool test_analysis_xrefs_save() {
 }
 
 bool test_analysis_xrefs_load() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	Sdb *db = xrefs_ref_db();
 
@@ -742,7 +742,7 @@ Sdb *meta_ref_db() {
 }
 
 bool test_analysis_meta_save() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	rz_meta_set(analysis, RZ_META_TYPE_DATA, 0x1337, 0x10, NULL);
 	rz_meta_set(analysis, RZ_META_TYPE_CODE, 0x1337, 0x11, NULL);
@@ -778,7 +778,7 @@ bool test_analysis_meta_save() {
 }
 
 bool test_analysis_meta_load() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	Sdb *db = meta_ref_db();
 
@@ -1004,7 +1004,7 @@ static int all_optypes[] = {
 #define ALL_OPTYPES_COUNT (sizeof(all_optypes) / sizeof(int))
 
 bool test_analysis_hints_save() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	rz_analysis_hint_set_arch(analysis, 0x100, "arm");
 	rz_analysis_hint_set_bits(analysis, 0x100, 16);
@@ -1059,7 +1059,7 @@ static bool bits_hints_count_cb(ut64 addr, int bits, void *user) {
 }
 
 bool test_analysis_hints_load() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	Sdb *db = hints_ref_db();
 
@@ -1145,7 +1145,7 @@ Sdb *classes_ref_db() {
 }
 
 bool test_analysis_classes_save() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	rz_analysis_class_create(analysis, "Aeropause");
 	RzAnalysisMethod crystal = {
@@ -1198,7 +1198,7 @@ bool test_analysis_classes_save() {
 }
 
 bool test_analysis_classes_load() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 	Sdb *db = classes_ref_db();
 	bool succ = rz_serialize_analysis_classes_load(db, analysis, NULL);
 	sdb_free(db);
@@ -1269,7 +1269,7 @@ static Sdb *cc_ref_db() {
 }
 
 bool test_analysis_cc_save() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	rz_analysis_cc_set(analysis, "rax sectarian(rdx, rcx, stack)");
 	rz_analysis_cc_set_self(analysis, "sectarian", "rsi");
@@ -1287,7 +1287,7 @@ bool test_analysis_cc_save() {
 }
 
 bool test_analysis_cc_load() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 	Sdb *db = cc_ref_db();
 	bool succ = rz_serialize_analysis_cc_load(db, analysis, NULL);
 	sdb_free(db);
@@ -1362,7 +1362,7 @@ Sdb *analysis_ref_db() {
 }
 
 bool test_analysis_save() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	RzAnalysisBlock *ba = rz_analysis_create_block(analysis, 1337, 42);
 	RzAnalysisBlock *bb = rz_analysis_create_block(analysis, 1234, 32);
@@ -1421,7 +1421,7 @@ bool test_analysis_save() {
 }
 
 bool test_analysis_load() {
-	RzAnalysis *analysis = rz_analysis_new();
+	RzAnalysis *analysis = rz_analysis_new(NULL);
 
 	const char *types_dir = TEST_BUILD_TYPES_DIR;
 	rz_type_db_init(analysis->typedb, types_dir, "x86", 64, "linux");
