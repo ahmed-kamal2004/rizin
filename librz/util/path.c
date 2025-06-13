@@ -89,7 +89,7 @@ RZ_API void rz_path_set_prefix(RZ_BORROW RZ_NONNULL RzPath *sys_path, RZ_NONNULL
  * provided via \p sys_path->prefix
  * \param sys_path RzPath* contains install prefix and mutex.
  */
-RZ_API const char *rz_path_prefix(RZ_NONNULL const RzPath *sys_path) {
+RZ_API const char *rz_path_prefix(RZ_BORROW RZ_NONNULL RzPath *sys_path) {
 #if RZ_IS_PORTABLE
 	rz_return_val_if_fail(sys_path && sys_path->prefix_mutex, RZ_PREFIX);
 	rz_th_lock_enter(sys_path->prefix_mutex);
@@ -110,7 +110,7 @@ RZ_API const char *rz_path_prefix(RZ_NONNULL const RzPath *sys_path) {
 /**
  * \brief Return the directory where include files are placed
  */
-RZ_API RZ_OWN char *rz_path_incdir(RZ_NULLABLE const RzPath *sys_path) {
+RZ_API RZ_OWN char *rz_path_incdir(RZ_BORROW RZ_NULLABLE RzPath *sys_path) {
 	const char *prefix = rz_path_prefix(sys_path);
 	return rz_file_path_join(prefix, RZ_INCDIR);
 }
@@ -118,7 +118,7 @@ RZ_API RZ_OWN char *rz_path_incdir(RZ_NULLABLE const RzPath *sys_path) {
 /**
  * \brief Return the directory where the Rizin binaries are placed
  */
-RZ_API RZ_OWN char *rz_path_bindir(RZ_NULLABLE const RzPath *sys_path) {
+RZ_API RZ_OWN char *rz_path_bindir(RZ_BORROW RZ_NULLABLE RzPath *sys_path) {
 	const char *prefix = rz_path_prefix(sys_path);
 	return rz_file_path_join(prefix, RZ_BINDIR);
 }
@@ -126,7 +126,7 @@ RZ_API RZ_OWN char *rz_path_bindir(RZ_NULLABLE const RzPath *sys_path) {
 /**
  * \brief Return the directory where the Rizin libraries are placed
  */
-RZ_API RZ_OWN char *rz_path_libdir(RZ_NULLABLE const RzPath *sys_path) {
+RZ_API RZ_OWN char *rz_path_libdir(RZ_BORROW RZ_NULLABLE RzPath *sys_path) {
 	const char *prefix = rz_path_prefix(sys_path);
 	return rz_file_path_join(prefix, RZ_LIBDIR);
 }
@@ -134,7 +134,7 @@ RZ_API RZ_OWN char *rz_path_libdir(RZ_NULLABLE const RzPath *sys_path) {
 /**
  * \brief Return the full system path of the given subpath \p path
  */
-RZ_API RZ_OWN char *rz_path_system(RZ_NULLABLE const RzPath *sys_path, RZ_NULLABLE const char *path) {
+RZ_API RZ_OWN char *rz_path_system(RZ_BORROW RZ_NULLABLE RzPath *sys_path, RZ_NULLABLE const char *path) {
 	const char *prefix = rz_path_prefix(sys_path);
 	return rz_file_path_join(prefix, path);
 }
@@ -156,7 +156,7 @@ RZ_API RZ_OWN char *rz_path_extra(RZ_NULLABLE const char *path) {
  * \brief Return the system path of the global rizinrc file
  * \param sys_path RzPath* contains mutex and install prefix.
  */
-RZ_API RZ_OWN char *rz_path_system_rc(RZ_NULLABLE const RzPath *sys_path) {
+RZ_API RZ_OWN char *rz_path_system_rc(RZ_BORROW RZ_NULLABLE RzPath *sys_path) {
 	const char *prefix = rz_path_prefix(sys_path);
 	return rz_file_path_join(prefix, RZ_GLOBAL_RC);
 }
