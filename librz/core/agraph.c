@@ -83,13 +83,17 @@ struct layer_t {
 	int gap;
 };
 
-struct agraph_refresh_data {
+typedef struct agraph_context_t {
+	int display_mode; ///< Integer indicating display mode: 0 = raw (no pseudo, no ESIL), 1 = pseudo-code enabled, 2 = ESIL.
+	int scroll_position; ///< Integer representing the vertical scroll position of the Graph in "RZ_AGRAPH_MODE_MINI".
+	int mouse_mode; ///< Integer identifying mouse mode: one of "canvas-y", "canvas-x", "node-y", "node-x", or NULL.
+	bool graph_cursor; ///< Boolean indicating whether the graph cursor is active.
+	bool follow_offset;
+	int fs;
 	RzCore *core;
 	RzAGraph *g;
 	RzAnalysisFunction **fcn;
-	bool follow_offset;
-	int fs;
-};
+} AGraphContext;
 
 struct rz_agraph_location {
 	int x;
@@ -193,7 +197,7 @@ static void agraph_node_free(RzANode *n) {
 	free(n);
 }
 
-static int agraph_refresh(struct agraph_refresh_data *grd);
+static int agraph_refresh(AGraphContext *grp_ctx);
 
 static void update_node_dimension(const RzGraph /*<RzANode *>*/ *g, int is_mini, int zoom, int edgemode, bool callgraph, int layout) {
 	const RzList *nodes = rz_graph_get_nodes(g);
@@ -255,7 +259,7 @@ static void append_shortcut(const RzAGraph *g, char *title, char *nodetitle, int
 	}
 }
 
-static void mini_RzANode_print(const RzAGraph *g, const RzANode *n, int cur, bool details) {
+static void mini_RzANode_print(const RzAGraph *g, const RzANode *n, const AGraphContext *grp_ctx, int cur, bool details) {
 	char title[TITLE_LEN];
 	int x, delta_x = 0;
 
@@ -279,8 +283,8 @@ static void mini_RzANode_print(const RzAGraph *g, const RzANode *n, int cur, boo
 			snprintf(title, sizeof(title) - 1,
 				"[ %s ]", n->title);
 			W(title);
-			if (discroll > 0) {
-				char *body = rz_str_ansi_crop(n->body, 0, discroll, -1, -1);
+			if (grp_ctx->scroll_position > 0) {
+				char *body = rz_str_ansi_crop(n->body, 0, grp_ctx->scroll_position, -1, -1);
 				(void)G(-g->can->sx, -g->can->sy + 3);
 				W(body);
 				free(body);
@@ -2752,20 +2756,20 @@ static void agraph_update_seek(RzAGraph *g, RzANode *n, int force) {
 	g->force_update_seek = force;
 }
 
-static void agraph_print_node(const RzAGraph *g, RzANode *n) {
+static void agraph_print_node(const RzAGraph *g, RzANode *n, const AGraphContext *grp_ctx) {
 	if (n->is_dummy) {
 		return;
 	}
 	const int cur = g->curnode && get_anode(g->curnode) == n;
 	const bool isMini = is_mini(g);
 	if (isMini || n->is_mini) {
-		mini_RzANode_print(g, n, cur, isMini);
+		mini_RzANode_print(g, n, grp_ctx, cur, isMini);
 	} else {
 		normal_RzANode_print(g, n, cur);
 	}
 }
 
-static void agraph_print_nodes(const RzAGraph *g) {
+static void agraph_print_nodes(const RzAGraph *g, const AGraphContext *grp_ctx) {
 	const RzList *nodes = rz_graph_get_nodes(g->graph);
 	RzGraphNode *gn;
 	RzListIter *it;
@@ -2776,13 +2780,13 @@ static void agraph_print_nodes(const RzAGraph *g) {
 			break;
 		}
 		if (gn != g->curnode) {
-			agraph_print_node(g, n);
+			agraph_print_node(g, n, grp_ctx);
 		}
 	}
 
 	/* draw current node now to make it appear on top */
 	if (g->curnode) {
-		agraph_print_node(g, get_anode(g->curnode));
+		agraph_print_node(g, get_anode(g->curnode), grp_ctx);
 	}
 }
 
@@ -3318,12 +3322,12 @@ static void agraph_prev_node(RzAGraph *g) {
 	agraph_update_seek(g, get_anode(g->curnode), false);
 }
 
-static void agraph_update_title(RzCore *core, RzAGraph *g, RzAnalysisFunction *fcn) {
+static void agraph_update_title(RzCore *core, RzAGraph *g, RzAnalysisFunction *fcn, const AGraphContext *grp_ctx) {
 	RzANode *a = get_anode(g->curnode);
 	char *sig = rz_core_analysis_function_signature(core, RZ_OUTPUT_MODE_STANDARD, NULL);
 	char *new_title = rz_str_newf(
 		"%s[0x%08" PFMT64x "]> %s # %s ",
-		graphCursor ? "(cursor)" : "",
+		grp_ctx->graph_cursor ? "(cursor)" : "",
 		fcn->addr, a ? a->title : "", sig);
 	rz_agraph_set_title(g, new_title);
 	free(new_title);
@@ -3332,7 +3336,7 @@ static void agraph_update_title(RzCore *core, RzAGraph *g, RzAnalysisFunction *f
 
 /* look for any change in the state of the graph
  * and update what's necessary */
-static bool check_changes(RzAGraph *g, int is_interactive, RzCore *core, RzAnalysisFunction *fcn) {
+static bool check_changes(RzAGraph *g, int is_interactive, RzCore *core, RzAnalysisFunction *fcn, const AGraphContext *grp_ctx) {
 	int oldpos[2] = {
 		0, 0
 	};
@@ -3385,7 +3389,7 @@ static bool check_changes(RzAGraph *g, int is_interactive, RzCore *core, RzAnaly
 		}
 	}
 	if (fcn) {
-		agraph_update_title(core, g, fcn);
+		agraph_update_title(core, g, fcn, grp_ctx);
 	}
 	if (oldpos[0] || oldpos[1]) {
 		g->can->sx = oldpos[0];
@@ -3399,9 +3403,9 @@ static bool check_changes(RzAGraph *g, int is_interactive, RzCore *core, RzAnaly
 	return true;
 }
 
-static int agraph_print(RzAGraph *g, int is_interactive, RzCore *core, RzAnalysisFunction *fcn) {
+static int agraph_print(RzAGraph *g, int is_interactive, RzCore *core, RzAnalysisFunction *fcn, const AGraphContext *grp_ctx) {
 	int h, w = rz_cons_get_size(&h);
-	bool ret = check_changes(g, is_interactive, core, fcn);
+	bool ret = check_changes(g, is_interactive, core, fcn, grp_ctx);
 	if (!ret) {
 		return false;
 	}
@@ -3444,7 +3448,7 @@ static int agraph_print(RzAGraph *g, int is_interactive, RzCore *core, RzAnalysi
 	}
 
 	agraph_print_edges(g);
-	agraph_print_nodes(g);
+	agraph_print_nodes(g, grp_ctx);
 	if (g->title && *g->title) {
 		g->can->sy--;
 	}
@@ -3488,18 +3492,19 @@ static void check_function_modified(RzCore *core, RzAnalysisFunction *fcn) {
 	}
 }
 
-static int agraph_refresh(struct agraph_refresh_data *grd) {
-	if (!grd) {
+static int agraph_refresh(AGraphContext *grp_ctx) {
+	if (!grp_ctx) {
 		return 0;
 	}
-	rz_cons_singleton()->event_data = grd;
-	RzCore *core = grd->core;
-	RzAGraph *g = grd->g;
+
+	rz_cons_singleton()->event_data = grp_ctx;
+	RzCore *core = grp_ctx->core;
+	RzAGraph *g = grp_ctx->g;
 	RzAnalysisFunction *f = NULL;
-	RzAnalysisFunction **fcn = grd->fcn;
+	RzAnalysisFunction **fcn = grp_ctx->fcn;
 
 	if (!fcn) {
-		return agraph_print(g, grd->fs, core, NULL);
+		return agraph_print(g, grp_ctx->fs, core, NULL, grp_ctx);
 	}
 
 	// allow to change the current function during debugging
@@ -3519,7 +3524,7 @@ static int agraph_refresh(struct agraph_refresh_data *grd) {
 		g->is_instep = false;
 	}
 
-	if (grd->follow_offset) {
+	if (grp_ctx->follow_offset) {
 		if (rz_io_is_valid_offset(core->io, core->offset, 0)) {
 			f = rz_analysis_get_fcn_in(core->analysis, core->offset, 0);
 			if (!f) {
@@ -3545,7 +3550,7 @@ static int agraph_refresh(struct agraph_refresh_data *grd) {
 		}
 	}
 
-	int res = agraph_print(g, grd->fs, core, *fcn);
+	int res = agraph_print(g, grp_ctx->fs, core, *fcn, grp_ctx);
 
 	if (rz_config_get_i(core->config, "scr.scrollbar")) {
 		rz_core_visual_scrollbar(core);
@@ -3554,12 +3559,12 @@ static int agraph_refresh(struct agraph_refresh_data *grd) {
 	return res;
 }
 
-static void agraph_refresh_oneshot(struct agraph_refresh_data *grd) {
-	rz_core_task_enqueue_oneshot(&grd->core->tasks, (RzCoreTaskOneShot)agraph_refresh, grd);
+static void agraph_refresh_oneshot(AGraphContext *grp_ctx) {
+	rz_core_task_enqueue_oneshot(&grp_ctx->core->tasks, (RzCoreTaskOneShot)agraph_refresh, grp_ctx);
 }
 
-static void agraph_set_need_reload_nodes(struct agraph_refresh_data *grd) {
-	grd->g->need_reload_nodes = true;
+static void agraph_set_need_reload_nodes(AGraphContext *grp_ctx) {
+	grp_ctx->g->need_reload_nodes = true;
 }
 
 static void agraph_toggle_speed(RzAGraph *g, RzCore *core) {
@@ -3592,7 +3597,7 @@ static void agraph_init(RzAGraph *g) {
 	rz_vector_init(&g->ghits.word_list, sizeof(struct rz_agraph_location), NULL, NULL);
 }
 
-static void graphNodeMove(RzAGraph *g, int dir, int speed) {
+static void graphNodeMove(RzAGraph *g, AGraphContext *grp_ctx, int dir, int speed) {
 	int delta = (dir == 'k') ? -1 : 1;
 	if (dir == 'H') {
 		return;
@@ -3600,7 +3605,7 @@ static void graphNodeMove(RzAGraph *g, int dir, int speed) {
 	if (dir == 'h' || dir == 'l') {
 		// horizontal scroll
 		if (is_mini(g)) {
-			discroll = 0;
+			grp_ctx->scroll_position = 0;
 		} else {
 			int delta = (dir == 'l') ? 1 : -1;
 			move_current_node(g, speed * delta, 0);
@@ -3610,7 +3615,7 @@ static void graphNodeMove(RzAGraph *g, int dir, int speed) {
 	RzCore *core = NULL;
 	// vertical scroll
 	if (is_mini(g)) {
-		discroll += (delta * speed);
+		grp_ctx->scroll_position += (delta * speed);
 	} else if (g->is_dis) {
 		rz_core_seek_opcode(core, (delta * 4) * speed, false);
 	} else {
@@ -3637,13 +3642,15 @@ static void agraph_sdb_init(const RzAGraph *g) {
 RZ_API Sdb *rz_agraph_get_sdb(RzAGraph *g) {
 	g->need_update_dim = true;
 	g->need_set_layout = true;
-	(void)check_changes(g, false, NULL, NULL);
+	AGraphContext grp_ctx = { 0 };
+	(void)check_changes(g, false, NULL, NULL, &grp_ctx);
 	// remove_dummy_nodes (g);
 	return g->db;
 }
 
 RZ_API void rz_agraph_print(RzAGraph *g) {
-	agraph_print(g, false, NULL, NULL);
+	AGraphContext grp_ctx = { 0 };
+	agraph_print(g, false, NULL, NULL, &grp_ctx);
 	if (g->graph->n_nodes > 0) {
 		rz_cons_newline();
 	}
@@ -3959,25 +3966,6 @@ RZ_API RzAGraph *rz_agraph_new(RzConsCanvas *can) {
 	return g;
 }
 
-RZ_OWN RzAGraphContext *rz_agraph_context_new(void) {
-	RzAGraphContext *gtx = RZ_NEW0(RzAGraphContext);
-	if (!gtx) {
-		return NULL;
-	}
-	gtx->discroll = 0;
-	gtx->disMode = 0;
-	gtx->mouseMode = 0;
-	gtx->graphCursor = false;
-	return gtx;
-}
-
-void rz_agraph_context_free(RZ_OWN RZ_NULLABLE RzAGraphContext *gcx) {
-	if (!gcx) {
-		return;
-	}
-	free(gcx);
-}
-
 static void visual_offset(RzAGraph *g, RzCore *core) {
 	char buf[256];
 	int rows;
@@ -4072,8 +4060,8 @@ static void graph_breakpoint(RzCore *core) {
 static void graph_continue(RzCore *core) {
 	rz_core_debug_continue(core);
 }
-static void applyDisMode(RzCore *core) {
-	switch (disMode) {
+static void applyDisMode(RzCore *core, const AGraphContext *grp_ctx) {
+	switch (grp_ctx->display_mode) {
 	case 0:
 		rz_config_set(core->config, "asm.pseudo", "false");
 		rz_config_set(core->config, "asm.esil", "false");
@@ -4168,7 +4156,6 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 	int o_vmode = core->vmode;
 	int exit_graph = false, is_error = false;
 	int update_seek = false;
-	struct agraph_refresh_data *grd;
 	int okey, key;
 	RzAnalysisFunction *fcn = NULL;
 	const char *key_s;
@@ -4179,6 +4166,7 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 	int movspeed;
 	int ret, invscroll;
 	RzConfigHold *hc = rz_config_hold_new(core->config);
+	AGraphContext grp_ctx = { 0 };
 	if (!hc) {
 		return false;
 	}
@@ -4240,20 +4228,12 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 	core->is_asmqjmps_letter = true;
 	core->vmode = true;
 
-	grd = RZ_NEW0(struct agraph_refresh_data);
-	if (!grd) {
-		rz_cons_canvas_free(can);
-		rz_config_hold_restore(hc);
-		rz_config_hold_free(hc);
-		rz_agraph_free(g);
-		return false;
-	}
-	grd->g = g;
-	grd->fs = is_interactive == 1;
-	grd->core = core;
-	grd->follow_offset = _fcn == NULL;
-	grd->fcn = fcn != NULL ? &fcn : NULL;
-	ret = agraph_refresh(grd);
+	grp_ctx.g = g;
+	grp_ctx.fs = is_interactive == 1;
+	grp_ctx.core = core;
+	grp_ctx.follow_offset = _fcn == NULL;
+	grp_ctx.fcn = fcn != NULL ? &fcn : NULL;
+	ret = agraph_refresh(&grp_ctx);
 	if (!ret || is_interactive != 1) {
 		rz_cons_newline();
 		exit_graph = true;
@@ -4261,7 +4241,7 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 	}
 
 	core->cons->event_resize = NULL; // avoid running old event with new data
-	core->cons->event_data = grd;
+	core->cons->event_data = &grp_ctx;
 	core->cons->event_resize = (RzConsEvent)agraph_refresh_oneshot;
 
 	rz_cons_break_push(NULL, NULL);
@@ -4269,7 +4249,7 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 	while (!exit_graph && !is_error && !rz_cons_is_breaked()) {
 		rz_cons_get_size(&h);
 		invscroll = rz_config_get_i(core->config, "graph.invscroll");
-		ret = agraph_refresh(grd);
+		ret = agraph_refresh(&grp_ctx);
 
 		if (!ret) {
 			is_error = true;
@@ -4286,7 +4266,7 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 			switch (key) {
 			case 'j':
 			case 'k':
-				switch (mousemode) {
+				switch (grp_ctx.mouse_mode) {
 				case 0: break;
 				case 1: key = key == 'k' ? 'h' : 'l'; break;
 				case 2: key = key == 'k' ? 'J' : 'K'; break;
@@ -4332,7 +4312,7 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 			g->need_update_dim = true;
 			g->need_set_layout = true;
 		}
-			discroll = 0;
+			grp_ctx.scroll_position = 0;
 			agraph_update_seek(g, get_anode(g->curnode), true);
 			break;
 		case 'e': {
@@ -4421,7 +4401,7 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 			} else {
 				graph_single_step_in(core, g);
 			}
-			discroll = 0;
+			grp_ctx.scroll_position = 0;
 			agraph_update_seek(g, get_anode(g->curnode), true);
 			break;
 		case 'S':
@@ -4447,7 +4427,7 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 		}
 		case 9: // tab
 			agraph_next_node(g);
-			discroll = 0;
+			grp_ctx.scroll_position = 0;
 			break;
 		case '?':
 			rz_cons_clear00();
@@ -4517,7 +4497,7 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 				g->mode = RZ_AGRAPH_MODE_COMMENTS;
 			}
 			g->need_reload_nodes = true;
-			discroll = 0;
+			grp_ctx.scroll_position = 0;
 			agraph_update_seek(g, get_anode(g->curnode), true);
 			// rz_config_toggle (core->config, "graph.hints");
 			break;
@@ -4546,8 +4526,8 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 			if (!fcn) {
 				break;
 			}
-			disMode = (disMode + 1) % 3;
-			applyDisMode(core);
+			grp_ctx.display_mode = (grp_ctx.display_mode + 1) % 3;
+			applyDisMode(core, &grp_ctx);
 			g->need_reload_nodes = true;
 			get_bbupdate(g, core, fcn);
 			break;
@@ -4627,15 +4607,15 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 			rotateColor(core);
 			break;
 		case 'm':
-			mousemode++;
-			if (!mousemodes[mousemode]) {
-				mousemode = 0;
+			grp_ctx.mouse_mode++;
+			if (!mousemodes[grp_ctx.mouse_mode]) {
+				grp_ctx.mouse_mode = 0;
 			}
 			break;
 		case 'M':
-			mousemode--;
-			if (mousemode < 0) {
-				mousemode = 3;
+			grp_ctx.mouse_mode--;
+			if (grp_ctx.mouse_mode < 0) {
+				grp_ctx.mouse_mode = 3;
 			}
 			break;
 		case '(': {
@@ -4676,7 +4656,7 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 			break;
 		case 'z':
 			agraph_toggle_mini(g);
-			discroll = 0;
+			grp_ctx.scroll_position = 0;
 			agraph_update_seek(g, get_anode(g->curnode), true);
 			break;
 		case 'v':
@@ -4684,25 +4664,25 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 			break;
 		case 'J':
 			// copypaste from 'j'
-			if (graphCursor) {
+			if (grp_ctx.graph_cursor) {
 				int speed = (okey == 27) ? PAGEKEY_SPEED : movspeed;
-				graphNodeMove(g, 'j', speed * 2);
+				graphNodeMove(g, &grp_ctx, 'j', speed * 2);
 			} else {
 				can->sy -= (5 * movspeed) * (invscroll ? -1 : 1);
 			}
 			break;
 		case 'K':
-			if (graphCursor) {
+			if (grp_ctx.graph_cursor) {
 				int speed = (okey == 27) ? PAGEKEY_SPEED : movspeed;
-				graphNodeMove(g, 'k', speed * 2);
+				graphNodeMove(g, &grp_ctx, 'k', speed * 2);
 			} else {
 				can->sy += (5 * movspeed) * (invscroll ? -1 : 1);
 			}
 			break;
 		case 'H':
-			if (graphCursor) {
+			if (grp_ctx.graph_cursor) {
 				// move node canvas faster
-				graphNodeMove(g, 'h', movspeed * 2);
+				graphNodeMove(g, &grp_ctx, 'h', movspeed * 2);
 			} else {
 				// scroll canvas faster
 				if (okey == 27) {
@@ -4715,22 +4695,22 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 			}
 			break;
 		case 'L':
-			if (graphCursor) {
-				graphNodeMove(g, 'l', movspeed * 2);
+			if (grp_ctx.graph_cursor) {
+				graphNodeMove(g, &grp_ctx, 'l', movspeed * 2);
 			} else {
 				can->sx -= (5 * movspeed) * (invscroll ? -1 : 1);
 			}
 			break;
 		case 'c':
-			graphCursor = !graphCursor;
+			grp_ctx.graph_cursor = !grp_ctx.graph_cursor;
 			break;
 		case 'j':
 			if (g->is_dis) {
 				rz_core_seek_opcode(core, 1, false);
 			} else {
-				if (graphCursor) {
+				if (grp_ctx.graph_cursor) {
 					int speed = (okey == 27) ? PAGEKEY_SPEED : movspeed;
-					graphNodeMove(g, 'j', speed);
+					graphNodeMove(g, &grp_ctx, 'j', speed);
 				} else {
 					// scroll canvas
 					can->sy -= movspeed * (invscroll ? -1 : 1);
@@ -4741,9 +4721,9 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 			if (g->is_dis) {
 				rz_core_seek_opcode(core, -1, false);
 			} else {
-				if (graphCursor) {
+				if (grp_ctx.graph_cursor) {
 					int speed = (okey == 27) ? PAGEKEY_SPEED : movspeed;
-					graphNodeMove(g, 'k', speed);
+					graphNodeMove(g, &grp_ctx, 'k', speed);
 				} else {
 					// scroll canvas
 					can->sy += movspeed * (invscroll ? -1 : 1);
@@ -4751,17 +4731,17 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 			}
 			break;
 		case 'l':
-			if (graphCursor) {
+			if (grp_ctx.graph_cursor) {
 				int speed = (okey == 27) ? PAGEKEY_SPEED : movspeed;
-				graphNodeMove(g, 'l', speed);
+				graphNodeMove(g, &grp_ctx, 'l', speed);
 			} else {
 				can->sx -= movspeed * (invscroll ? -1 : 1);
 			}
 			break;
 		case 'h':
-			if (graphCursor) {
+			if (grp_ctx.graph_cursor) {
 				int speed = (okey == 27) ? PAGEKEY_SPEED : movspeed;
-				graphNodeMove(g, 'h', speed);
+				graphNodeMove(g, &grp_ctx, 'h', speed);
 			} else {
 				can->sx += movspeed * (invscroll ? -1 : 1);
 			}
@@ -4780,7 +4760,7 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 			agraph_update_seek(g, get_anode(g->curnode), true);
 			break;
 		case '.':
-			discroll = 0;
+			grp_ctx.scroll_position = 0;
 			agraph_update_seek(g, get_anode(g->curnode), true);
 			break;
 		case 'i':
@@ -4946,7 +4926,6 @@ RZ_IPI int rz_core_visual_graph(RzCore *core, RzAGraph *g, RzAnalysisFunction *_
 	core->is_asmqjmps_letter = o_asmqjmps_letter;
 	core->keep_asmqjmps = false;
 
-	free(grd);
 	if (graph_allocated) {
 		rz_agraph_free(g);
 	} else {
