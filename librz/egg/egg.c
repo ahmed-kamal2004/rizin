@@ -61,6 +61,7 @@ RZ_API RzEgg *rz_egg_new(void) {
 		goto beach;
 	}
 	egg->remit = &emit_x86;
+	egg->remit->init(egg);
 	egg->syscall = rz_syscall_new();
 	if (!egg->syscall) {
 		goto beach;
@@ -112,6 +113,7 @@ RZ_API void rz_egg_free(RzEgg *egg) {
 	if (!egg) {
 		return;
 	}
+	egg->remit->fini(egg);
 	rz_path_free(egg->sys_path);
 	rz_buf_free(egg->src);
 	rz_buf_free(egg->buf);

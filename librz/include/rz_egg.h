@@ -142,6 +142,7 @@ typedef struct rz_egg_emit_t {
 	// const char *syscall_body;
 	const char *(*regs)(RzEgg *egg, int idx);
 	void (*init)(RzEgg *egg);
+	void (*fini)(RzEgg *egg);
 	void (*call)(RzEgg *egg, const char *addr, int ptr);
 	void (*jmp)(RzEgg *egg, const char *addr, int ptr);
 	// void (*sc)(int num);
@@ -164,6 +165,7 @@ typedef struct rz_egg_emit_t {
 	void (*branch)(RzEgg *egg, char *b, char *g, char *e, char *n, int sz, const char *dst);
 	void (*mathop)(RzEgg *egg, int ch, int sz, int type, const char *eq, const char *p);
 	void (*get_while_end)(RzEgg *egg, char *out, const char *ctxpush, const char *label);
+	void *emit_data; ///< Holds the data/args of each emit type architecture.
 } RzEggEmit;
 
 /**
