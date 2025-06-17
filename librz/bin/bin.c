@@ -360,6 +360,8 @@ RZ_IPI RzBinPlugin *rz_bin_get_binplugin_by_name(RzBin *bin, const char *name) {
 	bool found = false;
 	RzBinPlugin *plugin = ht_sp_find(bin->plugins, name, &found);
 	if (found) {
+		plugin->fini(bin->user);
+		plugin->init(&bin->user);
 		return plugin;
 	}
 	return NULL;
@@ -375,6 +377,8 @@ RZ_API RzBinPlugin *rz_bin_get_binplugin_by_buffer(RzBin *bin, RzBuffer *buf) {
 		if (plugin->check_buffer) {
 			if (plugin->check_buffer(buf)) {
 				rz_iterator_free(it);
+				plugin->fini(bin->user);
+				plugin->init(&bin->user);
 				return plugin;
 			}
 		}
@@ -396,6 +400,8 @@ RZ_IPI RzBinPlugin *rz_bin_get_binplugin_by_filename(RzBin *bin) {
 		if (plugin->check_filename) {
 			if (plugin->check_filename(filename)) {
 				rz_iterator_free(it);
+				plugin->fini(bin->user);
+				plugin->init(&bin->user);
 				return plugin;
 			}
 		}

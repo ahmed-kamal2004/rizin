@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 
 #include <rz_bin.h>
+#include "sms/sms.h"
 
 typedef struct gen_hdr {
 	ut8 HeaderID[8];
@@ -34,6 +35,7 @@ static bool check_buffer(RzBuffer *b) {
 }
 
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *buf, Sdb *sdb) {
+	SmsBinContext *sms_bin_ctx = bf->plugin_data;
 	return check_buffer(buf);
 }
 
@@ -117,7 +119,9 @@ RzBinPlugin rz_bin_plugin_sms = {
 	.check_buffer = &check_buffer,
 	.info = &info,
 	.strings = &strings,
-	.strfilter = 'U'
+	.strfilter = 'U',
+	.init=&sms_bin_init,
+	.fini=&sms_bin_fini,
 };
 
 #ifndef RZ_PLUGIN_INCORE
