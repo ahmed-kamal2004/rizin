@@ -521,6 +521,7 @@ RzEggEmit EMIT_NAME = {
 	.arch = RZ_ARCH,
 	.size = RZ_SZ,
 	.init = emit_init,
+	.fini = NULL,
 	.jmp = emit_jmp,
 	.call = emit_call,
 	.equ = emit_equ,

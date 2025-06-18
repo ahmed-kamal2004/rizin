@@ -35,10 +35,7 @@ static void emit_init(RzEgg *egg) {
 }
 
 static void emit_fini(RzEgg *egg) {
-	if (!egg) {
-		return;
-	}
-	if (egg->remit->emit_data) {
+	if (!egg->remit->emit_data) {
 		return;
 	}
 	EmitArmArg *emit_arm_data = egg->remit->emit_data;
