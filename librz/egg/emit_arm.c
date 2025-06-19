@@ -31,14 +31,14 @@ static EmitArmArg *create_new_emit_arm() {
 
 static void emit_init(RzEgg *egg) {
 	/* TODO */
-	egg->remit->emit_data = create_new_emit_arm();
+	egg->remit->emit_context = create_new_emit_arm();
 }
 
-static void emit_fini(RzEgg *egg) {
-	if (!egg->remit->emit_data) {
+static void emit_fini(RzEggEmit *egg_emit) {
+	if (!egg_emit) {
 		return;
 	}
-	EmitArmArg *emit_arm_data = egg->remit->emit_data;
+	EmitArmArg *emit_arm_data = egg_emit->emit_context;
 	free(emit_arm_data);
 }
 
@@ -140,7 +140,7 @@ static void emit_jmp(RzEgg *egg, const char *str, int atr) {
 
 static void emit_call(RzEgg *egg, const char *str, int atr) {
 	int i;
-	EmitArmArg *emit_arm_data = egg->remit->emit_data;
+	EmitArmArg *emit_arm_data = egg->remit->emit_context;
 	// rz_egg_printf (egg, " ARGS=%d CALL(%s,%d)\n", lastarg, str, atr);
 	for (i = 0; i < emit_arm_data->lastarg; i++) {
 		rz_egg_printf(egg, "  ldr r%d, [%s]\n", emit_arm_data->lastarg - 1 - i, emit_arm_data->lastargs[i]);
@@ -156,7 +156,7 @@ static void emit_call(RzEgg *egg, const char *str, int atr) {
 }
 
 static void emit_arg(RzEgg *egg, int xs, int num, const char *str) {
-	EmitArmArg *emit_arm_data = egg->remit->emit_data;
+	EmitArmArg *emit_arm_data = egg->remit->emit_context;
 	int d = atoi(str);
 	if (!attsyntax && (*str == '$')) {
 		str++;
