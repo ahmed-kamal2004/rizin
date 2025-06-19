@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2009-2019 pancake <pancake@nopcode.org>
 // SPDX-License-Identifier: LGPL-3.0-only
 
+#include <rz_util/rz_log.h>
 #include <errno.h>
 #if !defined(__HAIKU__) && !defined(__sun)
 #include <sys/ptrace.h>
@@ -40,11 +41,35 @@ static bool rz_debug_native_step(RzDebug *dbg) {
 	return true;
 }
 
+int match_pid(const void *pid_o, const void *th_o, void *user) {
+	int pid = *(int *)pid_o;
+	RzDebugPid *th = (RzDebugPid *)th_o;
+	return (pid == th->pid) ? 0 : 1;
+}
+
+static RZ_OWN RzList /*<RzDebugPid *>*/ *get_pid_thread_list(RZ_NONNULL RzDebug *dbg, int main_pid) {
+	rz_return_val_if_fail(dbg, NULL);
+	RzList *list = rz_list_new();
+	if (!list) {
+		RZ_LOG_ERROR("Cannot create thread list\n");
+		return NULL;
+	}
+	list = bsd_thread_list(dbg, main_pid, list);
+	dbg->main_pid = main_pid;
+	return list;
+}
+
 static int rz_debug_native_attach(RzDebug *dbg, int pid) {
-	int ret = ptrace(PTRACE_ATTACH, pid, 0, 0);
-	if (ret != -1) {
-		eprintf("Trying to attach to %d\n", pid);
-		perror("ptrace (PT_ATTACH)");
+	if (!dbg->threads) {
+		dbg->threads = get_pid_thread_list(dbg, pid);
+		return pid;
+	}
+	if (!rz_list_find(dbg->threads, &pid, &match_pid, NULL)) {
+		int ret = ptrace(PTRACE_ATTACH, pid, 0, 0);
+		if (ret == -1) {
+			RZ_LOG_ERROR("Trying to attach to %d\n", pid);
+			perror("ptrace (PT_ATTACH)");
+		}
 	}
 	return pid;
 }
@@ -77,17 +102,14 @@ static RzDebugReasonType rz_debug_native_wait(RzDebug *dbg, int pid) {
 	RzDebugReasonType reason = RZ_DEBUG_REASON_UNKNOWN;
 
 	if (pid == -1) {
-		eprintf("ERROR: rz_debug_native_wait called with pid -1\n");
+		RZ_LOG_ERROR("rz_debug_native_wait called with pid -1\n");
 		return RZ_DEBUG_REASON_ERROR;
 	}
 	int status = -1;
 #ifdef WAIT_ON_ALL_CHILDREN
-	int ret = waitpid(-1, &status, WAITPID_FLAGS);
-#else
 	int ret = waitpid(-1, &status, 0);
-	if (ret != -1) {
-		reason = RZ_DEBUG_REASON_TRAP;
-	}
+#else
+	int ret = waitpid(pid, &status, 0);
 #endif
 	if (ret == -1) {
 		rz_sys_perror("waitpid");
@@ -101,17 +123,16 @@ static RzDebugReasonType rz_debug_native_wait(RzDebug *dbg, int pid) {
 	/* we don't know what to do yet, let's try harder to figure it out. */
 	if (reason == RZ_DEBUG_REASON_UNKNOWN) {
 		if (WIFEXITED(status)) {
-			eprintf("child exited with status %d\n", WEXITSTATUS(status));
+			if (dbg->pid == pid) {
+				RZ_LOG_WARN("(%d) Process exited with status=0x%x\n", pid, WEXITSTATUS(status));
+			} else {
+				RZ_LOG_WARN("(%d) Thread exited with status=0x%x\n", pid, WEXITSTATUS(status));
+			}
 			reason = RZ_DEBUG_REASON_DEAD;
 		} else if (WIFSIGNALED(status)) {
 			eprintf("child received signal %d\n", WTERMSIG(status));
 			reason = RZ_DEBUG_REASON_SIGNAL;
 		} else if (WIFSTOPPED(status)) {
-			if (WSTOPSIG(status) != SIGTRAP &&
-				WSTOPSIG(status) != SIGSTOP) {
-				eprintf("Child stopped with signal %d\n", WSTOPSIG(status));
-			}
-
 			/* the ptrace documentation says GETSIGINFO is only necessary for
 			 * differentiating the various stops.
 			 *
