@@ -143,6 +143,7 @@ struct rz_egg_emit_t {
 	// const char *syscall_body;
 	const char *(*regs)(RzEgg *egg, int idx);
 	void (*init)(RzEgg *egg);
+	void (*begin)(RzEgg *egg);
 	void (*fini)(RzEggEmit *egg_emit);
 	void (*call)(RzEgg *egg, const char *addr, int ptr);
 	void (*jmp)(RzEgg *egg, const char *addr, int ptr);

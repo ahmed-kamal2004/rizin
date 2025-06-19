@@ -23,15 +23,12 @@ typedef struct emit_arm_arg {
 	char lastargs[16][32];
 } EmitArmArg;
 
-static EmitArmArg *create_new_emit_arm() {
-	EmitArmArg *emit_arm = RZ_NEW0(EmitArmArg);
-	emit_arm->lastarg = 0;
-	return emit_arm;
+static void emit_begin(RzEgg *egg) {
+	/* TODO */
 }
 
 static void emit_init(RzEgg *egg) {
-	/* TODO */
-	egg->remit->emit_context = create_new_emit_arm();
+	egg->remit->emit_context = RZ_NEW0(EmitArmArg);
 }
 
 static void emit_fini(RzEggEmit *egg_emit) {
@@ -318,6 +315,7 @@ RzEggEmit EMIT_NAME = {
 	.jmp = emit_jmp,
 	.call = emit_call,
 	.init = emit_init,
+	.begin = emit_begin,
 	.fini = emit_fini,
 	.equ = emit_equ,
 	.regs = emit_regs,

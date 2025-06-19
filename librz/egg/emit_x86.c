@@ -35,7 +35,7 @@ static char *regs[] = { "eax", "ebx", "ecx", "edx", "esi", "edi", "ebp" };
 
 #define RZ_NGP (sizeof(regs) / sizeof(char *))
 
-static void emit_init(RzEgg *egg) {
+static void emit_begin(RzEgg *egg) {
 	// TODO: add 'andb rsp, 0xf0'
 	if (attsyntax) {
 		rz_egg_printf(egg, "mov %%" RZ_SP ", %%" RZ_BP "\n");
@@ -520,7 +520,8 @@ RzEggEmit EMIT_NAME = {
 	.retvar = RZ_AX,
 	.arch = RZ_ARCH,
 	.size = RZ_SZ,
-	.init = emit_init,
+	.init = NULL,
+	.begin = emit_begin,
 	.fini = NULL,
 	.jmp = emit_jmp,
 	.call = emit_call,
