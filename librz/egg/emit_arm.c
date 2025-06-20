@@ -17,11 +17,26 @@
 
 // no attsyntax for arm
 static char *regs[] = RZ_GP;
-static int lastarg = 0;
-static char lastargs[16][32];
+
+typedef struct emit_arm_arg {
+	int lastarg;
+	char lastargs[16][32];
+} EmitArmArg;
+
+static void emit_begin(RzEgg *egg) {
+	/* TODO */
+}
 
 static void emit_init(RzEgg *egg) {
-	/* TODO */
+	egg->remit->emit_context = RZ_NEW0(EmitArmArg);
+}
+
+static void emit_fini(RzEggEmit *egg_emit) {
+	if (!egg_emit) {
+		return;
+	}
+	EmitArmArg *emit_arm_data = egg_emit->emit_context;
+	free(emit_arm_data);
 }
 
 static char *emit_syscall(RzEgg *egg, int num) {
@@ -122,10 +137,11 @@ static void emit_jmp(RzEgg *egg, const char *str, int atr) {
 
 static void emit_call(RzEgg *egg, const char *str, int atr) {
 	int i;
+	EmitArmArg *emit_arm_data = egg->remit->emit_context;
 	// rz_egg_printf (egg, " ARGS=%d CALL(%s,%d)\n", lastarg, str, atr);
-	for (i = 0; i < lastarg; i++) {
-		rz_egg_printf(egg, "  ldr r%d, [%s]\n", lastarg - 1 - i, lastargs[i]);
-		lastargs[i][0] = 0;
+	for (i = 0; i < emit_arm_data->lastarg; i++) {
+		rz_egg_printf(egg, "  ldr r%d, [%s]\n", emit_arm_data->lastarg - 1 - i, emit_arm_data->lastargs[i]);
+		emit_arm_data->lastargs[i][0] = 0;
 	}
 
 	if (atr) {
@@ -137,23 +153,24 @@ static void emit_call(RzEgg *egg, const char *str, int atr) {
 }
 
 static void emit_arg(RzEgg *egg, int xs, int num, const char *str) {
+	EmitArmArg *emit_arm_data = egg->remit->emit_context;
 	int d = atoi(str);
 	if (!attsyntax && (*str == '$')) {
 		str++;
 	}
-	lastarg = num;
+	emit_arm_data->lastarg = num;
 	switch (xs) {
 	case 0:
 		if (strchr(str, ',')) {
 			// rz_egg_printf (egg, ".  str r0, [%s]\n", str);
-			strncpy(lastargs[num - 1], str, sizeof(lastargs[0]) - 1);
+			strncpy(emit_arm_data->lastargs[num - 1], str, sizeof(emit_arm_data->lastargs[0]) - 1);
 		} else {
 			if (!atoi(str)) {
 				eprintf("WARNING: probably a bug?\n");
 			}
 			rz_egg_printf(egg, "  mov r0, %s\n", str);
-			snprintf(lastargs[num - 1], sizeof(lastargs[0]), "sp, %d", 8 + (num * 4));
-			rz_egg_printf(egg, "  str r0, [%s]\n", lastargs[num - 1]);
+			snprintf(emit_arm_data->lastargs[num - 1], sizeof(emit_arm_data->lastargs[0]), "sp, %d", 8 + (num * 4));
+			rz_egg_printf(egg, "  str r0, [%s]\n", emit_arm_data->lastargs[num - 1]);
 		}
 		break;
 	case '*':
@@ -298,6 +315,8 @@ RzEggEmit EMIT_NAME = {
 	.jmp = emit_jmp,
 	.call = emit_call,
 	.init = emit_init,
+	.begin = emit_begin,
+	.fini = emit_fini,
 	.equ = emit_equ,
 	.regs = emit_regs,
 	// .sc = emit_sc,
