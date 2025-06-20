@@ -1386,6 +1386,40 @@ RZ_API int rz_sys_getpid(void) {
 #endif
 }
 
+RZ_API RZ_OWN RzSys *rz_sys_new(void) {
+	RzSys *sys = RZ_NEW0(RzSys);
+	if (!sys) {
+		goto error;
+	}
+	sys->sys_pipe_mutex = rz_th_lock_new(true);
+	if (!sys->sys_pipe_mutex) {
+		goto error;
+	}
+	sys->fd2close = ht_uu_new();
+	if (!sys->fd2close) {
+		goto error;
+	}
+	sys->crash_handler_cmd = NULL;
+	sys->env = NULL;
+	sys->is_child = false;
+	return sys;
+
+error:
+	rz_sys_free(sys);
+	return NULL;
+}
+
+RZ_API void rz_sys_free(RZ_OWN RZ_NULLABLE RzSys *sys) {
+	if (!sys) {
+		return;
+	}
+	rz_th_lock_free(sys->sys_pipe_mutex);
+	if (sys->fd2close) {
+		ht_uu_free(sys->fd2close);
+	}
+	free(sys);
+}
+
 RZ_API RSysInfo *rz_sys_info(void) {
 #if __UNIX__
 	struct utsname un = { { 0 } };

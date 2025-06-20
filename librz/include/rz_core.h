@@ -340,6 +340,7 @@ struct rz_core_t {
 	RzHash *hash;
 	RzList /*<char *>*/ *warnings_after;
 	RzPath *sys_path; ///< pointer to RzPath, contains path prefix of the system
+	RzSys *sys; ///< pointer to RzSys
 
 	bool marks_init;
 	ut64 marks[UT8_MAX + 1];

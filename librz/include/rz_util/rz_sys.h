@@ -3,6 +3,7 @@
 
 #include <rz_types.h>
 #include <rz_list.h>
+#include <rz_th.h>
 
 #if __WINDOWS__
 #define RZ_SYS_DEVNULL "nul"
@@ -28,6 +29,20 @@ typedef struct {
 	char *version;
 	char *machine;
 } RSysInfo;
+
+/**
+ * \brief
+ */
+typedef struct rz_sys_t {
+	RzThreadLock *sys_pipe_mutex;
+	HtUU *fd2close;
+	char *crash_handler_cmd;
+	char **env;
+	bool is_child;
+} RzSys;
+
+RZ_API RZ_OWN RzSys *rz_sys_new();
+RZ_API void rz_sys_free(RZ_OWN RZ_NULLABLE RzSys *sys);
 
 RZ_API RSysInfo *rz_sys_info(void);
 RZ_API void rz_sys_info_free(RSysInfo *si);

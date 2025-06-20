@@ -1643,6 +1643,7 @@ RZ_API bool rz_core_init(RzCore *core) {
 	core->rasm->core = core;
 	// initialize path
 	core->sys_path = rz_path_new();
+	core->sys = rz_sys_new();
 	char *sdb_types_path = rz_path_system(core->sys_path, RZ_SDB_TYPES);
 	core->analysis = rz_analysis_new(sdb_types_path);
 	if (sdb_types_path) {
@@ -1848,6 +1849,7 @@ RZ_API void rz_core_fini(RzCore *c) {
 	RZ_FREE_CUSTOM(c->visual, rz_core_visual_free);
 	RZ_FREE_CUSTOM(c->warnings_after, rz_list_free);
 	RZ_FREE_CUSTOM(c->sys_path, rz_path_free);
+	RZ_FREE_CUSTOM(c->sys, rz_sys_free);
 }
 
 RZ_API void rz_core_free(RzCore *c) {
