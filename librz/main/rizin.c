@@ -483,20 +483,6 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 	char **env = rz_sys_get_environ();
 	char *envprofile = rz_run_get_environ_profile(env);
 
-	if (rz_sys_getenv_asbool("RZ_DEBUG")) {
-		char *sysdbg = rz_sys_getenv("RZ_DEBUG_TOOL");
-		char *fmt = (sysdbg && *sysdbg)
-			? rz_str_newf("%s %%d", sysdbg)
-#if __APPLE__
-			: rz_str_newf("lldb -p %%d");
-#else
-			: rz_str_newf("gdb --pid %%d");
-#endif
-		rz_sys_crash_handler(fmt);
-		free(fmt);
-		free(sysdbg);
-	}
-
 	r = rz_core_new();
 	if (!r) {
 		RZ_LOG_ERROR("Cannot initialize RzCore\n");
