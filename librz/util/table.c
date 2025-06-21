@@ -1090,6 +1090,7 @@ RZ_API void rz_table_filter_columns(RzTable *t, RzList /*<char *>*/ *list) {
 }
 
 static bool set_table_format(RzTable *t, const char *q) {
+	// CSV and JSON modes are mutually exclusive
 	if (!strcmp(q, "quiet")) {
 		t->showHeader = false;
 		t->showFancy = false;
@@ -1099,8 +1100,10 @@ static bool set_table_format(RzTable *t, const char *q) {
 		t->showFancy = false;
 	} else if (!strcmp(q, "csv")) {
 		t->showCSV = true;
+		t->showJSON = false;
 	} else if (!strcmp(q, "json")) {
 		t->showJSON = true;
+		t->showCSV = false;
 	} else {
 		return false;
 	}
@@ -1439,49 +1442,3 @@ RZ_API RZ_OWN RzTable *rz_table_transpose(RZ_NONNULL RzTable *t) {
 	rz_list_free(row_name);
 	return transpose;
 }
-
-#if 0
-// TODO: to be implemented
-RZ_API RzTable *rz_table_clone(RzTable *t) {
-	// TODO: implement
-	return NULL;
-}
-
-RZ_API RzTable *rz_table_push(RzTable *t) {
-	// TODO: implement
-	return NULL;
-}
-
-RZ_API RzTable *rz_table_pop(RzTable *t) {
-	// TODO: implement
-	return NULL;
-}
-
-RZ_API void rz_table_fromjson(RzTable *t, const char *csv) {
-	//  TODO
-}
-
-RZ_API void rz_table_fromcsv(RzTable *t, const char *csv) {
-	//  TODO
-}
-
-RZ_API char *rz_table_tohtml(RzTable *t) {
-	// TODO
-	return NULL;
-}
-
-RZ_API void rz_table_transpose(RzTable *t) {
-	// When the music stops rows will be cols and cols... rows!
-}
-
-RZ_API void rz_table_format(RzTable *t, int nth, RzTableColumnType *type) {
-	// change the format of a specific column
-	// change imm base, decimal precission, ...
-}
-
-// to compute sum result of all the elements in a column
-RZ_API ut64 rz_table_reduce(RzTable *t, int nth) {
-	// When the music stops rows will be cols and cols... rows!
-	return 0;
-}
-#endif
