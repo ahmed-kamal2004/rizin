@@ -30,16 +30,7 @@ typedef struct {
 	char *machine;
 } RSysInfo;
 
-/**
- * \brief
- */
-typedef struct rz_sys_t {
-	RzThreadLock *sys_pipe_mutex;
-	HtUU *fd2close;
-	char *crash_handler_cmd;
-	char **env;
-	bool is_child;
-} RzSys;
+typedef struct rz_sys_t RzSys;
 
 RZ_API RZ_OWN RzSys *rz_sys_new();
 RZ_API void rz_sys_free(RZ_OWN RZ_NULLABLE RzSys *sys);
@@ -70,7 +61,7 @@ RZ_API int rz_sys_run(const ut8 *buf, int len);
 RZ_API int rz_sys_run_rop(const ut8 *buf, int len);
 RZ_API int rz_sys_getpid(void);
 #if !HAVE_PIPE || (__UNIX__ && HAVE_PIPE)
-RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec);
+RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec, RZ_BORROW RZ_NONNULL RzSys *sys);
 RZ_API int rz_sys_pipe_close(int fd);
 #else
 #define rz_sys_pipe       pipe

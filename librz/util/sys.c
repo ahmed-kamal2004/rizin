@@ -38,6 +38,17 @@
 
 static char **env = NULL;
 
+typedef struct rz_sys_t {
+#if __UNIX__ && HAVE_PIPE
+	RzThreadLock *sys_pipe_mutex;
+	bool is_child;
+#endif /* __UNIX__ && HAVE_PIPE */
+#if __UNIX__ && (HAVE_PIPE || HAVE_PIPE2)
+	HtUU *fd2close;
+#endif /* __UNIX__ && ( HAVE_PIPE || HAVE_PIPE2 ) */
+	char **env;
+} RzSys;
+
 #if HAVE_DECL_ADDR_NO_RANDOMIZE
 #include <sys/personality.h>
 #endif /* HAVE_DECL_ADDR_NO_RANDOMIZE */
@@ -1391,17 +1402,20 @@ RZ_API RZ_OWN RzSys *rz_sys_new(void) {
 	if (!sys) {
 		goto error;
 	}
+#if __UNIX__ && HAVE_PIPE
 	sys->sys_pipe_mutex = rz_th_lock_new(true);
 	if (!sys->sys_pipe_mutex) {
 		goto error;
 	}
+	sys->is_child = false;
+#endif /* __UNIX__ && HAVE_PIPE */
+#if __UNIX__ && (HAVE_PIPE || HAVE_PIPE2)
 	sys->fd2close = ht_uu_new();
 	if (!sys->fd2close) {
 		goto error;
 	}
-	sys->crash_handler_cmd = NULL;
+#endif /* __UNIX__ && ( HAVE_PIPE || HAVE_PIPE2 ) */
 	sys->env = NULL;
-	sys->is_child = false;
 	return sys;
 
 error:
@@ -1413,10 +1427,14 @@ RZ_API void rz_sys_free(RZ_OWN RZ_NULLABLE RzSys *sys) {
 	if (!sys) {
 		return;
 	}
+#if __UNIX__ && HAVE_PIPE
 	rz_th_lock_free(sys->sys_pipe_mutex);
+#endif /* __UNIX__ && HAVE_PIPE */
+#if __UNIX__ && (HAVE_PIPE || HAVE_PIPE2)
 	if (sys->fd2close) {
 		ht_uu_free(sys->fd2close);
 	}
+#endif /* __UNIX__ && ( HAVE_PIPE || HAVE_PIPE2 ) */
 	free(sys);
 }
 
@@ -1547,15 +1565,15 @@ static bool set_close_on_exec(int fd) {
 	return fcntl(fd, F_SETFD, flags) != -1;
 }
 
-static void parent_lock_enter(void) {
-	if (!is_child) {
-		rz_th_lock_enter(sys_pipe_mutex);
+static void parent_lock_enter(RzSys *sys) {
+	if (!sys->is_child) {
+		rz_th_lock_enter(sys->sys_pipe_mutex);
 	}
 }
 
-static void parent_lock_leave(void) {
-	if (!is_child) {
-		rz_th_lock_leave(sys_pipe_mutex);
+static void parent_lock_leave(RzSys *sys) {
+	if (!sys->is_child) {
+		rz_th_lock_leave(sys->sys_pipe_mutex);
 	}
 }
 
@@ -1566,9 +1584,9 @@ static void parent_lock_leave(void) {
  * condition happen even on systems that don't support atomic creation of pipes
  * with O_CLOEXEC.
  */
-RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec) {
+RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec, RZ_BORROW RZ_NONNULL RzSys *sys) {
 	int res = -1;
-	parent_lock_enter();
+	parent_lock_enter(sys);
 	if ((res = pipe(pipefd)) == -1) {
 		perror("pipe");
 		goto err;
@@ -1580,7 +1598,7 @@ RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec) {
 		goto err;
 	}
 err:
-	parent_lock_leave();
+	parent_lock_leave(sys);
 	return res;
 }
 
@@ -1617,15 +1635,15 @@ static void sys_pipe_destructor(void) {
 	rz_th_lock_free(sys_pipe_mutex);
 }
 
-static void parent_lock_enter(void) {
-	if (!is_child) {
-		rz_th_lock_enter(sys_pipe_mutex);
+static void parent_lock_enter(RzSys *sys) {
+	if (!sys->is_child) {
+		rz_th_lock_enter(sys->sys_pipe_mutex);
 	}
 }
 
-static void parent_lock_leave(void) {
-	if (!is_child) {
-		rz_th_lock_leave(sys_pipe_mutex);
+static void parent_lock_leave(RzSys *sys) {
+	if (!sys->is_child) {
+		rz_th_lock_leave(sys->sys_pipe_mutex);
 	}
 }
 
@@ -1654,7 +1672,7 @@ static void close_fds(void) {
  * with this function would be closed before executing the new executable,
  * making sure these file descriptors don't leak.
  */
-RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec) {
+RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec, RZ_BORROW RZ_NONNULL RzSys *sys) {
 	int res = -1;
 	parent_lock_enter();
 	if ((res = pipe(pipefd)) == -1) {
@@ -1687,7 +1705,7 @@ RZ_API int rz_sys_pipe_close(int fd) {
 	return res;
 }
 #elif HAVE_PIPE
-RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec) {
+RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec, RZ_BORROW RZ_NONNULL RzSys *sys) {
 	return pipe(pipefd);
 }
 
@@ -1695,7 +1713,7 @@ RZ_API int rz_sys_pipe_close(int fd) {
 	return close(fd);
 }
 #elif __WINDOWS__
-RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec) {
+RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec, RZ_BORROW RZ_NONNULL RzSys *sys) {
 	return _pipe(pipefd, 0x1000, O_TEXT);
 }
 
@@ -1703,7 +1721,7 @@ RZ_API int rz_sys_pipe_close(int fd) {
 	return _close(fd);
 }
 #else
-RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec) {
+RZ_API int rz_sys_pipe(int pipefd[2], bool close_on_exec, RZ_BORROW RZ_NONNULL RzSys *sys) {
 	return -1;
 }
 
