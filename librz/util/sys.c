@@ -494,56 +494,6 @@ RZ_API int rz_sys_setenv(const char *key, const char *value) {
 #endif
 }
 
-#if __UNIX__
-static char *crash_handler_cmd = NULL;
-
-static void signal_handler(int signum) {
-	char cmd[1024];
-	if (!crash_handler_cmd) {
-		return;
-	}
-	snprintf(cmd, sizeof(cmd) - 1, crash_handler_cmd, getpid());
-	rz_sys_backtrace();
-	exit(rz_sys_system(cmd));
-}
-
-static int checkcmd(const char *c) {
-	char oc = 0;
-	for (; *c; c++) {
-		if (oc == '%') {
-			if (*c != 'd' && *c != '%') {
-				return 0;
-			}
-		}
-		oc = *c;
-	}
-	return 1;
-}
-#endif
-
-RZ_API int rz_sys_crash_handler(const char *cmd) {
-#ifndef __WINDOWS__
-	int sig[] = { SIGINT, SIGSEGV, SIGBUS, SIGQUIT, SIGHUP, 0 };
-
-	if (!checkcmd(cmd)) {
-		return false;
-	}
-#if HAVE_BACKTRACE
-	void *array[1];
-	/* call this outside of the signal handler to init it safely */
-	backtrace(array, 1);
-#endif
-
-	free(crash_handler_cmd);
-	crash_handler_cmd = rz_str_dup(cmd);
-
-	rz_sys_sigaction(sig, signal_handler);
-#else
-#pragma message("rz_sys_crash_handler : unimplemented for this platform")
-#endif
-	return true;
-}
-
 /**
  * \brief Get the value of an environment variable named \p key or NULL if none exists.
  */
