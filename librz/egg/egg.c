@@ -61,6 +61,9 @@ RZ_API RzEgg *rz_egg_new(void) {
 		goto beach;
 	}
 	egg->remit = &emit_x86;
+	if (egg->remit->init) {
+		egg->remit->init(egg);
+	}
 	egg->syscall = rz_syscall_new();
 	if (!egg->syscall) {
 		goto beach;
@@ -112,6 +115,11 @@ RZ_API void rz_egg_free(RzEgg *egg) {
 	if (!egg) {
 		return;
 	}
+
+	if (egg->remit && egg->remit->fini) {
+		egg->remit->fini(egg->remit);
+	}
+
 	rz_path_free(egg->sys_path);
 	rz_buf_free(egg->src);
 	rz_buf_free(egg->buf);
@@ -138,6 +146,9 @@ RZ_API void rz_egg_reset(RzEgg *egg) {
 
 RZ_API bool rz_egg_setup(RzEgg *egg, const char *arch, int bits, int endian, const char *os) {
 	const char *asmcpu = NULL; // TODO
+	if (egg->remit && egg->remit->fini) {
+		egg->remit->fini(egg->remit);
+	}
 	egg->remit = NULL;
 
 	egg->os = os ? rz_str_djb2_hash(os) : RZ_EGG_OS_DEFAULT;
@@ -174,6 +185,9 @@ RZ_API bool rz_egg_setup(RzEgg *egg, const char *arch, int bits, int endian, con
 		egg->endian = endian;
 	} else {
 		return false;
+	}
+	if (egg->remit && egg->remit->init) {
+		egg->remit->init(egg);
 	}
 	return true;
 }

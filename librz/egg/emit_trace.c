@@ -18,7 +18,7 @@
 // no attsyntax for arm
 static char *regs[] = RZ_GP;
 
-static void emit_init(RzEgg *egg) {
+static void emit_begin(RzEgg *egg) {
 	/* TODO */
 }
 
@@ -187,7 +187,9 @@ RzEggEmit EMIT_NAME = {
 	.size = RZ_SZ,
 	.jmp = emit_jmp,
 	.call = emit_call,
-	.init = emit_init,
+	.init = NULL,
+	.begin = emit_begin,
+	.fini = NULL,
 	.equ = emit_equ,
 	.regs = emit_regs,
 	//.sc = emit_sc,

@@ -641,10 +641,8 @@ static int get_rz_status(int stat) {
 		return RZ_DBG_PROC_DEAD;
 	}
 }
-#endif
 
-RzList *bsd_thread_list(RzDebug *dbg, int pid, RzList *list) {
-#if __KFBSD__
+static RzList *kfbsd_thread_list(RzDebug *dbg, int pid, RzList *list) {
 	int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID | KERN_PROC_INC_THREAD, pid };
 	struct kinfo_proc *kp;
 	size_t len = 0;
@@ -666,19 +664,93 @@ RzList *bsd_thread_list(RzDebug *dbg, int pid, RzList *list) {
 
 	max = len / sizeof(*kp);
 	for (i = 0; i < max; i++) {
-		RzDebugPid *pid_info;
-		int pid_stat;
+		int pid_stat = get_rz_status(kp[i].ki_stat);
 
-		pid_stat = get_rz_status(kp[i].ki_stat);
-		pid_info = rz_debug_pid_new(kp[i].ki_comm, kp[i].ki_tid,
+		RzDebugPid *pid_info = rz_debug_pid_new(kp[i].ki_comm, kp[i].ki_tid,
 			kp[i].ki_uid, pid_stat, (ut64)kp[i].ki_wchan);
+
 		rz_list_append(list, pid_info);
 	}
 
 	free(kp);
 	return list;
+}
+#endif
+
+#if __NetBSD__
+static int get_rz_status(int stat) {
+	switch (stat) {
+	case LSRUN:
+	case LSONPROC:
+	case LSIDL:
+		return RZ_DBG_PROC_RUN;
+	case LSSTOP:
+		return RZ_DBG_PROC_STOP;
+	case LSZOMB:
+		return RZ_DBG_PROC_ZOMBIE;
+	case LSSLEEP:
+		return RZ_DBG_PROC_SLEEP;
+	case LSSUSPENDED:
+		return RZ_DBG_PROC_STOP;
+	default:
+		return RZ_DBG_PROC_DEAD;
+	}
+}
+
+static RzList *netbsd_thread_list(RzDebug *dbg, int pid, RzList *list) {
+	int mib[6] = { CTL_KERN, KERN_PROC2, KERN_PROC_PID, pid, sizeof(struct kinfo_proc2), 0 };
+	struct kinfo_proc2 *kp;
+	size_t len = 0;
+	size_t max;
+	int i = 0;
+
+	if (sysctl(mib, 6, NULL, &len, NULL, 0) == -1) {
+		rz_list_free(list);
+		return NULL;
+	}
+
+	len += sizeof(*kp) + len / 10;
+	kp = malloc(len);
+	if (!kp) {
+		rz_list_free(list);
+		return NULL;
+	}
+
+	mib[5] = len / sizeof(struct kinfo_proc2);
+
+	if (sysctl(mib, 6, kp, &len, NULL, 0) == -1) {
+		free(kp);
+		rz_list_free(list);
+		return NULL;
+	}
+
+	max = len / sizeof(*kp);
+
+	for (i = 0; i < max; i++) {
+		int pid_stat = get_rz_status(kp[i].p_stat);
+
+		RzDebugPid *pid_info = rz_debug_pid_new(kp[i].p_comm, kp[i].p_pid,
+			kp[i].p_uid, pid_stat, (ut64)kp[i].p_wchan);
+
+		if (pid_info) {
+			rz_list_append(list, pid_info);
+		}
+	}
+
+	free(kp);
+	return list;
+}
+#endif
+
+RzList *bsd_thread_list(RzDebug *dbg, int pid, RzList *list) {
+#if __KFBSD__
+	RzList *thread_list = kfbsd_thread_list(dbg, pid, list);
+	return thread_list;
+#elif __NetBSD__
+	RzList *thread_list = netbsd_thread_list(dbg, pid, list);
+	return thread_list;
 #else
-	eprintf("bsd_thread_list unsupported on this platform\n");
+	RZ_LOG_ERROR("bsd_thread_list unsupported on this platform\n");
 	rz_list_free(list);
 	return NULL;
 #endif

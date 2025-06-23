@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 
 #include <rz_bin.h>
-#include "sms/sms.h"
 
 typedef struct gen_hdr {
 	ut8 HeaderID[8];
@@ -13,20 +12,22 @@ typedef struct gen_hdr {
 	ut8 RegionRomSize; // Low 4 bits RomSize, Top 4 bits Region
 } SMS_Header;
 
-static ut32 cb = 0;
-
-static bool check_buffer(RzBuffer *b) {
+static bool find_magic(RzBuffer *b, ut32 *offset) {
 	ut32 *off, offs[] = { 0x2000, 0x4000, 0x8000, 0x9000, 0 };
 	ut8 signature[8];
 	for (off = (ut32 *)&offs; *off; off++) {
 		rz_buf_read_at(b, *off - 16, (ut8 *)&signature, 8);
 		if (!strncmp((const char *)signature, "TMR SEGA", 8)) {
-			cb = *off - 16;
+			if (offset) {
+				*offset = *off - 16;
+			}
 			return true; // int)(*off - 16);
 		}
 		if (*off == 0x8000) {
 			if (!strncmp((const char *)signature, "SDSC", 4)) {
-				cb = *off - 16;
+				if (offset) {
+					*offset = *off - 16;
+				}
 				return true; // (int)(*off - 16);
 			}
 		}
@@ -34,9 +35,22 @@ static bool check_buffer(RzBuffer *b) {
 	return false;
 }
 
+static bool check_buffer(RzBuffer *b) {
+	return find_magic(b, NULL);
+}
+
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *buf, Sdb *sdb) {
-	SmsBinContext *sms_bin_ctx = bf->plugin_data;
-	return check_buffer(buf);
+	ut32 offset = 0;
+	if (!find_magic(bf->buf, &offset)) {
+		return false;
+	}
+	SMS_Header *sms_hdr = RZ_NEW0(SMS_Header);
+	if (!sms_hdr) {
+		return false;
+	}
+	rz_buf_read_at(bf->buf, offset, (ut8 *)sms_hdr, sizeof(SMS_Header));
+	obj->bin_obj = sms_hdr;
+	return true;
 }
 
 static RzBinInfo *info(RzBinFile *bf) {
@@ -58,7 +72,9 @@ static RzBinInfo *info(RzBinFile *bf) {
 		return NULL;
 	}
 	SMS_Header hdr = { { 0 } };
-	rz_buf_read_at(bf->buf, cb, (ut8 *)&hdr, sizeof(hdr));
+	ut32 offset = 0;
+	find_magic(bf->buf, &offset);
+	rz_buf_read_at(bf->buf, offset, (ut8 *)&hdr, sizeof(hdr));
 	hdr.CheckSum = rz_read_le16(&hdr.CheckSum);
 
 	eprintf("Checksum: 0x%04x\n", (ut32)hdr.CheckSum); // use endian safe apis here
@@ -119,9 +135,7 @@ RzBinPlugin rz_bin_plugin_sms = {
 	.check_buffer = &check_buffer,
 	.info = &info,
 	.strings = &strings,
-	.strfilter = 'U',
-	.init=&sms_bin_init,
-	.fini=&sms_bin_fini,
+	.strfilter = 'U'
 };
 
 #ifndef RZ_PLUGIN_INCORE

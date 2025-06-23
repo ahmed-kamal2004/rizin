@@ -64,10 +64,9 @@ typedef struct {
 	// BOOT CODE?
 } N64Header;
 
-static N64Header n64_header;
-
 static ut64 baddr(RzBinFile *bf) {
-	return (ut64)rz_read_be32(&n64_header.BootAddress);
+	N64Header *hdr = bf->o->bin_obj;
+	return (ut64)rz_read_be32(&(hdr->BootAddress));
 }
 
 static bool check_buffer(RzBuffer *b) {
@@ -81,9 +80,10 @@ static bool check_buffer(RzBuffer *b) {
 
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *b, Sdb *sdb) {
 	if (check_buffer(b)) {
+		N64Header *n64_header = RZ_NEW0(N64Header);
 		ut8 buf[sizeof(N64Header)] = { 0 };
 		rz_buf_read_at(b, 0, buf, sizeof(buf));
-		obj->bin_obj = memcpy(&n64_header, buf, sizeof(N64Header));
+		obj->bin_obj = memcpy(n64_header, buf, sizeof(N64Header));
 		return true;
 	}
 	return false;
@@ -130,11 +130,12 @@ static ut64 boffset(RzBinFile *bf) {
 static RzBinInfo *info(RzBinFile *bf) {
 	char GameName[21] = { 0 };
 	RzBinInfo *ret = RZ_NEW0(RzBinInfo);
+	N64Header *hdr = bf->o->bin_obj;
 	if (!ret) {
 		return NULL;
 	}
-	memcpy(GameName, n64_header.Name, sizeof(n64_header.Name));
-	ret->file = rz_str_newf("%s (%c)", GameName, n64_header.CountryCode);
+	memcpy(GameName, hdr->Name, sizeof(hdr->Name));
+	ret->file = rz_str_newf("%s (%c)", GameName, hdr->CountryCode);
 	ret->os = rz_str_dup("n64");
 	ret->arch = rz_str_dup("mips");
 	ret->machine = rz_str_dup("Nintendo 64");

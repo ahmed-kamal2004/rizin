@@ -364,7 +364,6 @@ struct rz_bin_file_t {
 	RzList /*<RzBinXtrData *>*/ *xtr_data;
 	RZ_DEPRECATE Sdb *sdb; ///< deprecated, put info in C structures instead of this
 	struct rz_bin_t *rbin;
-	void *plugin_data; ///< Stores plugin context
 }; // RzBinFile
 
 typedef struct rz_bin_file_options_t {
@@ -496,8 +495,6 @@ typedef struct rz_bin_plugin_t {
 	bool (*check_filename)(const char *filename);
 	ut64 (*baddr)(RzBinFile *bf);
 	ut64 (*boffset)(RzBinFile *bf);
-	void (*init)(void **user); 
-	void (*fini)(void *user);
 	RzPVector /*<RzBinVirtualFile *>*/ *(*virtual_files)(RzBinFile *bf);
 	RzPVector /*<RzBinMap *>*/ *(*maps)(RzBinFile *bf);
 	RzBinAddr *(*binsym)(RzBinFile *bf, RzBinSpecialSymbol num);
@@ -532,7 +529,6 @@ typedef struct rz_bin_plugin_t {
 	int (*file_type)(RzBinFile *bf);
 	char strfilter;
 	void *user;
-	void *plugin_data; ///< Pointer holds ref to plugin data.
 } RzBinPlugin;
 
 typedef void (*RzBinSymbollCallback)(RzBinObject *obj, void *symbol);

@@ -315,6 +315,7 @@ static RzBinMdtPart *segment_to_mdt_part(RzBinElfSegment *segment, size_t part_n
 
 	map = RZ_NEW0(RzBinMap);
 	if (!map) {
+		rz_bin_virtual_file_free(vfile);
 		goto error;
 	}
 	map->paddr = 0;
@@ -364,11 +365,11 @@ error:
 
 RZ_IPI bool rz_bin_mdt_check_filename(const char *filename) {
 	rz_return_val_if_fail(filename, NULL);
-	if (!filename || strlen(filename) < strlen(".mdt")) {
+	if (!filename) {
 		return false;
 	}
-	size_t len = strlen(filename);
-	return filename[len - 4] == '.' && filename[len - 3] == 'm' && filename[len - 2] == 'd' && filename[len - 1] == 't';
+	return rz_str_endswith_icase(filename, ".mdt");
+	;
 }
 
 static char *get_peripheral_name(const char *filename) {

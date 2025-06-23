@@ -269,9 +269,6 @@ rz_bin_sources = [
   'format/te/te.c',
   'format/wasm/wasm.c',
   'format/zimg/zimg.c',
-  'format/sms/sms.c',
-  'format/avr/avr.c',
-  'format/z64/z64.c',
 
   'pdb/cab_extract.c',
   'pdb/dbi.c',
