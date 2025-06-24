@@ -20,6 +20,7 @@
 #include <kvm.h>
 #include <limits.h>
 #include "bsd_debug.h"
+#include <rz_util/rz_log.h>
 #if __KFBSD__ || __DragonFly__
 #include <sys/user.h>
 #include <libutil.h>
@@ -78,12 +79,6 @@ int bsd_handle_signals(RzDebug *dbg) {
 		return -1;
 	}
 
-	// Not stopped by the signal
-	if (linfo.pl_event == PL_EVENT_NONE) {
-		dbg->reason.type = RZ_DEBUG_REASON_BREAKPOINT;
-		return 0;
-	}
-
 	siginfo = linfo.pl_siginfo;
 #else
 	struct ptrace_siginfo sinfo = { 0 };
@@ -108,13 +103,11 @@ int bsd_handle_signals(RzDebug *dbg) {
 	case SIGSEGV:
 		dbg->reason.type = RZ_DEBUG_REASON_SEGFAULT;
 		break;
-#if __NetBSD__
 	case SIGTRAP:
 		if (siginfo.si_code == TRAP_BRKPT) {
 			dbg->reason.type = RZ_DEBUG_REASON_BREAKPOINT;
 		}
 		break;
-#endif
 	}
 
 	return 0;
@@ -363,13 +356,18 @@ RzList *bsd_pid_list(RzDebug *dbg, int pid, RzList *list) {
 RzList *bsd_native_sysctl_map(RzDebug *dbg) {
 #if __KFBSD__
 	int mib[4];
-	size_t len;
-	char *buf, *bp, *eb;
-	struct kinfo_vmentry *kve;
+	size_t len = 0;
+	char *buf = NULL;
+	char *bp = NULL;
+	char *eb = NULL;
+	struct kinfo_vmentry *kve = NULL;
 	RzList *list = NULL;
-	RzDebugMap *map;
+	RzDebugMap *map = NULL;
+	char *name = NULL;
+	ut64 map_start = 0;
+	ut64 map_end = 0;
+	int perm = 0;
 
-	len = 0;
 	mib[0] = CTL_KERN;
 	mib[1] = KERN_PROC;
 	mib[2] = KERN_PROC_VMMAP;
@@ -395,10 +393,27 @@ RzList *bsd_native_sysctl_map(RzDebug *dbg) {
 	}
 	while (bp < eb) {
 		kve = (struct kinfo_vmentry *)(uintptr_t)bp;
-		map = rz_debug_map_new(kve->kve_path, kve->kve_start,
-			kve->kve_end, kve->kve_protection, 0);
-		if (!map)
+		name = kve->kve_path;
+		map_start = kve->kve_start;
+		map_end = kve->kve_end;
+
+		if (kve->kve_protection & VM_PROT_READ) {
+			perm |= RZ_PERM_R;
+		}
+		if (kve->kve_protection & VM_PROT_WRITE) {
+			perm |= RZ_PERM_W;
+		}
+		if (kve->kve_protection & VM_PROT_EXECUTE) {
+			perm |= RZ_PERM_X;
+		}
+
+		map = rz_debug_map_new(name, map_start, map_end, perm, 0);
+		if (!map) {
+			RZ_LOG_ERROR("Cannot create map entry for %s\n", name);
 			break;
+		}
+		map->offset = kve->kve_offset;
+		map->file = rz_str_dup(name);
 		rz_list_append(list, map);
 		bp += kve->kve_structsize;
 	}
