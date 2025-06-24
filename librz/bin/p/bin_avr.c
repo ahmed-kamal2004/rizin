@@ -128,8 +128,8 @@ static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *buf, Sdb *sdb
 		return false;
 	}
 	*entry = UT64_MAX;
-	bf->o->bin_obj = entry;
-	return find_magic(buf, bf->o->bin_obj);
+	obj->bin_obj = entry;
+	return find_magic(buf, obj->bin_obj);
 }
 
 static void destroy(RzBinFile *bf) {
