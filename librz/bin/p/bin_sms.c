@@ -10,6 +10,7 @@ typedef struct gen_hdr {
 	ut8 ProductCode[2];
 	ut8 Version; // Low 4 bits version, Top 4 bits ProductCode
 	ut8 RegionRomSize; // Low 4 bits RomSize, Top 4 bits Region
+	ut32 offset;
 } SMS_Header;
 
 static bool find_magic(RzBuffer *b, ut32 *offset) {
@@ -40,17 +41,22 @@ static bool check_buffer(RzBuffer *b) {
 }
 
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *buf, Sdb *sdb) {
-	ut32 offset = 0;
-	if (!find_magic(bf->buf, &offset)) {
-		return false;
-	}
 	SMS_Header *sms_hdr = RZ_NEW0(SMS_Header);
 	if (!sms_hdr) {
 		return false;
 	}
-	rz_buf_read_at(bf->buf, offset, (ut8 *)sms_hdr, sizeof(SMS_Header));
+	if (!find_magic(bf->buf, &sms_hdr->offset)) {
+		free(sms_hdr);
+		return false;
+	}
+	sms_hdr->CheckSum = rz_read_le16(&sms_hdr->CheckSum);
+	rz_buf_read_at(bf->buf, sms_hdr->offset, (ut8 *)sms_hdr, sizeof(SMS_Header));
 	obj->bin_obj = sms_hdr;
 	return true;
+}
+
+static void destroy(RzBinFile *bf) {
+	free(bf->o->bin_obj);
 }
 
 static RzBinInfo *info(RzBinFile *bf) {
@@ -71,16 +77,14 @@ static RzBinInfo *info(RzBinFile *bf) {
 		free(ret);
 		return NULL;
 	}
-	SMS_Header hdr = { { 0 } };
-	ut32 offset = 0;
-	find_magic(bf->buf, &offset);
-	rz_buf_read_at(bf->buf, offset, (ut8 *)&hdr, sizeof(hdr));
-	hdr.CheckSum = rz_read_le16(&hdr.CheckSum);
+	SMS_Header *hdr = bf->o->bin_obj;
+	rz_buf_read_at(bf->buf, hdr->offset, (ut8 *)&hdr, sizeof(hdr));
+	hdr->CheckSum = rz_read_le16(&hdr->CheckSum);
 
-	eprintf("Checksum: 0x%04x\n", (ut32)hdr.CheckSum); // use endian safe apis here
-	eprintf("ProductCode: %02d%02X%02X\n", (hdr.Version >> 4), hdr.ProductCode[1],
-		hdr.ProductCode[0]);
-	switch (hdr.RegionRomSize >> 4) {
+	eprintf("Checksum: 0x%04x\n", (ut32)hdr->CheckSum); // use endian safe apis here
+	eprintf("ProductCode: %02d%02X%02X\n", (hdr->Version >> 4), hdr->ProductCode[1],
+		hdr->ProductCode[0]);
+	switch (hdr->RegionRomSize >> 4) {
 	case 3:
 		eprintf("Console: Sega Master System\n");
 		eprintf("Region: Japan\n");
@@ -103,7 +107,7 @@ static RzBinInfo *info(RzBinFile *bf) {
 		break;
 	}
 	int romsize = 0;
-	switch (hdr.RegionRomSize & 0xf) {
+	switch (hdr->RegionRomSize & 0xf) {
 	case 0xa: romsize = 8; break;
 	case 0xb: romsize = 16; break;
 	case 0xc: romsize = 32; break;
@@ -133,6 +137,7 @@ RzBinPlugin rz_bin_plugin_sms = {
 	.author = "shengdi",
 	.load_buffer = &load_buffer,
 	.check_buffer = &check_buffer,
+	.destroy = &destroy,
 	.info = &info,
 	.strings = &strings,
 	.strfilter = 'U'

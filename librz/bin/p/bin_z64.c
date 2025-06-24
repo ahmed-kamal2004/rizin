@@ -79,14 +79,16 @@ static bool check_buffer(RzBuffer *b) {
 }
 
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *b, Sdb *sdb) {
-	if (check_buffer(b)) {
-		N64Header *n64_header = RZ_NEW0(N64Header);
-		ut8 buf[sizeof(N64Header)] = { 0 };
-		rz_buf_read_at(b, 0, buf, sizeof(buf));
-		obj->bin_obj = memcpy(n64_header, buf, sizeof(N64Header));
-		return true;
+	N64Header *hdr = RZ_NEW0(N64Header);
+	if (!check_buffer(b)) {
+		free(hdr);
+		return false;
 	}
-	return false;
+	ut8 buf[sizeof(N64Header)] = { 0 };
+	rz_buf_read_at(b, 0, buf, sizeof(buf));
+	memcpy(hdr, buf, sizeof(N64Header));
+	obj->bin_obj = hdr;
+	return true;
 }
 
 static RzPVector /*<RzBinAddr *>*/ *entries(RzBinFile *bf) {
