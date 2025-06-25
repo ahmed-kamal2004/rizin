@@ -19,8 +19,6 @@
 		return false; \
 	}
 
-static ut64 tmp_entry = UT64_MAX;
-
 static bool rjmp(RzBuffer *b, ut64 addr) {
 	ut8 tmp;
 	if (!rz_buf_read8_at(b, addr + 1, &tmp)) {
@@ -78,7 +76,7 @@ static bool jmp_dest(RzBuffer *b, ut64 addr, ut64 *result) {
 	return true;
 }
 
-static bool check_buffer_rjmp(RzBuffer *b) {
+static bool check_buffer_rjmp(RzBuffer *b, RZ_OUT ut64 *entry) {
 	CHECK3INSTR(b, rjmp, 4);
 	ut64 dst;
 	if (!rjmp_dest(b, 0, &dst)) {
@@ -88,11 +86,13 @@ static bool check_buffer_rjmp(RzBuffer *b) {
 	if (dst < 1 || dst > rz_buf_size(b)) {
 		return false;
 	}
-	tmp_entry = dst;
+	if (entry) {
+		*entry = dst;
+	}
 	return true;
 }
 
-static bool check_buffer_jmp(RzBuffer *b) {
+static bool check_buffer_jmp(RzBuffer *b, RZ_OUT ut64 *entry) {
 	CHECK4INSTR(b, jmp, 4);
 	ut64 dst;
 	if (!jmp_dest(b, 0, &dst)) {
@@ -102,26 +102,42 @@ static bool check_buffer_jmp(RzBuffer *b) {
 	if (dst < 1 || dst > rz_buf_size(b)) {
 		return false;
 	}
-	tmp_entry = dst;
+	if (entry) {
+		*entry = dst;
+	}
 	return true;
 }
 
-static bool check_buffer(RzBuffer *buf) {
+static bool find_magic(RzBuffer *buf, RZ_OUT ut64 *entry) {
 	if (rz_buf_size(buf) < 32) {
 		return false;
 	}
 	if (!rjmp(buf, 0)) {
-		return check_buffer_jmp(buf);
+		return check_buffer_jmp(buf, entry);
 	}
-	return check_buffer_rjmp(buf);
+	return check_buffer_rjmp(buf, entry);
+}
+
+static bool check_buffer(RzBuffer *buf) {
+	return find_magic(buf, NULL);
 }
 
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *buf, Sdb *sdb) {
-	return check_buffer(buf);
+	ut64 *entry = RZ_NEW0(ut64);
+	if (!entry) {
+		return false;
+	}
+	*entry = UT64_MAX;
+	if (find_magic(buf, entry)) {
+		obj->bin_obj = entry;
+		return true;
+	}
+	free(entry);
+	return false;
 }
 
 static void destroy(RzBinFile *bf) {
-	rz_buf_free(bf->o->bin_obj);
+	free(bf->o->bin_obj);
 }
 
 static RzBinInfo *info(RzBinFile *bf) {
@@ -142,14 +158,15 @@ static RzBinInfo *info(RzBinFile *bf) {
 static RzPVector /*<RzBinAddr *>*/ *entries(RzBinFile *bf) {
 	RzPVector *ret;
 	RzBinAddr *ptr = NULL;
-	if (tmp_entry == UT64_MAX) {
+	ut64 *entry = bf->o->bin_obj;
+	if (*entry == UT64_MAX) {
 		return false;
 	}
 	if (!(ret = rz_pvector_new(free))) {
 		return NULL;
 	}
 	if ((ptr = RZ_NEW0(RzBinAddr))) {
-		ut64 addr = tmp_entry;
+		ut64 addr = *entry;
 		ptr->vaddr = ptr->paddr = addr;
 		rz_pvector_push(ret, ptr);
 	}
@@ -180,18 +197,18 @@ static void addptr(RzPVector /*<RzBinSymbol *>*/ *ret, const char *name, ut64 ad
 
 static RzPVector /*<RzBinSymbol *>*/ *symbols(RzBinFile *bf) {
 	RzPVector *ret = NULL;
-	RzBuffer *obj = bf->o->bin_obj;
+	RzBuffer *buf = bf->buf;
 
 	if (!(ret = rz_pvector_new((RzPVectorFree)rz_bin_symbol_free))) {
 		return NULL;
 	}
 	/* atmega8 */
-	addptr(ret, "int0", 2, obj);
-	addptr(ret, "int1", 4, obj);
-	addptr(ret, "timer2cmp", 6, obj);
-	addptr(ret, "timer2ovf", 8, obj);
-	addptr(ret, "timer1capt", 10, obj);
-	addptr(ret, "timer1cmpa", 12, obj);
+	addptr(ret, "int0", 2, buf);
+	addptr(ret, "int1", 4, buf);
+	addptr(ret, "timer2cmp", 6, buf);
+	addptr(ret, "timer2ovf", 8, buf);
+	addptr(ret, "timer1capt", 10, buf);
+	addptr(ret, "timer1cmpa", 12, buf);
 	return ret;
 }
 
