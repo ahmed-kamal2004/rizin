@@ -49,8 +49,8 @@ static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *buf, Sdb *sdb
 		free(sms_hdr);
 		return false;
 	}
-	sms_hdr->CheckSum = rz_read_le16(&sms_hdr->CheckSum);
 	rz_buf_read_at(bf->buf, sms_hdr->offset, (ut8 *)sms_hdr, sizeof(SMS_Header));
+	sms_hdr->CheckSum = rz_read_le16(&sms_hdr->CheckSum);
 	obj->bin_obj = sms_hdr;
 	return true;
 }
