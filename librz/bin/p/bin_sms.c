@@ -10,8 +10,12 @@ typedef struct gen_hdr {
 	ut8 ProductCode[2];
 	ut8 Version; // Low 4 bits version, Top 4 bits ProductCode
 	ut8 RegionRomSize; // Low 4 bits RomSize, Top 4 bits Region
-	ut32 offset;
 } SMS_Header;
+
+typedef struct sms_info {
+	SMS_Header *hdr;
+	ut32 offset;
+} SMS_INFO;
 
 static bool find_magic(RzBuffer *b, ut32 *offset) {
 	ut32 *off, offs[] = { 0x2000, 0x4000, 0x8000, 0x9000, 0 };
@@ -41,22 +45,31 @@ static bool check_buffer(RzBuffer *b) {
 }
 
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *buf, Sdb *sdb) {
-	SMS_Header *sms_hdr = RZ_NEW0(SMS_Header);
-	if (!sms_hdr) {
+	SMS_INFO *sms_info = RZ_NEW0(SMS_INFO);
+	if (!sms_info) {
 		return false;
 	}
-	if (!find_magic(bf->buf, &sms_hdr->offset)) {
+	SMS_Header *sms_hdr = RZ_NEW0(SMS_Header);
+	if (!sms_hdr) {
+		free(sms_info);
+		return false;
+	}
+	if (!find_magic(bf->buf, &sms_info->offset)) {
+		free(sms_info);
 		free(sms_hdr);
 		return false;
 	}
-	rz_buf_read_at(bf->buf, sms_hdr->offset, (ut8 *)sms_hdr, sizeof(SMS_Header));
+	rz_buf_read_at(bf->buf, sms_info->offset, (ut8 *)sms_hdr, sizeof(SMS_Header));
 	sms_hdr->CheckSum = rz_read_le16(&sms_hdr->CheckSum);
-	obj->bin_obj = sms_hdr;
+	sms_info->hdr = sms_hdr;
+	obj->bin_obj = sms_info;
 	return true;
 }
 
 static void destroy(RzBinFile *bf) {
-	free(bf->o->bin_obj);
+	SMS_INFO *sms_info = bf->o->bin_obj;
+	free(sms_info->hdr);
+	free(sms_info);
 }
 
 static RzBinInfo *info(RzBinFile *bf) {
@@ -77,9 +90,8 @@ static RzBinInfo *info(RzBinFile *bf) {
 		free(ret);
 		return NULL;
 	}
-	SMS_Header *hdr = bf->o->bin_obj;
-	rz_buf_read_at(bf->buf, hdr->offset, (ut8 *)&hdr, sizeof(hdr));
-	hdr->CheckSum = rz_read_le16(&hdr->CheckSum);
+	SMS_INFO *sms_info = bf->o->bin_obj;
+	SMS_Header *hdr = sms_info->hdr;
 
 	eprintf("Checksum: 0x%04x\n", (ut32)hdr->CheckSum); // use endian safe apis here
 	eprintf("ProductCode: %02d%02X%02X\n", (hdr->Version >> 4), hdr->ProductCode[1],
