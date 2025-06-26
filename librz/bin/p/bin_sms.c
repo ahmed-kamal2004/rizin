@@ -12,16 +12,12 @@ typedef struct gen_hdr {
 	ut8 RegionRomSize; // Low 4 bits RomSize, Top 4 bits Region
 } SMS_Header;
 
-typedef struct sms_info {
-	SMS_Header *hdr;
-	ut32 offset;
-} SMS_INFO;
-
 static bool find_magic(RzBuffer *b, ut32 *offset) {
-	ut32 *off, offs[] = { 0x2000, 0x4000, 0x8000, 0x9000, 0 };
+	ut32 offsets[] = { 0x2000, 0x4000, 0x8000, 0x9000 };
 	ut8 signature[8];
-	for (off = (ut32 *)&offs; *off; off++) {
-		rz_buf_read_at(b, *off - 16, (ut8 *)&signature, 8);
+	for (size_t i = 0; i < RZ_ARRAY_SIZE(offsets); i++) {
+		ut32 *off = offsets + i;
+		rz_buf_read_at(b, *off - 16, signature, 8);
 		if (!strncmp((const char *)signature, "TMR SEGA", 8)) {
 			if (offset) {
 				*offset = *off - 16;
@@ -45,31 +41,23 @@ static bool check_buffer(RzBuffer *b) {
 }
 
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *buf, Sdb *sdb) {
-	SMS_INFO *sms_info = RZ_NEW0(SMS_INFO);
-	if (!sms_info) {
-		return false;
-	}
 	SMS_Header *sms_hdr = RZ_NEW0(SMS_Header);
+	ut32 offset;
 	if (!sms_hdr) {
-		free(sms_info);
 		return false;
 	}
-	if (!find_magic(bf->buf, &sms_info->offset)) {
-		free(sms_info);
+	if (!find_magic(bf->buf, &offset)) {
 		free(sms_hdr);
 		return false;
 	}
-	rz_buf_read_at(bf->buf, sms_info->offset, (ut8 *)sms_hdr, sizeof(SMS_Header));
+	rz_buf_read_at(bf->buf, offset, (ut8 *)sms_hdr, sizeof(SMS_Header));
 	sms_hdr->CheckSum = rz_read_le16(&sms_hdr->CheckSum);
-	sms_info->hdr = sms_hdr;
-	obj->bin_obj = sms_info;
+	obj->bin_obj = sms_hdr;
 	return true;
 }
 
 static void destroy(RzBinFile *bf) {
-	SMS_INFO *sms_info = bf->o->bin_obj;
-	free(sms_info->hdr);
-	free(sms_info);
+	free(bf->o->bin_obj);
 }
 
 static RzBinInfo *info(RzBinFile *bf) {
@@ -90,8 +78,7 @@ static RzBinInfo *info(RzBinFile *bf) {
 		free(ret);
 		return NULL;
 	}
-	SMS_INFO *sms_info = bf->o->bin_obj;
-	SMS_Header *hdr = sms_info->hdr;
+	SMS_Header *hdr = bf->o->bin_obj;
 
 	eprintf("Checksum: 0x%04x\n", (ut32)hdr->CheckSum); // use endian safe apis here
 	eprintf("ProductCode: %02d%02X%02X\n", (hdr->Version >> 4), hdr->ProductCode[1],
