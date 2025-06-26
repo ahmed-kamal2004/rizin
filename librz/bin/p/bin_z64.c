@@ -85,8 +85,7 @@ static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *b, Sdb *sdb) 
 		return false;
 	}
 	ut8 buf[sizeof(N64Header)] = { 0 };
-	rz_buf_read_at(b, 0, buf, sizeof(buf));
-	memcpy(hdr, buf, sizeof(N64Header));
+	rz_buf_read_at(b, 0, (ut8 *)hdr, sizeof(buf));
 	obj->bin_obj = hdr;
 	return true;
 }
