@@ -78,14 +78,34 @@ static bool check_buffer(RzBuffer *b) {
 	return !memcmp(magic, "\x80\x37\x12\x40", 4);
 }
 
+static bool n64_read_firm_hdr(RzBuffer *buf, N64Header *hdr) {
+	ut64 offset = 0;
+	return rz_buf_read_ble8_offset(buf, &offset, &hdr->x1, false) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x2, false) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x3, false) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x4, false) &&
+		rz_buf_read_le32_offset(buf, &offset, &hdr->ClockRate) &&
+		rz_buf_read_le32_offset(buf, &offset, &hdr->BootAddress) &&
+		rz_buf_read_le32_offset(buf, &offset, &hdr->Release) &&
+		rz_buf_read_le32_offset(buf, &offset, &hdr->CRC1) &&
+		rz_buf_read_le32_offset(buf, &offset, &hdr->CRC2) &&
+		rz_buf_read_le64_offset(buf, &offset, &hdr->UNK1) &&
+		rz_buf_read_offset(buf, &offset, (ut8 *)hdr->Name, sizeof(hdr->Name)) &&
+		rz_buf_read_le32_offset(buf, &offset, &hdr->UNK2) &&
+		rz_buf_read_le16_offset(buf, &offset, &hdr->UNK3) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK4, false) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->ManufacturerID, false) &&
+		rz_buf_read_le16_offset(buf, &offset, &hdr->CartridgeID) &&
+		rz_buf_read_ble8_offset(buf, &offset, (ut8 *)&hdr->CountryCode, false) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK5, false);
+}
+
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *b, Sdb *sdb) {
 	N64Header *hdr = RZ_NEW0(N64Header);
-	if (!check_buffer(b)) {
+	if (!n64_read_firm_hdr(b, hdr)) {
 		free(hdr);
 		return false;
 	}
-	ut8 buf[sizeof(N64Header)] = { 0 };
-	rz_buf_read_at(b, 0, (ut8 *)hdr, sizeof(buf));
 	obj->bin_obj = hdr;
 	return true;
 }
