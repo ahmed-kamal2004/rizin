@@ -16,18 +16,18 @@ static bool find_magic(RzBuffer *b, ut32 *offset) {
 	ut32 offsets[] = { 0x2000, 0x4000, 0x8000, 0x9000 };
 	ut8 signature[8];
 	for (size_t i = 0; i < RZ_ARRAY_SIZE(offsets); i++) {
-		ut32 *off = offsets + i;
-		rz_buf_read_at(b, *off - 16, signature, 8);
+		ut32 off = offsets[i];
+		rz_buf_read_at(b, off - 16, signature, 8);
 		if (!strncmp((const char *)signature, "TMR SEGA", 8)) {
 			if (offset) {
-				*offset = *off - 16;
+				*offset = off - 16;
 			}
 			return true; // int)(*off - 16);
 		}
-		if (*off == 0x8000) {
+		if (off == 0x8000) {
 			if (!strncmp((const char *)signature, "SDSC", 4)) {
 				if (offset) {
-					*offset = *off - 16;
+					*offset = off - 16;
 				}
 				return true; // (int)(*off - 16);
 			}
@@ -60,49 +60,36 @@ static void destroy(RzBinFile *bf) {
 	free(bf->o->bin_obj);
 }
 
-static RzBinInfo *info(RzBinFile *bf) {
-	RzBinInfo *ret = RZ_NEW0(RzBinInfo);
-	if (!ret || !bf || !bf->buf) {
-		free(ret);
-		return NULL;
-	}
-	ret->file = rz_str_dup(bf->file);
-	ret->type = rz_str_dup("ROM");
-	ret->machine = rz_str_dup("SEGA MasterSystem");
-	ret->os = rz_str_dup("sms");
-	ret->arch = rz_str_dup("z80");
-	ret->has_va = 1;
-	ret->bits = 8;
+static void header(RzBinFile *bf) {
+	RzBin *rbin = bf->rbin;
 	if (!check_buffer(bf->buf)) {
-		eprintf("Cannot find magic SEGA copyright\n");
-		free(ret);
-		return NULL;
+		rbin->cb_printf("Cannot find magic SEGA copyright\n");
+		return;
 	}
 	SMS_Header *hdr = bf->o->bin_obj;
-
-	eprintf("Checksum: 0x%04x\n", (ut32)hdr->CheckSum); // use endian safe apis here
-	eprintf("ProductCode: %02d%02X%02X\n", (hdr->Version >> 4), hdr->ProductCode[1],
+	rbin->cb_printf("Checksum: 0x%04x\n", (ut32)hdr->CheckSum); // use endian safe apis here
+	rbin->cb_printf("ProductCode: %02d%02X%02X\n", (hdr->Version >> 4), hdr->ProductCode[1],
 		hdr->ProductCode[0]);
 	switch (hdr->RegionRomSize >> 4) {
 	case 3:
-		eprintf("Console: Sega Master System\n");
-		eprintf("Region: Japan\n");
+		rbin->cb_printf("Console: Sega Master System\n");
+		rbin->cb_printf("Region: Japan\n");
 		break;
 	case 4:
-		eprintf("Console: Sega Master System\n");
-		eprintf("Region: Export\n");
+		rbin->cb_printf("Console: Sega Master System\n");
+		rbin->cb_printf("Region: Export\n");
 		break;
 	case 5:
-		eprintf("Console: Game Gear\n");
-		eprintf("Region: Japan\n");
+		rbin->cb_printf("Console: Game Gear\n");
+		rbin->cb_printf("Region: Japan\n");
 		break;
 	case 6:
-		eprintf("Console: Game Gear\n");
-		eprintf("Region: Export\n");
+		rbin->cb_printf("Console: Game Gear\n");
+		rbin->cb_printf("Region: Export\n");
 		break;
 	case 7:
-		eprintf("Console: Game Gear\n");
-		eprintf("Region: International\n");
+		rbin->cb_printf("Console: Game Gear\n");
+		rbin->cb_printf("Region: International\n");
 		break;
 	}
 	int romsize = 0;
@@ -117,7 +104,22 @@ static RzBinInfo *info(RzBinFile *bf) {
 	case 0x1: romsize = 512; break;
 	case 0x2: romsize = 1024; break;
 	}
-	eprintf("RomSize: %dKB\n", romsize);
+	rbin->cb_printf("RomSize: %dKB\n", romsize);
+}
+
+static RzBinInfo *info(RzBinFile *bf) {
+	RzBinInfo *ret = RZ_NEW0(RzBinInfo);
+	if (!ret || !bf || !bf->buf) {
+		free(ret);
+		return NULL;
+	}
+	ret->file = rz_str_dup(bf->file);
+	ret->type = rz_str_dup("ROM");
+	ret->machine = rz_str_dup("SEGA MasterSystem");
+	ret->os = rz_str_dup("sms");
+	ret->arch = rz_str_dup("z80");
+	ret->has_va = 1;
+	ret->bits = 8;
 	return ret;
 }
 
@@ -137,6 +139,7 @@ RzBinPlugin rz_bin_plugin_sms = {
 	.load_buffer = &load_buffer,
 	.check_buffer = &check_buffer,
 	.destroy = &destroy,
+	.header = &header,
 	.info = &info,
 	.strings = &strings,
 	.strfilter = 'U'
