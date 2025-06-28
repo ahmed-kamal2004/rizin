@@ -3,6 +3,12 @@
 
 #include <rz_bin.h>
 
+#define SMS_CONSOLE_SEGA_MASTER_JAPAN 3
+#define SMS_CONSOLE_SEGA_MASTER_EXPRT 4
+#define SMS_CONSOLE_GAME_GEAR_JAPAN   5
+#define SMS_CONSOLE_GAME_GEAR_EXPRT   6
+#define SMS_CONSOLE_GAME_GEAR_INTL    7
+
 typedef struct gen_hdr {
 	ut8 HeaderID[8];
 	ut8 ReservedWord[2];
@@ -62,34 +68,32 @@ static void destroy(RzBinFile *bf) {
 
 static void header(RzBinFile *bf) {
 	RzBin *rbin = bf->rbin;
-	if (!check_buffer(bf->buf)) {
-		rbin->cb_printf("Cannot find magic SEGA copyright\n");
-		return;
-	}
 	SMS_Header *hdr = bf->o->bin_obj;
 	rbin->cb_printf("Checksum: 0x%04x\n", (ut32)hdr->CheckSum); // use endian safe apis here
 	rbin->cb_printf("ProductCode: %02d%02X%02X\n", (hdr->Version >> 4), hdr->ProductCode[1],
 		hdr->ProductCode[0]);
 	switch (hdr->RegionRomSize >> 4) {
-	case 3:
+	case SMS_CONSOLE_SEGA_MASTER_JAPAN:
 		rbin->cb_printf("Console: Sega Master System\n");
 		rbin->cb_printf("Region: Japan\n");
 		break;
-	case 4:
+	case SMS_CONSOLE_SEGA_MASTER_EXPRT:
 		rbin->cb_printf("Console: Sega Master System\n");
 		rbin->cb_printf("Region: Export\n");
 		break;
-	case 5:
+	case SMS_CONSOLE_GAME_GEAR_JAPAN:
 		rbin->cb_printf("Console: Game Gear\n");
 		rbin->cb_printf("Region: Japan\n");
 		break;
-	case 6:
+	case SMS_CONSOLE_GAME_GEAR_EXPRT:
 		rbin->cb_printf("Console: Game Gear\n");
 		rbin->cb_printf("Region: Export\n");
 		break;
-	case 7:
+	case SMS_CONSOLE_GAME_GEAR_INTL:
 		rbin->cb_printf("Console: Game Gear\n");
 		rbin->cb_printf("Region: International\n");
+		break;
+	default:
 		break;
 	}
 	int romsize = 0;

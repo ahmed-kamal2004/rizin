@@ -16,9 +16,11 @@ RUN
 
 NAME=SMS: maps
 FILE=bins/sms/colorcheck.sms
-CMDS=oml
+CMDS=iH
 EXPECT=<<EOF
- 1 fd: 3 +0x00000000 0x00000000 * 0x00007fff r-x 
+Checksum: 0x5e2a
+ProductCode: 000000
+RomSize: 256KB
 EOF
 RUN
 
