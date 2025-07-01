@@ -16,12 +16,16 @@
 
 #define N64_ROM_START 0x1000
 
+#define UNKNOWN_BYTE_ORDER       0
+#define BIG_INDIAN_BYTE_ORDER    1
+#define LITTLE_INDIAN_BYTE_ORDER 2
+
 // starting at 0
 /*
-0000h              (1 byte): initial PI_BSB_DOM1_LAT_REG value (0x80)
-0001h              (1 byte): initial PI_BSB_DOM1_PGS_REG value (0x37)
-0002h              (1 byte): initial PI_BSB_DOM1_PWD_REG value (0x12)
-0003h              (1 byte): initial PI_BSB_DOM1_PGS_REG value (0x40)
+0000h              (1 byte): initial PI_BSB_DOM1_LAT_REG value (0x80 for z64) (0x40 for n64)
+0001h              (1 byte): initial PI_BSB_DOM1_PGS_REG value (0x37 for z64) (0x12 for n64)
+0002h              (1 byte): initial PI_BSB_DOM1_PWD_REG value (0x12 for z64) (0x37 for n64)
+0003h              (1 byte): initial PI_BSB_DOM1_PGS_REG value (0x40 for z64) (0x80 for n64)
 0004h - 0007h     (1 dword): ClockRate
 0008h - 000Bh     (1 dword): Program Counter (PC)
 000Ch - 000Fh     (1 dword): Release
@@ -75,34 +79,60 @@ static bool check_buffer(RzBuffer *b) {
 		return false;
 	}
 	(void)rz_buf_read_at(b, 0, magic, sizeof(magic));
-	return !memcmp(magic, "\x80\x37\x12\x40", 4);
+	return (!memcmp(magic, "\x80\x37\x12\x40", 4) || !memcmp(magic, "\x40\x12\x37\x80", 4));
 }
 
-static bool n64_read_firm_hdr(RzBuffer *buf, N64Header *hdr) {
+static int get_byte_order_format(RzBuffer *buf) {
+	ut8 magic[4];
+	if (rz_buf_size(buf) < N64_ROM_START) {
+		return UNKNOWN_BYTE_ORDER;
+	}
+	(void)rz_buf_read_at(buf, 0, magic, sizeof(magic));
+	if (!memcmp(magic, "\x80\x37\x12\x40", 4)) {
+		return BIG_INDIAN_BYTE_ORDER;
+	} else if (!memcmp(magic, "\x40\x12\x37\x80", 4)) {
+		return LITTLE_INDIAN_BYTE_ORDER;
+	}
+	return UNKNOWN_BYTE_ORDER;
+}
+
+static bool n64_read_orm_hdr(RzBuffer *buf, N64Header *hdr) {
 	ut64 offset = 0;
-	return rz_buf_read_ble8_offset(buf, &offset, &hdr->x1, false) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->x2, false) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->x3, false) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->x4, false) &&
-		rz_buf_read_le32_offset(buf, &offset, &hdr->ClockRate) &&
-		rz_buf_read_le32_offset(buf, &offset, &hdr->BootAddress) &&
-		rz_buf_read_le32_offset(buf, &offset, &hdr->Release) &&
-		rz_buf_read_le32_offset(buf, &offset, &hdr->CRC1) &&
-		rz_buf_read_le32_offset(buf, &offset, &hdr->CRC2) &&
-		rz_buf_read_le64_offset(buf, &offset, &hdr->UNK1) &&
-		rz_buf_read_offset(buf, &offset, (ut8 *)hdr->Name, sizeof(hdr->Name)) &&
-		rz_buf_read_le32_offset(buf, &offset, &hdr->UNK2) &&
-		rz_buf_read_le16_offset(buf, &offset, &hdr->UNK3) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK4, false) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->ManufacturerID, false) &&
-		rz_buf_read_le16_offset(buf, &offset, &hdr->CartridgeID) &&
-		rz_buf_read_ble8_offset(buf, &offset, (ut8 *)&hdr->CountryCode, false) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK5, false);
-}
+	size_t byte_order = get_byte_order_format(buf);
+	bool byte_order_flag = true;
 
+	switch (byte_order) {
+	case LITTLE_INDIAN_BYTE_ORDER:
+		byte_order_flag = false;
+		break;
+	case BIG_INDIAN_BYTE_ORDER:
+	default:
+		byte_order_flag = true;
+		break;
+	}
+
+	return rz_buf_read_ble8_offset(buf, &offset, &hdr->x1, byte_order_flag) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x2, byte_order_flag) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x3, byte_order_flag) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x4, byte_order_flag) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->ClockRate, byte_order_flag) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->BootAddress, byte_order_flag) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->Release, byte_order_flag) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->CRC1, byte_order_flag) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->CRC2, byte_order_flag) &&
+		rz_buf_read_ble64_offset(buf, &offset, &hdr->UNK1, byte_order_flag) &&
+		rz_buf_read_offset(buf, &offset, (ut8 *)hdr->Name, sizeof(hdr->Name)) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->UNK2, byte_order_flag) &&
+		rz_buf_read_ble16_offset(buf, &offset, &hdr->UNK3, byte_order_flag) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK4, byte_order_flag) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->ManufacturerID, byte_order_flag) &&
+		rz_buf_read_ble16_offset(buf, &offset, &hdr->CartridgeID, byte_order_flag) &&
+		rz_buf_read_ble8_offset(buf, &offset, (ut8 *)&hdr->CountryCode, byte_order_flag) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK5, byte_order_flag);
+}
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *b, Sdb *sdb) {
 	N64Header *hdr = RZ_NEW0(N64Header);
-	if (!n64_read_firm_hdr(b, hdr)) {
+	if (!n64_read_orm_hdr(b, hdr)) {
 		free(hdr);
 		return false;
 	}
