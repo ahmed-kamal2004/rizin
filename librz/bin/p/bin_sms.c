@@ -3,6 +3,12 @@
 
 #include <rz_bin.h>
 
+#define SMS_CONSOLE_SEGA_MASTER_JAPAN 3
+#define SMS_CONSOLE_SEGA_MASTER_EXPRT 4
+#define SMS_CONSOLE_GAME_GEAR_JAPAN   5
+#define SMS_CONSOLE_GAME_GEAR_EXPRT   6
+#define SMS_CONSOLE_GAME_GEAR_INTL    7
+
 typedef struct gen_hdr {
 	ut8 HeaderID[8];
 	ut8 ReservedWord[2];
@@ -12,20 +18,23 @@ typedef struct gen_hdr {
 	ut8 RegionRomSize; // Low 4 bits RomSize, Top 4 bits Region
 } SMS_Header;
 
-static ut32 cb = 0;
-
-static bool check_buffer(RzBuffer *b) {
-	ut32 *off, offs[] = { 0x2000, 0x4000, 0x8000, 0x9000, 0 };
+static bool find_magic(RzBuffer *b, ut32 *offset) {
+	ut32 offsets[] = { 0x2000, 0x4000, 0x8000, 0x9000 };
 	ut8 signature[8];
-	for (off = (ut32 *)&offs; *off; off++) {
-		rz_buf_read_at(b, *off - 16, (ut8 *)&signature, 8);
+	for (size_t i = 0; i < RZ_ARRAY_SIZE(offsets); i++) {
+		ut32 off = offsets[i];
+		rz_buf_read_at(b, off - 16, signature, 8);
 		if (!strncmp((const char *)signature, "TMR SEGA", 8)) {
-			cb = *off - 16;
+			if (offset) {
+				*offset = off - 16;
+			}
 			return true; // int)(*off - 16);
 		}
-		if (*off == 0x8000) {
+		if (off == 0x8000) {
 			if (!strncmp((const char *)signature, "SDSC", 4)) {
-				cb = *off - 16;
+				if (offset) {
+					*offset = off - 16;
+				}
 				return true; // (int)(*off - 16);
 			}
 		}
@@ -33,8 +42,73 @@ static bool check_buffer(RzBuffer *b) {
 	return false;
 }
 
+static bool check_buffer(RzBuffer *b) {
+	return find_magic(b, NULL);
+}
+
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *buf, Sdb *sdb) {
-	return check_buffer(buf);
+	SMS_Header *sms_hdr = RZ_NEW0(SMS_Header);
+	ut32 offset;
+	if (!sms_hdr) {
+		return false;
+	}
+	if (!find_magic(bf->buf, &offset)) {
+		free(sms_hdr);
+		return false;
+	}
+	rz_buf_read_at(bf->buf, offset, (ut8 *)sms_hdr, sizeof(SMS_Header));
+	sms_hdr->CheckSum = rz_read_le16(&sms_hdr->CheckSum);
+	obj->bin_obj = sms_hdr;
+	return true;
+}
+
+static void destroy(RzBinFile *bf) {
+	free(bf->o->bin_obj);
+}
+
+static void header(RzBinFile *bf) {
+	RzBin *rbin = bf->rbin;
+	SMS_Header *hdr = bf->o->bin_obj;
+	rbin->cb_printf("Checksum: 0x%04x\n", (ut32)hdr->CheckSum); // use endian safe apis here
+	rbin->cb_printf("ProductCode: %02d%02X%02X\n", (hdr->Version >> 4), hdr->ProductCode[1],
+		hdr->ProductCode[0]);
+	switch (hdr->RegionRomSize >> 4) {
+	case SMS_CONSOLE_SEGA_MASTER_JAPAN:
+		rbin->cb_printf("Console: Sega Master System\n");
+		rbin->cb_printf("Region: Japan\n");
+		break;
+	case SMS_CONSOLE_SEGA_MASTER_EXPRT:
+		rbin->cb_printf("Console: Sega Master System\n");
+		rbin->cb_printf("Region: Export\n");
+		break;
+	case SMS_CONSOLE_GAME_GEAR_JAPAN:
+		rbin->cb_printf("Console: Game Gear\n");
+		rbin->cb_printf("Region: Japan\n");
+		break;
+	case SMS_CONSOLE_GAME_GEAR_EXPRT:
+		rbin->cb_printf("Console: Game Gear\n");
+		rbin->cb_printf("Region: Export\n");
+		break;
+	case SMS_CONSOLE_GAME_GEAR_INTL:
+		rbin->cb_printf("Console: Game Gear\n");
+		rbin->cb_printf("Region: International\n");
+		break;
+	default:
+		break;
+	}
+	int romsize = 0;
+	switch (hdr->RegionRomSize & 0xf) {
+	case 0xa: romsize = 8; break;
+	case 0xb: romsize = 16; break;
+	case 0xc: romsize = 32; break;
+	case 0xd: romsize = 48; break;
+	case 0xe: romsize = 64; break;
+	case 0xf: romsize = 128; break;
+	case 0x0: romsize = 256; break;
+	case 0x1: romsize = 512; break;
+	case 0x2: romsize = 1024; break;
+	}
+	rbin->cb_printf("RomSize: %dKB\n", romsize);
 }
 
 static RzBinInfo *info(RzBinFile *bf) {
@@ -50,53 +124,6 @@ static RzBinInfo *info(RzBinFile *bf) {
 	ret->arch = rz_str_dup("z80");
 	ret->has_va = 1;
 	ret->bits = 8;
-	if (!check_buffer(bf->buf)) {
-		eprintf("Cannot find magic SEGA copyright\n");
-		free(ret);
-		return NULL;
-	}
-	SMS_Header hdr = { { 0 } };
-	rz_buf_read_at(bf->buf, cb, (ut8 *)&hdr, sizeof(hdr));
-	hdr.CheckSum = rz_read_le16(&hdr.CheckSum);
-
-	eprintf("Checksum: 0x%04x\n", (ut32)hdr.CheckSum); // use endian safe apis here
-	eprintf("ProductCode: %02d%02X%02X\n", (hdr.Version >> 4), hdr.ProductCode[1],
-		hdr.ProductCode[0]);
-	switch (hdr.RegionRomSize >> 4) {
-	case 3:
-		eprintf("Console: Sega Master System\n");
-		eprintf("Region: Japan\n");
-		break;
-	case 4:
-		eprintf("Console: Sega Master System\n");
-		eprintf("Region: Export\n");
-		break;
-	case 5:
-		eprintf("Console: Game Gear\n");
-		eprintf("Region: Japan\n");
-		break;
-	case 6:
-		eprintf("Console: Game Gear\n");
-		eprintf("Region: Export\n");
-		break;
-	case 7:
-		eprintf("Console: Game Gear\n");
-		eprintf("Region: International\n");
-		break;
-	}
-	int romsize = 0;
-	switch (hdr.RegionRomSize & 0xf) {
-	case 0xa: romsize = 8; break;
-	case 0xb: romsize = 16; break;
-	case 0xc: romsize = 32; break;
-	case 0xd: romsize = 48; break;
-	case 0xe: romsize = 64; break;
-	case 0xf: romsize = 128; break;
-	case 0x0: romsize = 256; break;
-	case 0x1: romsize = 512; break;
-	case 0x2: romsize = 1024; break;
-	}
-	eprintf("RomSize: %dKB\n", romsize);
 	return ret;
 }
 
@@ -115,6 +142,8 @@ RzBinPlugin rz_bin_plugin_sms = {
 	.author = "shengdi",
 	.load_buffer = &load_buffer,
 	.check_buffer = &check_buffer,
+	.destroy = &destroy,
+	.header = &header,
 	.info = &info,
 	.strings = &strings,
 	.strfilter = 'U'
