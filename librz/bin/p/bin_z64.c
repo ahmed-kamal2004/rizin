@@ -16,12 +16,16 @@
 
 #define N64_ROM_START 0x1000
 
+#define UNKNOWN_BYTE_ORDER       0
+#define BIG_ENDIAN_BYTE_ORDER    1
+#define LITTLE_ENDIAN_BYTE_ORDER 2
+
 // starting at 0
 /*
-0000h              (1 byte): initial PI_BSB_DOM1_LAT_REG value (0x80)
-0001h              (1 byte): initial PI_BSB_DOM1_PGS_REG value (0x37)
-0002h              (1 byte): initial PI_BSB_DOM1_PWD_REG value (0x12)
-0003h              (1 byte): initial PI_BSB_DOM1_PGS_REG value (0x40)
+0000h              (1 byte): initial PI_BSB_DOM1_LAT_REG value (0x80 for z64) (0x40 for n64)
+0001h              (1 byte): initial PI_BSB_DOM1_PGS_REG value (0x37 for z64) (0x12 for n64)
+0002h              (1 byte): initial PI_BSB_DOM1_PWD_REG value (0x12 for z64) (0x37 for n64)
+0003h              (1 byte): initial PI_BSB_DOM1_PGS_REG value (0x40 for z64) (0x80 for n64)
 0004h - 0007h     (1 dword): ClockRate
 0008h - 000Bh     (1 dword): Program Counter (PC)
 000Ch - 000Fh     (1 dword): Release
@@ -64,29 +68,80 @@ typedef struct {
 	// BOOT CODE?
 } N64Header;
 
-static N64Header n64_header;
-
 static ut64 baddr(RzBinFile *bf) {
-	return (ut64)rz_read_be32(&n64_header.BootAddress);
+	N64Header *hdr = bf->o->bin_obj;
+	return (ut64)hdr->BootAddress;
 }
 
 static bool check_buffer(RzBuffer *b) {
-	ut8 magic[4];
+	ut8 magic[4] = { 0 };
 	if (rz_buf_size(b) < N64_ROM_START) {
 		return false;
 	}
 	(void)rz_buf_read_at(b, 0, magic, sizeof(magic));
-	return !memcmp(magic, "\x80\x37\x12\x40", 4);
+	return (!memcmp(magic, "\x80\x37\x12\x40", 4) || !memcmp(magic, "\x40\x12\x37\x80", 4));
 }
 
-static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *b, Sdb *sdb) {
-	if (check_buffer(b)) {
-		ut8 buf[sizeof(N64Header)] = { 0 };
-		rz_buf_read_at(b, 0, buf, sizeof(buf));
-		obj->bin_obj = memcpy(&n64_header, buf, sizeof(N64Header));
-		return true;
+static int get_byte_order_format(RzBuffer *buf) {
+	ut8 magic[4] = { 0 };
+	if (rz_buf_size(buf) < N64_ROM_START) {
+		return UNKNOWN_BYTE_ORDER;
 	}
-	return false;
+	(void)rz_buf_read_at(buf, 0, magic, sizeof(magic));
+	if (!memcmp(magic, "\x80\x37\x12\x40", 4)) {
+		return BIG_ENDIAN_BYTE_ORDER;
+	} else if (!memcmp(magic, "\x40\x12\x37\x80", 4)) {
+		return LITTLE_ENDIAN_BYTE_ORDER;
+	}
+	return UNKNOWN_BYTE_ORDER;
+}
+
+static bool n64_read_orm_hdr(RzBuffer *buf, N64Header *hdr) {
+	ut64 offset = 0;
+	size_t byte_order = get_byte_order_format(buf);
+	bool big_endian = true;
+
+	switch (byte_order) {
+	case LITTLE_ENDIAN_BYTE_ORDER:
+		big_endian = false;
+		break;
+	case BIG_ENDIAN_BYTE_ORDER:
+		big_endian = true;
+		break;
+	default:
+		return false; // always fail if is not BE or LE
+	}
+
+	return rz_buf_read_ble8_offset(buf, &offset, &hdr->x1, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x2, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x3, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x4, big_endian) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->ClockRate, big_endian) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->BootAddress, big_endian) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->Release, big_endian) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->CRC1, big_endian) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->CRC2, big_endian) &&
+		rz_buf_read_ble64_offset(buf, &offset, &hdr->UNK1, big_endian) &&
+		rz_buf_read_offset(buf, &offset, (ut8 *)hdr->Name, sizeof(hdr->Name)) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->UNK2, big_endian) &&
+		rz_buf_read_ble16_offset(buf, &offset, &hdr->UNK3, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK4, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->ManufacturerID, big_endian) &&
+		rz_buf_read_ble16_offset(buf, &offset, &hdr->CartridgeID, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, (ut8 *)&hdr->CountryCode, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK5, big_endian);
+}
+static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *b, Sdb *sdb) {
+	N64Header *hdr = RZ_NEW0(N64Header);
+	if (!hdr) {
+		return false;
+	}
+	if (!n64_read_orm_hdr(b, hdr)) {
+		free(hdr);
+		return false;
+	}
+	obj->bin_obj = hdr;
+	return true;
 }
 
 static RzPVector /*<RzBinAddr *>*/ *entries(RzBinFile *bf) {
@@ -130,11 +185,12 @@ static ut64 boffset(RzBinFile *bf) {
 static RzBinInfo *info(RzBinFile *bf) {
 	char GameName[21] = { 0 };
 	RzBinInfo *ret = RZ_NEW0(RzBinInfo);
+	N64Header *hdr = bf->o->bin_obj;
 	if (!ret) {
 		return NULL;
 	}
-	memcpy(GameName, n64_header.Name, sizeof(n64_header.Name));
-	ret->file = rz_str_newf("%s (%c)", GameName, n64_header.CountryCode);
+	memcpy(GameName, hdr->Name, sizeof(hdr->Name));
+	ret->file = rz_str_newf("%s (%c)", GameName, hdr->CountryCode);
 	ret->os = rz_str_dup("n64");
 	ret->arch = rz_str_dup("mips");
 	ret->machine = rz_str_dup("Nintendo 64");
@@ -144,8 +200,6 @@ static RzBinInfo *info(RzBinFile *bf) {
 	ret->big_endian = true;
 	return ret;
 }
-
-#if !RZ_BIN_Z64
 
 RzBinPlugin rz_bin_plugin_z64 = {
 	.name = "z64",
@@ -168,5 +222,4 @@ RZ_API RzLibStruct rizin_plugin = {
 	.data = &rz_bin_plugin_z64,
 	.version = RZ_VERSION
 };
-#endif
 #endif
