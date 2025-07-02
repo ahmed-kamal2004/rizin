@@ -17,8 +17,8 @@
 #define N64_ROM_START 0x1000
 
 #define UNKNOWN_BYTE_ORDER       0
-#define BIG_INDIAN_BYTE_ORDER    1
-#define LITTLE_INDIAN_BYTE_ORDER 2
+#define BIG_ENDIAN_BYTE_ORDER    1
+#define LITTLE_ENDIAN_BYTE_ORDER 2
 
 // starting at 0
 /*
@@ -70,11 +70,11 @@ typedef struct {
 
 static ut64 baddr(RzBinFile *bf) {
 	N64Header *hdr = bf->o->bin_obj;
-	return (ut64)rz_read_be32(&(hdr->BootAddress));
+	return (ut64)hdr->BootAddress;
 }
 
 static bool check_buffer(RzBuffer *b) {
-	ut8 magic[4];
+	ut8 magic[4] = { 0 };
 	if (rz_buf_size(b) < N64_ROM_START) {
 		return false;
 	}
@@ -83,15 +83,15 @@ static bool check_buffer(RzBuffer *b) {
 }
 
 static int get_byte_order_format(RzBuffer *buf) {
-	ut8 magic[4];
+	ut8 magic[4] = { 0 };
 	if (rz_buf_size(buf) < N64_ROM_START) {
 		return UNKNOWN_BYTE_ORDER;
 	}
 	(void)rz_buf_read_at(buf, 0, magic, sizeof(magic));
 	if (!memcmp(magic, "\x80\x37\x12\x40", 4)) {
-		return BIG_INDIAN_BYTE_ORDER;
+		return BIG_ENDIAN_BYTE_ORDER;
 	} else if (!memcmp(magic, "\x40\x12\x37\x80", 4)) {
-		return LITTLE_INDIAN_BYTE_ORDER;
+		return LITTLE_ENDIAN_BYTE_ORDER;
 	}
 	return UNKNOWN_BYTE_ORDER;
 }
@@ -99,39 +99,43 @@ static int get_byte_order_format(RzBuffer *buf) {
 static bool n64_read_orm_hdr(RzBuffer *buf, N64Header *hdr) {
 	ut64 offset = 0;
 	size_t byte_order = get_byte_order_format(buf);
-	bool byte_order_flag = true;
+	bool big_endian = true;
 
 	switch (byte_order) {
-	case LITTLE_INDIAN_BYTE_ORDER:
-		byte_order_flag = false;
+	case LITTLE_ENDIAN_BYTE_ORDER:
+		big_endian = false;
 		break;
-	case BIG_INDIAN_BYTE_ORDER:
+	case BIG_ENDIAN_BYTE_ORDER:
+		big_endian = true;
+		break;
 	default:
-		byte_order_flag = true;
-		break;
+		return false; // always fail if is not BE or LE
 	}
 
-	return rz_buf_read_ble8_offset(buf, &offset, &hdr->x1, byte_order_flag) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->x2, byte_order_flag) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->x3, byte_order_flag) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->x4, byte_order_flag) &&
-		rz_buf_read_ble32_offset(buf, &offset, &hdr->ClockRate, byte_order_flag) &&
-		rz_buf_read_ble32_offset(buf, &offset, &hdr->BootAddress, byte_order_flag) &&
-		rz_buf_read_ble32_offset(buf, &offset, &hdr->Release, byte_order_flag) &&
-		rz_buf_read_ble32_offset(buf, &offset, &hdr->CRC1, byte_order_flag) &&
-		rz_buf_read_ble32_offset(buf, &offset, &hdr->CRC2, byte_order_flag) &&
-		rz_buf_read_ble64_offset(buf, &offset, &hdr->UNK1, byte_order_flag) &&
+	return rz_buf_read_ble8_offset(buf, &offset, &hdr->x1, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x2, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x3, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->x4, big_endian) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->ClockRate, big_endian) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->BootAddress, big_endian) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->Release, big_endian) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->CRC1, big_endian) &&
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->CRC2, big_endian) &&
+		rz_buf_read_ble64_offset(buf, &offset, &hdr->UNK1, big_endian) &&
 		rz_buf_read_offset(buf, &offset, (ut8 *)hdr->Name, sizeof(hdr->Name)) &&
-		rz_buf_read_ble32_offset(buf, &offset, &hdr->UNK2, byte_order_flag) &&
-		rz_buf_read_ble16_offset(buf, &offset, &hdr->UNK3, byte_order_flag) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK4, byte_order_flag) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->ManufacturerID, byte_order_flag) &&
-		rz_buf_read_ble16_offset(buf, &offset, &hdr->CartridgeID, byte_order_flag) &&
-		rz_buf_read_ble8_offset(buf, &offset, (ut8 *)&hdr->CountryCode, byte_order_flag) &&
-		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK5, byte_order_flag);
+		rz_buf_read_ble32_offset(buf, &offset, &hdr->UNK2, big_endian) &&
+		rz_buf_read_ble16_offset(buf, &offset, &hdr->UNK3, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK4, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->ManufacturerID, big_endian) &&
+		rz_buf_read_ble16_offset(buf, &offset, &hdr->CartridgeID, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, (ut8 *)&hdr->CountryCode, big_endian) &&
+		rz_buf_read_ble8_offset(buf, &offset, &hdr->UNK5, big_endian);
 }
 static bool load_buffer(RzBinFile *bf, RzBinObject *obj, RzBuffer *b, Sdb *sdb) {
 	N64Header *hdr = RZ_NEW0(N64Header);
+	if (!hdr) {
+		return false;
+	}
 	if (!n64_read_orm_hdr(b, hdr)) {
 		free(hdr);
 		return false;
@@ -197,8 +201,6 @@ static RzBinInfo *info(RzBinFile *bf) {
 	return ret;
 }
 
-#if !RZ_BIN_Z64
-
 RzBinPlugin rz_bin_plugin_z64 = {
 	.name = "z64",
 	.desc = "Nintendo 64 Big-Endian binary",
@@ -220,5 +222,4 @@ RZ_API RzLibStruct rizin_plugin = {
 	.data = &rz_bin_plugin_z64,
 	.version = RZ_VERSION
 };
-#endif
 #endif
