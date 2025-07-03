@@ -110,8 +110,7 @@ static task_t task_for_pid_ios9pangu(int pid) {
 	return task;
 }
 
-static task_t pid_to_task(RZ_NONNULL RzIODesc *fd, int pid) {
-	rz_return_val_if_fail(fd, 0);
+static task_t pid_to_task(RzIODesc *fd, int pid) {
 	task_t task = 0;
 	kern_return_t kr;
 
