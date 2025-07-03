@@ -11,11 +11,8 @@
 #include "rz_io_plugins.h"
 
 typedef struct {
-	libqnxr_t desc;
+	libqnxr_t *qnx_desc;
 } RzIOQnx;
-
-static libqnxr_t *desc = NULL;
-static RzIODesc *rioqnx = NULL;
 
 static bool __plugin_open(RzIO *io, const char *file, bool many) {
 	return (!strncmp(file, "qnx://", 6));
@@ -28,7 +25,7 @@ static ut32 c_size = UT32_MAX;
 static ut8 *c_buff = NULL;
 #define SILLY_CACHE 0
 
-static int debug_qnx_read_at(ut8 *buf, int sz, ut64 addr) {
+static int debug_qnx_read_at(ut8 *buf, int sz, ut64 addr, libqnxr_t *desc) {
 	ut32 size_max = 500;
 	ut32 packets = sz / size_max;
 	ut32 last = sz % size_max;
@@ -55,7 +52,7 @@ static int debug_qnx_read_at(ut8 *buf, int sz, ut64 addr) {
 	return sz;
 }
 
-static int debug_qnx_write_at(const ut8 *buf, int sz, ut64 addr) {
+static int debug_qnx_write_at(const ut8 *buf, int sz, ut64 addr, libqnxr_t *desc) {
 	ut32 x, size_max = 500;
 	ut32 packets = sz / size_max;
 	ut32 last = sz % size_max;
@@ -80,16 +77,14 @@ static int debug_qnx_write_at(const ut8 *buf, int sz, ut64 addr) {
 }
 
 static RzIODesc *__open(RzIO *io, const char *file, int rw, int mode) {
-	RzIOQnx *rioq;
+	RzIOQnx *rioq = NULL;
+	RzIODesc *rioqnx = NULL;
 	char host[128], *port, *p;
 
 	if (!__plugin_open(io, file, 0)) {
 		return NULL;
 	}
-	if (rioqnx) {
-		// FIX: Don't allocate more than one RzIODesc
-		return rioqnx;
-	}
+
 	strncpy(host, file + 6, sizeof(host) - 1);
 	host[sizeof(host) - 1] = '\0';
 	port = strchr(host, ':');
@@ -105,10 +100,9 @@ static RzIODesc *__open(RzIO *io, const char *file, int rw, int mode) {
 	}
 
 	rioq = RZ_NEW0(RzIOQnx);
-	qnxr_init(&rioq->desc);
+	qnxr_init(rioq->qnx_desc);
 	int i_port = atoi(port);
-	if (qnxr_connect(&rioq->desc, host, i_port) == 0) {
-		desc = &rioq->desc;
+	if (qnxr_connect(rioq->qnx_desc, host, i_port) == 0) {
 		rioqnx = rz_io_desc_new(io, &rz_io_plugin_qnx, file, rw, mode, rioq);
 		return rioqnx;
 	}
@@ -118,11 +112,12 @@ static RzIODesc *__open(RzIO *io, const char *file, int rw, int mode) {
 }
 
 static int __write(RzIO *io, RzIODesc *fd, const ut8 *buf, size_t count) {
+	RzIOQnx *rioq = fd->data;
 	ut64 addr = io->off;
-	if (!desc) {
+	if (!rioq->qnx_desc) {
 		return -1;
 	}
-	return debug_qnx_write_at(buf, count, addr);
+	return debug_qnx_write_at(buf, count, addr, rioq->qnx_desc);
 }
 
 static ut64 __lseek(RzIO *io, RzIODesc *fd, ut64 offset, int whence) {
@@ -131,15 +126,19 @@ static ut64 __lseek(RzIO *io, RzIODesc *fd, ut64 offset, int whence) {
 
 static int __read(RzIO *io, RzIODesc *fd, ut8 *buf, size_t count) {
 	memset(buf, 0xff, count);
+	RzIOQnx *rioq = fd->data;
 	ut64 addr = io->off;
-	if (!desc) {
+	if (!rioq->qnx_desc) {
 		return -1;
 	}
-	return debug_qnx_read_at(buf, count, addr);
+	return debug_qnx_read_at(buf, count, addr, rioq->qnx_desc);
 }
 
 static int __close(RzIODesc *fd) {
-	// TODO
+	RzIOQnx *rioq = fd->data;
+	RZ_FREE(rioq->qnx_desc);
+	RZ_FREE(rioq);
+	RZ_FREE(fd);
 	return -1;
 }
 
