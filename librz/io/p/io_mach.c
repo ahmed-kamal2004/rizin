@@ -273,7 +273,7 @@ static int tsk_pagesize(RzIODesc *desc) {
 	task_t task = pid_to_task(desc, tid);
 	RzIODescData *iodd = desc->data;
 	if (iodd && iodd->data) {
-		RzIoMach *riom = iodd->data;
+		RzIOMach *riom = iodd->data;
 		return riom->pagesize
 			? riom->pagesize
 			: (host_page_size(task, &riom->pagesize) == KERN_SUCCESS)
