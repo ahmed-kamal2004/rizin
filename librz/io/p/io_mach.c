@@ -116,26 +116,24 @@ static task_t pid_to_task(RzIODesc *fd, int pid) {
 
 	RzIODescData *iodd = fd ? (RzIODescData *)fd->data : NULL;
 	RzIOMach *riom = NULL;
-	if (iodd) {
+	if (iodd && iodd->data) {
 		riom = iodd->data;
-		if (riom) {
-			if (riom->task) {
-				riom->old_task = riom->task;
-				riom->task = 0;
-				riom->old_pid = iodd->pid;
-			}
+		if (riom->task) {
+			riom->old_task = riom->task;
+			riom->task = 0;
+			riom->old_pid = iodd->pid;
+		}
 
-			if (riom->old_task != 0) {
-				if (riom->old_pid == pid) {
-					return riom->old_task;
-				}
-				// we changed the process pid so deallocate a ref from the old_task
-				// since we are going to get a new task
-				kr = mach_port_deallocate(mach_task_self(), riom->old_task);
-				if (kr != KERN_SUCCESS) {
-					eprintf("pid_to_task: fail to deallocate port\n");
-					return 0;
-				}
+		if (riom->old_task != 0) {
+			if (riom->old_pid == pid) {
+				return riom->old_task;
+			}
+			// we changed the process pid so deallocate a ref from the old_task
+			// since we are going to get a new task
+			kr = mach_port_deallocate(mach_task_self(), riom->old_task);
+			if (kr != KERN_SUCCESS) {
+				RZ_LOG_ERROR("pid_to_task: fail to deallocate port\n");
+				return 0;
 			}
 		}
 	}
@@ -274,15 +272,13 @@ static int tsk_pagesize(RzIODesc *desc) {
 	int tid = __get_pid(desc);
 	task_t task = pid_to_task(desc, tid);
 	RzIODescData *iodd = desc->data;
-	if (iodd) {
-		RzIOMach *riom = iodd->data;
-		if (riom) {
-			return riom->pagesize
-				? riom->pagesize
-				: (host_page_size(task, &riom->pagesize) == KERN_SUCCESS)
-				? riom->pagesize
-				: 4096;
-		}
+	if (iodd && iodd->data) {
+		RzIoMach *riom = iodd->data;
+		return riom->pagesize
+			? riom->pagesize
+			: (host_page_size(task, &riom->pagesize) == KERN_SUCCESS)
+			? riom->pagesize
+			: 4096;
 	}
 	return 4096;
 }
