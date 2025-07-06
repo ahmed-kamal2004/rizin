@@ -135,11 +135,18 @@ static int __read(RzIO *io, RzIODesc *fd, ut8 *buf, size_t count) {
 }
 
 static int __close(RzIODesc *fd) {
+	if (!fd) {
+		return -1;
+	}
 	RzIOQnx *rioq = fd->data;
+	if (!rioq) {
+		RZ_FREE(fd);
+		return -1;
+	}
 	RZ_FREE(rioq->qnx_desc);
 	RZ_FREE(rioq);
 	RZ_FREE(fd);
-	return -1;
+	return 0;
 }
 
 static char *__system(RzIO *io, RzIODesc *fd, const char *cmd) {
