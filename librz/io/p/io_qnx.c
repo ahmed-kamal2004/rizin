@@ -10,10 +10,6 @@
 
 #include "rz_io_plugins.h"
 
-typedef struct {
-	libqnxr_t *qnx_desc;
-} RzIOQnx;
-
 static bool __plugin_open(RzIO *io, const char *file, bool many) {
 	return (!strncmp(file, "qnx://", 6));
 }
@@ -77,7 +73,7 @@ static int debug_qnx_write_at(const ut8 *buf, int sz, ut64 addr, libqnxr_t *desc
 }
 
 static RzIODesc *__open(RzIO *io, const char *file, int rw, int mode) {
-	RzIOQnx *rioq = NULL;
+	libqnxr_t *qnx_desc = NULL;
 	RzIODesc *rioqnx = NULL;
 	char host[128], *port, *p;
 
@@ -99,25 +95,23 @@ static RzIODesc *__open(RzIO *io, const char *file, int rw, int mode) {
 		*p = 0;
 	}
 
-	rioq = RZ_NEW0(RzIOQnx);
-	qnxr_init(rioq->qnx_desc);
+	qnxr_init(qnx_desc);
 	int i_port = atoi(port);
-	if (qnxr_connect(rioq->qnx_desc, host, i_port) == 0) {
-		rioqnx = rz_io_desc_new(io, &rz_io_plugin_qnx, file, rw, mode, rioq);
+	if (qnxr_connect(qnx_desc, host, i_port) == 0) {
+		rioqnx = rz_io_desc_new(io, &rz_io_plugin_qnx, file, rw, mode, qnx_desc);
 		return rioqnx;
 	}
 	eprintf("qnx.io.open: Cannot connect to host.\n");
-	free(rioq);
 	return NULL;
 }
 
 static int __write(RzIO *io, RzIODesc *fd, const ut8 *buf, size_t count) {
-	RzIOQnx *rioq = fd->data;
+	libqnxr_t *qnx_desc = fd->data;
 	ut64 addr = io->off;
-	if (!rioq->qnx_desc) {
+	if (!qnx_desc) {
 		return -1;
 	}
-	return debug_qnx_write_at(buf, count, addr, rioq->qnx_desc);
+	return debug_qnx_write_at(buf, count, addr, qnx_desc);
 }
 
 static ut64 __lseek(RzIO *io, RzIODesc *fd, ut64 offset, int whence) {
@@ -126,25 +120,24 @@ static ut64 __lseek(RzIO *io, RzIODesc *fd, ut64 offset, int whence) {
 
 static int __read(RzIO *io, RzIODesc *fd, ut8 *buf, size_t count) {
 	memset(buf, 0xff, count);
-	RzIOQnx *rioq = fd->data;
+	libqnxr_t *qnx_desc = fd->data;
 	ut64 addr = io->off;
-	if (!rioq->qnx_desc) {
+	if (!qnx_desc) {
 		return -1;
 	}
-	return debug_qnx_read_at(buf, count, addr, rioq->qnx_desc);
+	return debug_qnx_read_at(buf, count, addr, qnx_desc);
 }
 
 static int __close(RzIODesc *fd) {
 	if (!fd) {
 		return -1;
 	}
-	RzIOQnx *rioq = fd->data;
-	if (!rioq) {
+	libqnxr_t *qnx_desc = fd->data;
+	if (!qnx_desc) {
 		RZ_FREE(fd);
 		return -1;
 	}
-	RZ_FREE(rioq->qnx_desc);
-	RZ_FREE(rioq);
+	RZ_FREE(qnx_desc);
 	RZ_FREE(fd);
 	return 0;
 }
