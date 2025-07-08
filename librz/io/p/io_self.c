@@ -20,7 +20,7 @@
 #include <mach/mach_error.h>
 #include <mach/task.h>
 #include <mach/task_info.h>
-void macosx_debug_regions(RzIO *io, task_t task, mach_vm_address_t address, int max);
+void macosx_debug_regions(RzIO *io, RzIOSelf *io_self, task_t task, mach_vm_address_t address, int max);
 #elif __BSD__
 #if __FreeBSD__
 #include <sys/sysctl.h>
@@ -35,7 +35,7 @@ void macosx_debug_regions(RzIO *io, task_t task, mach_vm_address_t address, int 
 #include <kvm.h>
 #endif
 #include <errno.h>
-bool bsd_proc_vmmaps(RzIO *io, int pid);
+bool bsd_proc_vmmaps(RzIO *io, RzIOSelf *io_self, int pid);
 #endif
 #ifdef __HAIKU__
 #include <kernel/image.h>
@@ -64,20 +64,27 @@ typedef struct {
 // computed.
 #define PROC_REGION_LEFT_SZ 98
 #define PROC_PERM_SZ        5
+#define SELF_SECTION_NUM    1024
 
-static RzIOSelfSection self_sections[1024];
-static int self_sections_count = 0;
-static bool mameio = false;
+typedef struct {
+	RzIOSelfSection *self_sections;
+	int self_sections_count;
+	bool mameio;
+} RzIOSelf;
 
-static int self_in_section(RzIO *io, ut64 addr, int *left, int *perm) {
+static int self_in_section(RzIO *io, RzIODesc *desc, ut64 addr, int *left, int *perm) {
+	if (!desc->data) {
+		return false;
+	}
+	RzIOSelf *io_self = desc->data;
 	int i;
-	for (i = 0; i < self_sections_count; i++) {
-		if (addr >= self_sections[i].from && addr < self_sections[i].to) {
+	for (i = 0; i < io_self->self_sections_count; i++) {
+		if (addr >= io_self->self_sections[i].from && addr < io_self->self_sections[i].to) {
 			if (left) {
-				*left = self_sections[i].to - addr;
+				*left = io_self->self_sections[i].to - addr;
 			}
 			if (perm) {
-				*perm = self_sections[i].perm;
+				*perm = io_self->self_sections[i].perm;
 			}
 			return true;
 		}
@@ -85,8 +92,12 @@ static int self_in_section(RzIO *io, ut64 addr, int *left, int *perm) {
 	return false;
 }
 
-static int update_self_regions(RzIO *io, int pid) {
-	self_sections_count = 0;
+static int update_self_regions(RzIO *io, RzIODesc *desc, int pid) {
+	if (!desc->data) {
+		return false;
+	}
+	RzIOSelf *io_self = desc->data;
+	io_self->self_sections_count = 0;
 #if __APPLE__
 	mach_port_t task;
 	kern_return_t rc;
@@ -95,7 +106,7 @@ static int update_self_regions(RzIO *io, int pid) {
 		eprintf("task_for_pid failed\n");
 		return false;
 	}
-	macosx_debug_regions(io, task, (size_t)1, 1000);
+	macosx_debug_regions(io, io_self, task, (size_t)1, 1000);
 	return true;
 #elif __linux__
 	char *pos_c;
@@ -138,28 +149,28 @@ static int update_self_regions(RzIO *io, int pid) {
 			case 'x': perm |= RZ_PERM_X; break;
 			}
 		}
-		self_sections[self_sections_count].from = rz_num_get(NULL, region);
-		self_sections[self_sections_count].to = rz_num_get(NULL, region2);
-		self_sections[self_sections_count].name = rz_str_dup(name);
-		self_sections[self_sections_count].perm = perm;
-		self_sections_count++;
+		io_self->self_sections[io_self->self_sections_count].from = rz_num_get(NULL, region);
+		io_self->self_sections[io_self->self_sections_count].to = rz_num_get(NULL, region2);
+		io_self->self_sections[io_self->self_sections_count].name = rz_str_dup(name);
+		io_self->self_sections[io_self->self_sections_count].perm = perm;
+		io_self->self_sections_count++;
 		rz_num_get(NULL, region2);
 	}
 	fclose(fd);
 
 	return true;
 #elif __BSD__
-	return bsd_proc_vmmaps(io, pid);
+	return bsd_proc_vmmaps(io, io_self, pid);
 #elif __HAIKU__
 	image_info ii;
 	int32_t cookie = 0;
 
 	while (get_next_image_info(0, &cookie, &ii) == B_OK) {
-		self_sections[self_sections_count].from = (ut64)ii.text;
-		self_sections[self_sections_count].to = (ut64)((char *)ii.text + ii.text_size);
-		self_sections[self_sections_count].name = rz_str_dup(ii.name);
-		self_sections[self_sections_count].perm = 0;
-		self_sections_count++;
+		io_self->self_sections[io_self->self_sections_count].from = (ut64)ii.text;
+		io_self->self_sections[io_self->self_sections_count].to = (ut64)((char *)ii.text + ii.text_size);
+		io_self->self_sections[io_self->self_sections_count].name = rz_str_dup(ii.name);
+		io_self->self_sections[io_self->self_sections_count].perm = 0;
+		io_self->self_sections_count++;
 	}
 	return true;
 #elif __sun && defined _LP64
@@ -219,11 +230,11 @@ static int update_self_regions(RzIO *io, int pid) {
 			perm |= RZ_PERM_X;
 		}
 
-		self_sections[self_sections_count].from = (ut64)c->pr_vaddr;
-		self_sections[self_sections_count].to = (ut64)(c->pr_vaddr + c->pr_size);
-		self_sections[self_sections_count].name = rz_str_dup(name);
-		self_sections[self_sections_count].perm = perm;
-		self_sections_count++;
+		io_self->self_sections[io_self->self_sections_count].from = (ut64)c->pr_vaddr;
+		io_self->self_sections[io_self->self_sections_count].to = (ut64)(c->pr_vaddr + c->pr_size);
+		io_self->self_sections[io_self->self_sections_count].name = rz_str_dup(name);
+		io_self->self_sections[io_self->self_sections_count].perm = perm;
+		io_self->self_sections_count++;
 	}
 
 	free(map);
@@ -254,11 +265,11 @@ static int update_self_regions(RzIO *io, int pid) {
 		if (perm && !GetMappedFileNameW(h, (LPVOID)mbi.BaseAddress, name, name_size)) {
 			name[0] = L'\0';
 		}
-		self_sections[self_sections_count].from = (ut64)mbi.BaseAddress;
-		self_sections[self_sections_count].to = (ut64)to;
-		self_sections[self_sections_count].name = rz_utf16_to_utf8(name);
-		self_sections[self_sections_count].perm = perm;
-		self_sections_count++;
+		io_self->self_sections[io_self->self_sections_count].from = (ut64)mbi.BaseAddress;
+		io_self->self_sections[io_self->self_sections_count].to = (ut64)to;
+		io_self->self_sections[io_self->self_sections_count].name = rz_utf16_to_utf8(name);
+		io_self->self_sections[io_self->self_sections_count].perm = perm;
+		io_self->self_sections_count++;
 		name[0] = L'\0';
 	}
 	free(name);
@@ -276,19 +287,25 @@ static bool __plugin_open(RzIO *io, const char *file, bool many) {
 }
 
 static RzIODesc *__open(RzIO *io, const char *file, int rw, int mode) {
+	RzIOSelf *io_self = RZ_NEW0(RzIOSelf);
+	if (!io_self) {
+		return NULL;
+	}
+	io_self->self_sections = (RzIOSelfSection *)calloc(SELF_SECTION_NUM, sizeof(RzIOSelfSection));
+	RzIODesc *desc = rz_io_desc_new(io, &rz_io_plugin_self, file, rw, mode, io_self);
 	int ret, pid = getpid();
 	io->va = true; // nop
-	ret = update_self_regions(io, pid);
+	ret = update_self_regions(io, desc, pid);
 	if (ret) {
-		return rz_io_desc_new(io, &rz_io_plugin_self,
-			file, rw, mode, NULL);
+		return desc;
 	}
+	RZ_FREE(desc);
 	return NULL;
 }
 
 static int __read(RzIO *io, RzIODesc *fd, ut8 *buf, size_t len) {
 	int left, perm;
-	if (self_in_section(io, io->off, &left, &perm)) {
+	if (self_in_section(io, fd, io->off, &left, &perm)) {
 		if (perm & RZ_PERM_R) {
 			int newlen = RZ_MIN(len, left);
 			ut8 *ptr = (ut8 *)(size_t)io->off;
@@ -302,7 +319,7 @@ static int __read(RzIO *io, RzIODesc *fd, ut8 *buf, size_t len) {
 static int __write(RzIO *io, RzIODesc *fd, const ut8 *buf, size_t len) {
 	if (fd->perm & RZ_PERM_W) {
 		int left, perm;
-		if (self_in_section(io, io->off, &left, &perm)) {
+		if (self_in_section(io, fd, io->off, &left, &perm)) {
 			int newlen = RZ_MIN(len, left);
 			ut8 *ptr = (ut8 *)(size_t)io->off;
 			if (newlen > 0) {
@@ -335,6 +352,10 @@ static void got_alarm(int sig) {
 #endif
 
 static char *__system(RzIO *io, RzIODesc *fd, const char *cmd) {
+	RzIOSelf *io_self = fd->data;
+	if (!io_self) {
+		return NULL;
+	}
 	if (!strcmp(cmd, "pid")) {
 		return rz_str_newf("%d", fd->fd);
 	} else if (!strncmp(cmd, "pid", 3)) {
@@ -462,18 +483,18 @@ static char *__system(RzIO *io, RzIODesc *fd, const char *cmd) {
 		if (ptr) {
 			//	gothis =
 			eprintf("TODO: No MAME IO implemented yet\n");
-			mameio = true;
+			io_self->mameio = true;
 		} else {
 			eprintf("This process is not a MAME!");
 		}
 		rz_sys_dlclose(lib);
 	} else if (!strcmp(cmd, "maps")) {
 		int i;
-		for (i = 0; i < self_sections_count; i++) {
+		for (i = 0; i < io_self->self_sections_count; i++) {
 			eprintf("0x%08" PFMT64x " - 0x%08" PFMT64x " %s %s\n",
-				self_sections[i].from, self_sections[i].to,
-				rz_str_rwx_i(self_sections[i].perm),
-				self_sections[i].name);
+				io_self->self_sections[i].from, io_self->self_sections[i].to,
+				rz_str_rwx_i(io_self->self_sections[i].perm),
+				io_self->self_sections[i].name);
 		}
 	} else {
 		eprintf("|Usage: R![cmd] [args]\n");
@@ -522,7 +543,7 @@ kern_return_t mach_vm_region_recurse(
 	vm_region_recurse_info_t info,
 	mach_msg_type_number_t *infoCnt);
 // TODO: unify that implementation in a single reusable place
-void macosx_debug_regions(RzIO *io, task_t task, mach_vm_address_t address, int max) {
+void macosx_debug_regions(RzIO *io, RzIOSelf *io_self, task_t task, mach_vm_address_t address, int max) {
 	kern_return_t kret;
 
 	struct vm_region_submap_info_64 info;
@@ -601,10 +622,10 @@ void macosx_debug_regions(RzIO *io, task_t task, mach_vm_address_t address, int 
 				perm |= RZ_PERM_X;
 			}
 
-			self_sections[self_sections_count].from = address;
-			self_sections[self_sections_count].to = address + size;
-			self_sections[self_sections_count].perm = perm;
-			self_sections_count++;
+			io_self->self_sections[io_self->self_sections_count].from = address;
+			io_self->self_sections[io_self->self_sections_count].to = address + size;
+			io_self->self_sections[io_self->self_sections_count].perm = perm;
+			io_self->self_sections_count++;
 			if (nsubregions > 1) {
 				io->cb_printf(" (%d sub-regions)", nsubregions);
 			}
@@ -624,7 +645,7 @@ void macosx_debug_regions(RzIO *io, task_t task, mach_vm_address_t address, int 
 	}
 }
 #elif __BSD__
-bool bsd_proc_vmmaps(RzIO *io, int pid) {
+bool bsd_proc_vmmaps(RzIO *io, RzIOSelf *io_self, int pid) {
 #if __FreeBSD__
 	size_t size;
 	bool ret = false;
@@ -674,11 +695,11 @@ bool bsd_proc_vmmaps(RzIO *io, int pid) {
 					entry->kve_path);
 			}
 
-			self_sections[self_sections_count].from = entry->kve_start;
-			self_sections[self_sections_count].to = entry->kve_end;
-			self_sections[self_sections_count].name = rz_str_dup(entry->kve_path);
-			self_sections[self_sections_count].perm = perm;
-			self_sections_count++;
+			io_self->self_sections[io_self->self_sections_count].from = entry->kve_start;
+			io_self->self_sections[io_self->self_sections_count].to = entry->kve_end;
+			io_self->self_sections[io_self->self_sections_count].name = rz_str_dup(entry->kve_path);
+			io_self->self_sections[io_self->self_sections_count].perm = perm;
+			io_self->self_sections_count++;
 			p_start += sz;
 		}
 
@@ -726,10 +747,10 @@ exit:
 			rz_str_rwx_i(perm),
 			entry.kve_offset);
 
-		self_sections[self_sections_count].from = entry.kve_start;
-		self_sections[self_sections_count].to = entry.kve_end;
-		self_sections[self_sections_count].perm = perm;
-		self_sections_count++;
+		io_self->self_sections[io_self->self_sections_count].from = entry.kve_start;
+		io_self->self_sections[io_self->self_sections_count].to = entry.kve_end;
+		io_self->self_sections[io_self->self_sections_count].perm = perm;
+		io_self->self_sections_count++;
 		entry.kve_start = entry.kve_start + 1;
 	}
 
@@ -783,11 +804,11 @@ exit:
 					entry->kve_path);
 			}
 
-			self_sections[self_sections_count].from = entry->kve_start;
-			self_sections[self_sections_count].to = entry->kve_end;
-			self_sections[self_sections_count].name = rz_str_dup(entry->kve_path);
-			self_sections[self_sections_count].perm = perm;
-			self_sections_count++;
+			io_self->self_sections[io_self->self_sections_count].from = entry->kve_start;
+			io_self->self_sections[io_self->self_sections_count].to = entry->kve_end;
+			io_self->self_sections[io_self->self_sections_count].name = rz_str_dup(entry->kve_path);
+			io_self->self_sections[io_self->self_sections_count].perm = perm;
+			io_self->self_sections_count++;
 			p_start += sz;
 		}
 
@@ -841,10 +862,10 @@ exit:
 			rz_str_rwx_i(perm),
 			entry.ba.offset);
 
-		self_sections[self_sections_count].from = entry.ba.start;
-		self_sections[self_sections_count].to = entry.ba.end;
-		self_sections[self_sections_count].perm = perm;
-		self_sections_count++;
+		io_self->self_sections[io_self->self_sections_count].from = entry.ba.start;
+		io_self->self_sections[io_self->self_sections_count].to = entry.ba.end;
+		io_self->self_sections[io_self->self_sections_count].perm = perm;
+		io_self->self_sections_count++;
 		ep = kvm_vm_map_entry_next(k, ep, &entry);
 	}
 
