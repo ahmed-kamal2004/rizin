@@ -9,6 +9,7 @@
 #include "rz_io_plugins.h"
 
 #if DEBUGGER
+typedef struct io_self_t RzIOSelf;
 #if __APPLE__
 #include <mach/vm_map.h>
 #include <mach/mach_init.h>
@@ -66,11 +67,11 @@ typedef struct {
 #define PROC_PERM_SZ        5
 #define SELF_SECTION_NUM    1024
 
-typedef struct {
+struct io_self_t {
 	RzIOSelfSection *self_sections;
 	int self_sections_count;
 	bool mameio;
-} RzIOSelf;
+};
 
 static int self_in_section(RzIO *io, RzIODesc *desc, ut64 addr, int *left, int *perm) {
 	if (!desc->data) {
