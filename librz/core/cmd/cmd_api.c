@@ -2219,7 +2219,7 @@ static void cmd_foreach_cmdname_modes(RzCmd *cmd, RzCmdDesc *cd, int modes, RzCm
 	size_t i;
 	for (i = 0; i < RZ_ARRAY_SIZE(argv_modes); i++) {
 		if (modes & argv_modes[i].mode) {
-			RzCmdDescHelp mode_help;
+			RzCmdDescHelp mode_help = { 0 };
 			const RzCmdDescHelp *copy = cd->help;
 			cd->help = mode_cmd_desc_help(&mode_help, copy, argv_modes[i].summary_suffix);
 
@@ -2426,6 +2426,10 @@ RZ_API void rz_cmd_state_output_fini(RZ_NONNULL RzCmdStateOutput *state) {
 		rz_table_free(state->d.t);
 		state->d.t = NULL;
 		break;
+	case RZ_OUTPUT_MODE_STR_BUF:
+		rz_strbuf_free(state->d.sbuf);
+		state->d.sbuf = NULL;
+		break;
 	default:
 		break;
 	}
@@ -2452,6 +2456,12 @@ RZ_API bool rz_cmd_state_output_init(RZ_NONNULL RzCmdStateOutput *state, RzOutpu
 	case RZ_OUTPUT_MODE_TABLE:
 		state->d.t = rz_table_new();
 		if (!state->d.t) {
+			return false;
+		}
+		break;
+	case RZ_OUTPUT_MODE_STR_BUF:
+		state->d.sbuf = rz_strbuf_new("");
+		if (!state->d.sbuf) {
 			return false;
 		}
 		break;
