@@ -335,6 +335,16 @@ typedef struct rz_panels_root_t {
 	bool from_visual;
 } RzPanelsRoot;
 
+typedef struct rz_visual_util_t {
+	RzConfigHold *hold;
+	ut64 oldpc;
+	ut64 oseek;
+	char debugstr_refresh[512];
+	char debugstr_core[512];
+	int numbuf_i;
+	int sortMode;
+} RzVisualUtil;
+
 typedef struct rz_core_visual_view_t {
 	int level;
 	st64 delta;
@@ -384,12 +394,15 @@ typedef struct rz_core_visual_t {
 	float percentage;
 	/* visual view */
 	RzCoreVisualView *view;
+	/* visual util */
+	RzVisualUtil *util;
 } RzCoreVisual;
 
 RZ_IPI RZ_OWN RzCoreVisual *rz_core_visual_new();
 RZ_IPI void rz_core_visual_free(RZ_NULLABLE RzCoreVisual *visual);
 
 RZ_IPI void rz_panels_root_free(RZ_NULLABLE RzPanelsRoot *panels_root);
+RZ_IPI void rz_visual_util_free(RZ_NULLABLE RzVisualUtil *visual_util);
 
 RZ_IPI void rz_core_visual_prompt_input(RzCore *core);
 RZ_IPI void rz_core_visual_toggle_hints(RzCore *core);

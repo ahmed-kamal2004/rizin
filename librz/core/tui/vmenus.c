@@ -613,6 +613,7 @@ RZ_IPI void rz_core_visual_analysis(RzCore *core, const char *input) {
 	RzCoreVisual *visual = core->visual;
 	RzCoreVisualView *view = visual->view;
 	RzConsEvent olde = core->cons->event_resize;
+	int *sortMode = &visual->util->sortMode;
 	void *olde_user = core->cons->event_data;
 	ut64 addr = core->offset;
 
@@ -882,10 +883,9 @@ RZ_IPI void rz_core_visual_analysis(RzCore *core, const char *input) {
 		case '!':
 			// TODO: use aflsn/aflsb/aflss/...
 			{
-				static int sortMode = 0;
 				const char *sortModes[4] = { "aflsa", "aflss", "aflsb", "aflsn" };
-				rz_core_cmd0(core, sortModes[sortMode % 4]);
-				sortMode++;
+				rz_core_cmd0(core, sortModes[*sortMode % 4]);
+				(*sortMode)++;
 			}
 			break;
 		case 'k':
