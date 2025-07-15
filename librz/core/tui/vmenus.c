@@ -613,7 +613,7 @@ RZ_IPI void rz_core_visual_analysis(RzCore *core, const char *input) {
 	RzCoreVisual *visual = core->visual;
 	RzCoreVisualView *view = visual->view;
 	RzConsEvent olde = core->cons->event_resize;
-	int *sortMode = &visual->util->sortMode;
+	int *sortMode = &visual->util.sortMode;
 	void *olde_user = core->cons->event_data;
 	ut64 addr = core->offset;
 

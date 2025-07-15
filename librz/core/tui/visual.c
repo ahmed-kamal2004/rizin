@@ -28,17 +28,9 @@ RZ_IPI RZ_OWN RzCoreVisual *rz_core_visual_new() {
 	visual->view->output_mode = -1;
 	visual->view->output_addr = -1;
 	visual->view->selectPanel = false;
-	visual->util = RZ_NEW0(RzVisualUtil);
-	visual->util->oseek = UT64_MAX;
+	memset(&visual->util, 0, sizeof(RzVisualUtil));
+	visual->util.oseek = UT64_MAX;
 	return visual;
-}
-
-RZ_IPI void rz_visual_util_free(RZ_NULLABLE RzVisualUtil *visual_util) {
-	if (!visual_util) {
-		return;
-	}
-	rz_config_hold_free(visual_util->hold);
-	free(visual_util);
 }
 
 RZ_IPI void rz_core_visual_free(RZ_NULLABLE RzCoreVisual *visual) {
@@ -46,7 +38,7 @@ RZ_IPI void rz_core_visual_free(RZ_NULLABLE RzCoreVisual *visual) {
 		return;
 	}
 	rz_panels_root_free(visual->panels_root);
-	rz_visual_util_free(visual->util);
+	rz_config_hold_free(visual->util.hold);
 	rz_list_free(visual->tabs);
 	free(visual->view->inputing);
 	free(visual->view);
@@ -99,7 +91,7 @@ RZ_IPI void rz_core_visual_toggle_hints(RzCore *core) {
 
 RZ_IPI void rz_core_visual_toggle_decompiler_disasm(RzCore *core, bool for_graph, bool reset) {
 	RzCoreVisual *visual = core->visual;
-	RzConfigHold *hold = visual->util->hold;
+	RzConfigHold *hold = visual->util.hold;
 
 	if (hold) {
 		rz_config_hold_restore(hold);
@@ -2109,7 +2101,7 @@ RZ_IPI int rz_core_visual_cmd(RzCore *core, const char *arg) {
 	int i, cols = core->print->cols;
 	int wheelspeed;
 	int ch = och;
-	int *numbuf_i = &visual->util->numbuf_i;
+	int *numbuf_i = &visual->util.numbuf_i;
 	if ((ut8)ch == KEY_ALTQ) {
 		rz_cons_readchar();
 		ch = 'q';
@@ -3161,7 +3153,7 @@ RZ_IPI void rz_core_visual_title(RzCore *core, int color) {
 	const char *filename;
 	char pos[512], bar[512], pcs[32];
 	RzCoreVisual *visual = core->visual;
-	ut64 *oldpc = &visual->util->oldpc;
+	ut64 *oldpc = &visual->util.oldpc;
 	if (!*oldpc) {
 		*oldpc = rz_debug_reg_get(core->dbg, "PC");
 	}
@@ -3638,7 +3630,7 @@ exit1:
 
 static void visual_refresh(RzCore *core) {
 	RzCoreVisual *visual = core->visual;
-	ut64 *oseek = &visual->util->oseek;
+	ut64 *oseek = &visual->util.oseek;
 	const char *vi, *vcmd, *cmd_str;
 	if (!core) {
 		return;
@@ -3709,13 +3701,13 @@ static void visual_refresh(RzCore *core) {
 				pxw = stackPrintCommand(core);
 				break;
 			}
-			snprintf(visual->util->debugstr_refresh, sizeof(visual->util->debugstr_refresh),
+			snprintf(visual->util.debugstr_refresh, sizeof(visual->util.debugstr_refresh),
 				"?0;%s %d @ %" PFMT64d ";cl;"
 				"?1;%s %d @ %" PFMT64d ";",
 				pxw, size, visual->splitPtr,
 				pxw, size, core->offset);
 			core->print->screen_bounds = 1LL;
-			cmd_str = visual->util->debugstr_refresh;
+			cmd_str = visual->util.debugstr_refresh;
 		} else {
 			core->print->screen_bounds = 1LL;
 			cmd_str = __core_visual_print_command(core);
@@ -3877,24 +3869,24 @@ RZ_IPI int rz_core_visual(RzCore *core, const char *input) {
 			const char *cmdvhex = rz_config_get(core->config, "cmd.stack");
 
 			if (cmdvhex && *cmdvhex) {
-				rz_strf(visual->util->debugstr_core,
+				rz_strf(visual->util.debugstr_core,
 					"%%0 ; f+ tmp ; sr %s @e: cfg.seek.silent=true ; %s ; %%1 ; %s ; %%1 ; "
 					"s tmp @e: cfg.seek.silent=true ; f- tmp ; pd $r",
 					reg, cmdvhex,
 					ref ? CMD_REGISTERS_REFS : CMD_REGISTERS);
-				visual->util->debugstr_core[sizeof(visual->util->debugstr_core) - 1] = 0;
+				visual->util.debugstr_core[sizeof(visual->util.debugstr_core) - 1] = 0;
 			} else {
 				const char *pxw = stackPrintCommand(core);
 				const char sign = (delta < 0) ? '+' : '-';
 				const int absdelta = RZ_ABS(delta);
-				rz_strf(visual->util->debugstr_core,
+				rz_strf(visual->util.debugstr_core,
 					"diq ; %%0 ; f+ tmp ; sr %s @e: cfg.seek.silent=true ; %s %d @ $$%c%d;"
 					"%%1 ; %s;"
 					"%%1 ; s tmp @e: cfg.seek.silent=true ; f- tmp ; afal ; pd $r",
 					reg, pxa ? "pxa" : pxw, size, sign, absdelta,
 					ref ? CMD_REGISTERS_REFS : CMD_REGISTERS);
 			}
-			printfmtSingle[2] = visual->util->debugstr_core;
+			printfmtSingle[2] = visual->util.debugstr_core;
 		}
 #endif
 		rz_cons_enable_mouse(rz_config_get_b(core->config, "scr.wheel"));

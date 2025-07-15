@@ -395,7 +395,7 @@ typedef struct rz_core_visual_t {
 	/* visual view */
 	RzCoreVisualView *view;
 	/* visual util */
-	RzVisualUtil *util;
+	RzVisualUtil util;
 } RzCoreVisual;
 
 RZ_IPI RZ_OWN RzCoreVisual *rz_core_visual_new();
