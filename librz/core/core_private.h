@@ -341,6 +341,7 @@ typedef struct rz_visual_util_t {
 	ut64 oseek;
 	char debugstr_refresh[512];
 	char debugstr_core[512];
+	char numbuf[32];
 	int numbuf_i;
 	int sortMode;
 } RzVisualUtil;

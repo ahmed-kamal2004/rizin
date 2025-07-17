@@ -2060,25 +2060,23 @@ static bool isNumber(RzCore *core, int ch) {
 	return false;
 }
 
-static char numbuf[32] = { 0 };
-
-static void numbuf_append(int *numbuf_i, int ch) {
-	if (*numbuf_i >= sizeof(numbuf) - 1) {
-		*numbuf_i = 0;
+static void numbuf_append(RzVisualUtil *util, int ch) {
+	if (util->numbuf_i >= sizeof(util->numbuf) - 1) {
+		util->numbuf_i = 0;
 	}
-	numbuf[(*numbuf_i)++] = ch;
-	numbuf[*numbuf_i] = 0;
+	util->numbuf[util->numbuf_i++] = ch;
+	util->numbuf[util->numbuf_i] = 0;
 }
 
-static int numbuf_pull(int *numbuf_i) {
+static int numbuf_pull(RzVisualUtil *util) {
 	int distance = 1;
-	if (*numbuf_i) {
-		numbuf[*numbuf_i] = 0;
-		distance = atoi(numbuf);
+	if (util->numbuf_i) {
+		util->numbuf[util->numbuf_i] = 0;
+		distance = atoi(util->numbuf);
 		if (!distance) {
 			distance = 1;
 		}
-		*numbuf_i = 0;
+		util->numbuf_i = 0;
 	}
 	return distance;
 }
@@ -2156,10 +2154,10 @@ RZ_IPI int rz_core_visual_cmd(RzCore *core, const char *arg) {
 			if (rz_config_get_b(core->config, "asm.hints") && (rz_config_get_b(core->config, "asm.hint.jmp") || rz_config_get_b(core->config, "asm.hint.lea") || rz_config_get_b(core->config, "asm.hint.emu") || rz_config_get_b(core->config, "asm.hint.call"))) {
 				rz_core_visual_jump(core, ch);
 			} else {
-				numbuf_append(numbuf_i, ch);
+				numbuf_append(&visual->util, ch);
 			}
 		} else {
-			numbuf_append(numbuf_i, ch);
+			numbuf_append(&visual->util, ch);
 		}
 	} else {
 		switch (ch) {
@@ -2365,7 +2363,7 @@ RZ_IPI int rz_core_visual_cmd(RzCore *core, const char *arg) {
 		case 'd': {
 			bool mouse_state = __holdMouseState(core);
 			rz_core_visual_showcursor(core, true);
-			int distance = numbuf_pull(numbuf_i);
+			int distance = numbuf_pull(&visual->util);
 			rz_core_visual_define(core, arg + 1, distance - 1);
 			rz_core_visual_showcursor(core, false);
 			rz_cons_enable_mouse(mouse_state && rz_config_get_b(core->config, "scr.wheel"));
@@ -2607,7 +2605,7 @@ RZ_IPI int rz_core_visual_cmd(RzCore *core, const char *arg) {
 			break;
 		case 'h':
 		case 'l': {
-			int distance = numbuf_pull(numbuf_i);
+			int distance = numbuf_pull(&visual->util);
 			if (core->print->cur_enabled) {
 				if (ch == 'h') {
 					for (i = 0; i < distance; i++) {
@@ -2627,7 +2625,7 @@ RZ_IPI int rz_core_visual_cmd(RzCore *core, const char *arg) {
 		} break;
 		case 'L':
 		case 'H': {
-			int distance = numbuf_pull(numbuf_i);
+			int distance = numbuf_pull(&visual->util);
 			if (core->print->cur_enabled) {
 				if (ch == 'H') {
 					for (i = 0; i < distance; i++) {
@@ -2647,13 +2645,13 @@ RZ_IPI int rz_core_visual_cmd(RzCore *core, const char *arg) {
 		} break;
 		case 'j':
 			if (core->print->cur_enabled) {
-				int distance = numbuf_pull(numbuf_i);
+				int distance = numbuf_pull(&visual->util);
 				for (i = 0; i < distance; i++) {
 					cursor_nextrow(core, false);
 				}
 			} else {
 				if (rz_config_get_b(core->config, "scr.wheel.nkey")) {
-					int i, distance = numbuf_pull(numbuf_i);
+					int i, distance = numbuf_pull(&visual->util);
 					if (distance < 1) {
 						distance = 1;
 					}
@@ -2672,7 +2670,7 @@ RZ_IPI int rz_core_visual_cmd(RzCore *core, const char *arg) {
 					if (ami) {
 						rz_core_seek_delta(core, amisize, false);
 					} else {
-						int distance = numbuf_pull(numbuf_i);
+						int distance = numbuf_pull(&visual->util);
 						if (distance > 1) {
 							times = distance;
 						}
@@ -2693,7 +2691,7 @@ RZ_IPI int rz_core_visual_cmd(RzCore *core, const char *arg) {
 			break;
 		case 'J':
 			if (core->print->cur_enabled) {
-				int distance = numbuf_pull(numbuf_i);
+				int distance = numbuf_pull(&visual->util);
 				for (i = 0; i < distance; i++) {
 					cursor_nextrow(core, true);
 				}
@@ -2727,13 +2725,13 @@ RZ_IPI int rz_core_visual_cmd(RzCore *core, const char *arg) {
 			break;
 		case 'k':
 			if (core->print->cur_enabled) {
-				int distance = numbuf_pull(numbuf_i);
+				int distance = numbuf_pull(&visual->util);
 				for (i = 0; i < distance; i++) {
 					cursor_prevrow(core, false);
 				}
 			} else {
 				if (rz_config_get_b(core->config, "scr.wheel.nkey")) {
-					int i, distance = numbuf_pull(numbuf_i);
+					int i, distance = numbuf_pull(&visual->util);
 					if (distance < 1) {
 						distance = 1;
 					}
@@ -2745,7 +2743,7 @@ RZ_IPI int rz_core_visual_cmd(RzCore *core, const char *arg) {
 					if (times < 1) {
 						times = 1;
 					}
-					int distance = numbuf_pull(numbuf_i);
+					int distance = numbuf_pull(&visual->util);
 					if (distance > 1) {
 						times = distance;
 					}
@@ -2762,7 +2760,7 @@ RZ_IPI int rz_core_visual_cmd(RzCore *core, const char *arg) {
 			break;
 		case 'K':
 			if (core->print->cur_enabled) {
-				int distance = numbuf_pull(numbuf_i);
+				int distance = numbuf_pull(&visual->util);
 				for (i = 0; i < distance; i++) {
 					cursor_prevrow(core, true);
 				}
