@@ -303,10 +303,6 @@ RZ_API void sdb_encode_raw(char *bout, const ut8 *bin, int len);
 RZ_API int sdb_decode_raw(ut8 *bout, const char *bin, int len);
 
 // binfmt
-RZ_API char *sdb_fmt(const char *fmt, ...) RZ_PRINTF_CHECK(1, 2);
-RZ_API int sdb_fmt_init(void *p, const char *fmt);
-RZ_API void sdb_fmt_free(void *p, const char *fmt);
-RZ_API int sdb_fmt_tobin(const char *_str, const char *fmt, void *stru);
 RZ_API char *sdb_fmt_tostr(void *stru, const char *fmt);
 RZ_API char **sdb_fmt_array(const char *list);
 RZ_API ut64 *sdb_fmt_array_num(const char *list);

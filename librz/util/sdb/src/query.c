@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include "sdb.h"
+#include <rz_util.h>
 
 typedef struct {
 	char *buf;
@@ -214,7 +215,9 @@ repeat:
 		if (next) {
 			*next = 0;
 		}
-		out_concat(sdb_fmt("0x%08x\n", sdb_hash(p)));
+		char k[12];
+		rz_strf(k, "0x%08x\n", sdb_hash(p));
+		strbuf_append(out, k, 1);
 		if (next) {
 			*next = ';';
 		}
