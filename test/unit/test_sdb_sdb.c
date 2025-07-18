@@ -77,7 +77,7 @@ bool test_sdb_list_delete(void) {
 
 bool test_sdb_list_big(void) {
 	Sdb *db = sdb_new0();
-	char k[256];
+	char k[5];
 	for (int i = 0; i < 5000; i++) {
 		sdb_num_set(db, rz_strf(k, "%d", i), i + 1);
 	}
@@ -110,7 +110,7 @@ bool test_sdb_delete_alot(void) {
 	const int count = 2048;
 	int i;
 
-	char k[256];
+	char k[10];
 	for (i = 0; i < count; i++) {
 		sdb_set(db, rz_strf(k, "key.%d", i), "bar");
 	}
@@ -145,7 +145,7 @@ bool test_sdb_milset_random(void) {
 	const int MAX = 1999;
 	bool solved = true;
 	Sdb *s = sdb_new0();
-	char k[256];
+	char k[8];
 	sdb_set(s, "foo", "bar");
 	for (i = 0; i < MAX; i++) {
 		char *v = rz_strf(k, "bar%d", i);

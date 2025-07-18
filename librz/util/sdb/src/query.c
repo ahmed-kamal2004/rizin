@@ -215,7 +215,7 @@ repeat:
 		if (next) {
 			*next = 0;
 		}
-		char k[256];
+		char k[12];
 		rz_strf(k, "0x%08x\n", sdb_hash(p));
 		strbuf_append(out, k, 1);
 		if (next) {
