@@ -216,8 +216,8 @@ repeat:
 			*next = 0;
 		}
 		char k[256];
-		char *ret = rz_strf(k, "0x%08x\n", sdb_hash(p));
-		out_concat(ret);
+		rz_strf(k, "0x%08x\n", sdb_hash(p));
+		strbuf_append(out, k, 1);
 		if (next) {
 			*next = ';';
 		}
