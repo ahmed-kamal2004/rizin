@@ -26,12 +26,20 @@ static inline SdbKv *next_kv(HtSS *ht, SdbKv *kv) {
 			(j) = (count) == (ht)->count ? j + 1 : j, (kv) = (count) == (ht)->count ? next_kv(ht, kv) : kv, (count) = (ht)->count)
 
 // TODO: use mmap instead of read.. much faster!
-RZ_API Sdb *sdb_new0(void) {
+RZ_API RZ_OWN Sdb *sdb_new0(void) {
 	return sdb_new(NULL, NULL, 0);
 }
 
-RZ_API Sdb *sdb_new(const char *path, const char *name, int lock) {
+/**
+ * \brief Gets new SDB instance, initialized with given args.
+ *
+ * \param path System path.
+ * \param name SDB dir.
+ * \param lock Lock.
+ */
+RZ_API RZ_OWN Sdb *sdb_new(const char *path, const char *name, int lock) {
 	Sdb *s = RZ_NEW0(Sdb);
+	char *buf = NULL;
 	if (!s) {
 		return NULL;
 	}
@@ -59,12 +67,14 @@ RZ_API Sdb *sdb_new(const char *path, const char *name, int lock) {
 		}
 		switch (lock) {
 		case 1:
-			if (!sdb_lock(sdb_lock_file(s->dir))) {
+			buf = sdb_lock_file(s->dir);
+			if (!sdb_lock(buf)) {
 				goto fail;
 			}
 			break;
 		case 2:
-			if (!sdb_lock_wait(sdb_lock_file(s->dir))) {
+			buf = sdb_lock_file(s->dir);
+			if (!sdb_lock_wait(buf)) {
 				goto fail;
 			}
 			break;
@@ -87,12 +97,14 @@ RZ_API Sdb *sdb_new(const char *path, const char *name, int lock) {
 	s->lock = lock;
 	// if open fails ignore
 	cdb_init(&s->db, s->fd);
+	free(buf);
 	return s;
 fail:
 	if (s->fd != -1) {
 		close(s->fd);
 		s->fd = -1;
 	}
+	free(buf);
 	free(s->dir);
 	free(s->name);
 	free(s->path);
@@ -100,15 +112,19 @@ fail:
 	return NULL;
 }
 
-// XXX: this is wrong. stuff not stored in memory is lost
 RZ_API void sdb_file(Sdb *s, const char *dir) {
+	char *buf = NULL;
 	if (s->lock) {
-		sdb_unlock(sdb_lock_file(s->dir));
+		buf = sdb_lock_file(s->dir);
+		sdb_unlock(buf);
+		free(buf);
 	}
 	free(s->dir);
 	s->dir = (dir && *dir) ? strdup(dir) : NULL;
 	if (s->lock) {
-		sdb_lock(sdb_lock_file(s->dir));
+		buf = sdb_lock_file(s->dir);
+		sdb_lock(buf);
+		free(buf);
 	}
 }
 
@@ -155,12 +171,15 @@ RZ_API int sdb_count(Sdb *s) {
 }
 
 static void sdb_fini(Sdb *s, int donull) {
+	char *buf = NULL;
 	if (!s) {
 		return;
 	}
 	cdb_free(&s->db);
 	if (s->lock) {
-		sdb_unlock(sdb_lock_file(s->dir));
+		buf = sdb_lock_file(s->dir);
+		sdb_unlock(buf);
+		free(buf);
 	}
 	sdb_ns_free_all(s);
 	s->refs = 0;

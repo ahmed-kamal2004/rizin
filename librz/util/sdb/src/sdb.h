@@ -89,8 +89,8 @@ typedef struct sdb_ns_t {
 	Sdb *sdb;
 } SdbNs;
 
-RZ_API Sdb *sdb_new0(void);
-RZ_API Sdb *sdb_new(const char *path, const char *file, int lock);
+RZ_API RZ_OWN Sdb *sdb_new0(void);
+RZ_API RZ_OWN Sdb *sdb_new(const char *path, const char *file, int lock);
 
 RZ_API int sdb_open(Sdb *s, const char *file);
 RZ_API void sdb_close(Sdb *s);
@@ -200,7 +200,7 @@ RZ_API const char *sdb_itoca(ut64 n);
 
 /* locking */
 RZ_API bool sdb_lock(const char *s);
-RZ_API const char *sdb_lock_file(const char *f);
+RZ_API RZ_OWN char *sdb_lock_file(const char *f);
 RZ_API void sdb_unlock(const char *s);
 RZ_API bool sdb_unlink(Sdb *s);
 RZ_API int sdb_lock_wait(RZ_UNUSED const char *s);
