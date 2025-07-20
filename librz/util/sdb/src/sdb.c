@@ -26,11 +26,18 @@ static inline SdbKv *next_kv(HtSS *ht, SdbKv *kv) {
 			(j) = (count) == (ht)->count ? j + 1 : j, (kv) = (count) == (ht)->count ? next_kv(ht, kv) : kv, (count) = (ht)->count)
 
 // TODO: use mmap instead of read.. much faster!
-RZ_API Sdb *sdb_new0(void) {
+RZ_API RZ_OWN Sdb *sdb_new0(void) {
 	return sdb_new(NULL, NULL, 0);
 }
 
-RZ_API Sdb *sdb_new(const char *path, const char *name, int lock) {
+/**
+ * \brief Gets new SDB instance, initialized with given args.
+ *
+ * \param path System path.
+ * \param name SDB dir.
+ * \param lock Lock.
+ */
+RZ_API RZ_OWN Sdb *sdb_new(const char *path, const char *name, int lock) {
 	Sdb *s = RZ_NEW0(Sdb);
 	char *buf = NULL;
 	if (!s) {
@@ -105,7 +112,6 @@ fail:
 	return NULL;
 }
 
-// XXX: this is wrong. stuff not stored in memory is lost
 RZ_API void sdb_file(Sdb *s, const char *dir) {
 	char *buf = NULL;
 	if (s->lock) {
