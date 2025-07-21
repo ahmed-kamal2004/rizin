@@ -17,6 +17,7 @@
  **/
 
 #include "float_internal.c"
+#include "rz_util/rz_float.h"
 #include <rz_userconf.h>
 #include <math.h>
 #include <fenv.h>
@@ -613,7 +614,7 @@ RZ_API RZ_OWN RzFloat *rz_float_new_from_f32(float value) {
 	} else if (isnan(value)) {
 		return rz_float_new_qnan(RZ_FLOAT_IEEE754_BIN_32);
 	} else if (value == 0) {
-		return rz_float_new_zero(RZ_FLOAT_IEEE754_BIN_32);
+		return rz_float_new_zero(RZ_FLOAT_IEEE754_BIN_32, IS_NEG_ZERO32(value));
 	}
 
 	RzFloat *f = rz_float_new(RZ_FLOAT_IEEE754_BIN_32);
@@ -640,7 +641,7 @@ RZ_API RZ_OWN RzFloat *rz_float_new_from_f64(double value) {
 	} else if (isnan(value)) {
 		return rz_float_new_qnan(RZ_FLOAT_IEEE754_BIN_64);
 	} else if (value == 0) {
-		return rz_float_new_zero(RZ_FLOAT_IEEE754_BIN_64);
+		return rz_float_new_zero(RZ_FLOAT_IEEE754_BIN_64, IS_NEG_ZERO64(value));
 	}
 
 	RzFloat *f = rz_float_new(RZ_FLOAT_IEEE754_BIN_64);
@@ -669,7 +670,7 @@ RZ_API RZ_OWN RzFloat *rz_float_new_from_f80(long double value) {
 	} else if (isnan(value)) {
 		return rz_float_new_qnan(RZ_FLOAT_IEEE754_BIN_80);
 	} else if (value == 0) {
-		return rz_float_new_zero(RZ_FLOAT_IEEE754_BIN_80);
+		return rz_float_new_zero(RZ_FLOAT_IEEE754_BIN_80, IS_NEG_ZEROLD(value));
 	}
 
 	RzFloat *f = rz_float_new(RZ_FLOAT_IEEE754_BIN_80);
@@ -698,7 +699,7 @@ RZ_API RZ_OWN RzFloat *rz_float_new_from_f128(long double value) {
 	} else if (isnan(value)) {
 		return rz_float_new_qnan(RZ_FLOAT_IEEE754_BIN_128);
 	} else if (value == 0) {
-		return rz_float_new_zero(RZ_FLOAT_IEEE754_BIN_128);
+		return rz_float_new_zero(RZ_FLOAT_IEEE754_BIN_128, IS_NEG_ZEROLD(value));
 	}
 
 	RzFloat *f = rz_float_new(RZ_FLOAT_IEEE754_BIN_128);
@@ -1113,12 +1114,17 @@ RZ_API RZ_OWN RzFloat *rz_float_new_inf(RzFloatFormat format, bool is_negative) 
 }
 
 /**
- * Generate a positive zero
+ * Generate a negative zero
  * \param format float format
+ * \param negative If true, the zero is a negative zero.
  * \return zero float
  */
-RZ_API RZ_OWN RzFloat *rz_float_new_zero(RzFloatFormat format) {
-	return rz_float_new(format);
+RZ_API RZ_OWN RzFloat *rz_float_new_zero(RzFloatFormat format, bool negative) {
+	RzFloat *zero = rz_float_new(format);
+	if (negative && zero) {
+		rz_bv_toggle(zero->s, rz_bv_len(zero->s) - 1);
+	}
+	return zero;
 }
 
 /**
@@ -1436,7 +1442,7 @@ RZ_API RZ_OWN RzFloat *rz_float_trunc(RZ_NONNULL RzFloat *f) {
 
 	if (exp_val < bias) {
 		// magnitude < 1.0
-		return rz_float_new_zero(f->r);
+		return rz_float_new_zero(f->r, false);
 	}
 
 	ut32 pt_pos;
@@ -1658,8 +1664,7 @@ RZ_API RZ_OWN RzFloat *rz_float_convert(RZ_NONNULL RzFloat *f, RzFloatFormat for
 	}
 
 	if (rz_float_is_zero(f)) {
-		RzFloat *ret_zero = rz_float_new_zero(format);
-		rz_float_set_sign(ret_zero, rz_float_get_sign(f));
+		RzFloat *ret_zero = rz_float_new_zero(format, rz_float_get_sign(f));
 		return ret_zero;
 	}
 
