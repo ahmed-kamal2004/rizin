@@ -18,7 +18,7 @@ typedef struct slurp_data_t {
 	size_t nextlen;
 } SlurpData;
 
-void terminate(Sdb *s, int save, int sig, SlurpData *slurp_data) {
+void terminate(RZ_OWN Sdb *s, int save, int sig, RZ_OWN SlurpData *slurp_data) {
 	if (!slurp_data) {
 		free(slurp_data->next);
 		free(slurp_data);
@@ -183,7 +183,7 @@ static int insertkeys(Sdb *s, const char **args, int nargs) {
 	return must_save;
 }
 
-static int createdb(Sdb **s, SlurpData *slurp_data, const char *f, const char **args, int nargs) {
+static int createdb(RZ_BORROW Sdb **s, RZ_BORROW SlurpData *slurp_data, const char *f, const char **args, int nargs) {
 	*s = sdb_new(NULL, f, 0);
 	if (!*s) {
 		eprintf("Cannot create database\n");
@@ -252,7 +252,7 @@ static int base64encode(RZ_BORROW SlurpData *slurp_data) {
 	return 0;
 }
 
-static int base64decode(SlurpData *slurp_data) {
+static int base64decode(RZ_BORROW SlurpData *slurp_data) {
 	ut8 *out;
 	size_t len, ret = 1;
 	char *in = slurp(slurp_data, stdin, &len);
