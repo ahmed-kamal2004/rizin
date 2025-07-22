@@ -8,10 +8,6 @@
 #include "sdb.h"
 #include "sdb_private.h"
 
-#if HAVE_HEADER_SYS_MMAN_H
-#include <setjmp.h>
-#endif
-
 #define MODE_ZERO '0'
 #define MODE_DFLT 0
 #define OPTIONS   (SDB_OPTION_FS | SDB_OPTION_NOSTAMP)
