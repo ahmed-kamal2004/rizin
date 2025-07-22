@@ -19,10 +19,10 @@ typedef struct slurp_data_t {
 } SlurpData;
 
 void terminate(RZ_OWN Sdb *s, int save, int sig, RZ_OWN SlurpData *slurp_data) {
-	if (!slurp_data) {
+	if (slurp_data) {
 		free(slurp_data->next);
-		free(slurp_data);
 	}
+	free(slurp_data);
 	if (!s) {
 		return;
 	}
@@ -185,7 +185,7 @@ static int insertkeys(Sdb *s, const char **args, int nargs) {
 
 static int createdb(RZ_BORROW Sdb **s, RZ_BORROW SlurpData *slurp_data, const char *f, const char **args, int nargs) {
 	*s = sdb_new(NULL, f, 0);
-	if (!*s) {
+	if (!(*s)) {
 		eprintf("Cannot create database\n");
 		return 1;
 	}
