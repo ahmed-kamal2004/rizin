@@ -22,13 +22,6 @@ typedef struct slurp_data_t {
 	size_t nextlen;
 } SlurpData;
 
-#if HAVE_HEADER_SYS_MMAN_H
-jmp_buf sig, syncro;
-
-void terminate_hndlr(RZ_UNUSED int signal_num) {
-	longjmp(sig, signal_num);
-}
-
 void terminate(Sdb *s, int save, int sig, SlurpData *slurp_data) {
 	if (!slurp_data) {
 		free(slurp_data->next);
@@ -49,7 +42,6 @@ void terminate(Sdb *s, int save, int sig, SlurpData *slurp_data) {
 static void write_null(void) {
 	write_(1, "", 1);
 }
-#endif
 
 #define BS 128
 
@@ -140,13 +132,6 @@ static char *slurp(RZ_BORROW SlurpData *slurp_data, FILE *f, size_t *sz) {
 	buf[len] = 0;
 	return buf;
 }
-
-#if HAVE_HEADER_SYS_MMAN_H
-void synchronize_hndlr(RZ_UNUSED int signal_num) {
-	longjmp(sig, signal_num);
-	setjmp(syncro);
-}
-#endif
 
 static int sdb_grep_dump(const char *dbname, int fmt, bool grep,
 	const char *expgrep) {
@@ -403,10 +388,7 @@ int main(int argc, const char **argv) {
 		}
 		return sdb_dump(argv[db0], fmt);
 	}
-#if HAVE_HEADER_SYS_MMAN_H
-	signal(SIGINT, terminate_hndlr);
-	signal(SIGHUP, synchronize_hndlr);
-#endif
+
 	int ret = 0;
 	if (interactive || !strcmp(argv[db0 + 1], "-")) {
 		if ((s = sdb_new(NULL, argv[db0], 0))) {
@@ -443,22 +425,6 @@ int main(int argc, const char **argv) {
 		}
 	}
 
-#if HAVE_HEADER_SYS_MMAN_H
-	switch (setjmp(sig)) {
-	case 1:
-		sdb_sync(s);
-		Sdb *n = sdb_new(s->path, s->name, s->lock);
-		if (n) {
-			sdb_config(n, OPTIONS);
-			sdb_free(s);
-			s = n;
-		}
-		longjmp(syncro, 0);
-	case 2:
-		terminate(s, save, 2, slurp_data);
-		return ret;
-	}
-#endif
 	terminate(s, save, ret, slurp_data);
 	return ret;
 }
