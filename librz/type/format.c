@@ -1787,10 +1787,10 @@ RZ_API int rz_type_format_struct_size(const RzTypeDB *typedb, const char *f, int
 	return format_struct_size(typedb, NULL, f, mode, n);
 }
 
-static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzStrBuf *outbuf, ut64 seek, const ut8 *b, const int len,
+static int rz_type_format_data_internal(RZ_BORROW RzTypeDB *typedb, RzPrint *p, RzStrBuf *outbuf, ut64 seek, const ut8 *b, const int len,
 	const char *formatname, int mode, const char *setval, char *ofield);
 
-static int rz_type_format_struct(const RzTypeDB *typedb, RzPrint *p, RzStrBuf *outbuf, ut64 seek, const ut8 *b, int len, const char *name,
+static int rz_type_format_struct(RZ_BORROW RzTypeDB *typedb, RzPrint *p, RzStrBuf *outbuf, ut64 seek, const ut8 *b, int len, const char *name,
 	int slide, int mode, const char *setval, char *field, int anon) {
 	char *fmt;
 	int ret = 0;
@@ -1955,13 +1955,12 @@ RZ_API void rz_type_db_format_delete(RzTypeDB *typedb, const char *name) {
 	ht_ss_delete(typedb->formats, name);
 }
 
-static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzStrBuf *outbuf, ut64 seek, const ut8 *b, const int len,
+static int rz_type_format_data_internal(RZ_BORROW RzTypeDB *typedb, RzPrint *p, RzStrBuf *outbuf, ut64 seek, const ut8 *b, const int len,
 	const char *formatname, int mode, const char *setval, char *ofield) {
 	int nargs, i, invalid, nexti, idx, times, otimes, endian, isptr = 0;
 	const int old_bits = typedb->target->bits;
 	char *args = NULL, *bracket, tmp, last = 0;
 	ut64 addr = 0, addr64 = 0, seeki = 0;
-	static int slide = 0, oldslide = 0, ident = 4;
 	char namefmt[32], *field = NULL;
 	const char *arg = NULL;
 	const char *fmt = NULL;
@@ -1969,6 +1968,7 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 	int viewflags = 0;
 	char *oarg = NULL;
 	char *internal_format = NULL;
+	RzFormatDataInternal *format_data = typedb->format_internal_data;
 
 	/* Load format from name into fmt */
 	if (!formatname) {
@@ -2054,11 +2054,11 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 		}
 		const char *ends = " "; // XXX trailing space warning
 		snprintf(namefmt, sizeof(namefmt), "%%%ds :%s",
-			((maxl + 1) * (1 + slide)) % STRUCTPTR, ends);
+			((maxl + 1) * (1 + format_data->slide)) % STRUCTPTR, ends);
 	}
 #define ISPOINTED ((slide % STRUCTFLAG) / STRUCTPTR <= (oldslide % STRUCTFLAG) / STRUCTPTR)
 #define ISNESTED  ((slide % STRUCTPTR) <= (oldslide % STRUCTPTR))
-	if (mode == RZ_PRINT_JSON && slide == 0) {
+	if (mode == RZ_PRINT_JSON && format_data->slide == 0) {
 		rz_strbuf_append(outbuf, "[");
 	}
 	if (mode == RZ_PRINT_STRUCT) {
@@ -2321,7 +2321,7 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 					rz_strbuf_appendf(outbuf, "f %s.%s_", fmtname, fieldname);
 				} else if (tmp == 'E') {
 					rz_strbuf_appendf(outbuf, "f %s @ 0x%08" PFMT64x "\n", fieldname, seeki);
-				} else if (slide / STRUCTFLAG > 0 && idx == 1) {
+				} else if (format_data->slide / STRUCTFLAG > 0 && idx == 1) {
 					rz_strbuf_appendf(outbuf, "%s @ 0x%08" PFMT64x "\n", fieldname, seeki);
 				} else {
 					rz_strbuf_appendf(outbuf, "f %s @ 0x%08" PFMT64x "\n", fieldname, seeki);
@@ -2345,15 +2345,15 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 
 			/* json */
 			if (MUSTSEEJSON && mode & RZ_PRINT_JSON) {
-				if (oldslide <= slide) {
+				if (format_data->oldslide <= format_data->slide) {
 					if (first) {
 						first = 0;
 					} else {
 						rz_strbuf_append(outbuf, ",");
 					}
-				} else if (oldslide) {
+				} else if (format_data->oldslide) {
 					rz_strbuf_append(outbuf, "]},");
-					oldslide -= NESTEDSTRUCT;
+					format_data->oldslide -= NESTEDSTRUCT;
 				}
 				if (fieldname) {
 					rz_strbuf_appendf(outbuf, "{\"name\":\"%s\",\"type\":\"", fieldname);
@@ -2380,9 +2380,9 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 			if (MUSTSEESTRUCT) {
 				char *type = get_format_type(tmp, (tmp == 'n' || tmp == 'N') ? arg[1] : 0);
 				if (type) {
-					rz_strbuf_appendf(outbuf, "%*c%s %s; // ", ident, ' ', type, fieldname);
+					rz_strbuf_appendf(outbuf, "%*c%s %s; // ", format_data->ident, ' ', type, fieldname);
 				} else {
-					rz_strbuf_appendf(outbuf, "%*cstruct %s {", ident, ' ', fieldname);
+					rz_strbuf_appendf(outbuf, "%*cstruct %s {", format_data->ident, ' ', fieldname);
 				}
 				free(type);
 			}
@@ -2578,12 +2578,12 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 						if (isptr) {
 							rz_strbuf_appendf(outbuf, "%" PFMT64d, seeki);
 						} else {
-							ident += 4;
+							format_data->ident += 4;
 							rz_strbuf_append(outbuf, "\n");
 						}
 					}
 					if (mode & RZ_PRINT_SEEFLAGS) {
-						slide += STRUCTFLAG;
+						format_data->slide += STRUCTFLAG;
 					}
 					if (!fmtname) {
 						break;
@@ -2596,12 +2596,12 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 							fmtname++;
 						}
 					}
-					oldslide = slide;
+					format_data->oldslide = format_data->slide;
 					// slide += (isptr) ? STRUCTPTR : NESTEDSTRUCT;
-					slide += NESTEDSTRUCT;
+					format_data->slide += NESTEDSTRUCT;
 					if (size == -1) {
 						s = rz_type_format_struct(typedb, p, outbuf, seeki,
-							buf + i, len - i, fmtname, slide,
+							buf + i, len - i, fmtname, format_data->slide,
 							mode, setval, nxtfield, anon);
 						i += (isptr) ? (typedb->target->bits / 8) : s;
 						if (MUSTSEEJSON) {
@@ -2625,7 +2625,7 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 								mode &= ~RZ_PRINT_MUSTSEE;
 							}
 							s = rz_type_format_struct(typedb, p, outbuf, seek + i,
-								buf + i, len - i, fmtname, slide, mode, setval, nxtfield, anon);
+								buf + i, len - i, fmtname, format_data->slide, mode, setval, nxtfield, anon);
 							if ((MUSTSEE || MUSTSEEJSON || MUSTSEESTRUCT) && size != 0 && elem == -1) {
 								if (MUSTSEEJSON) {
 									rz_strbuf_append(outbuf, ",");
@@ -2647,12 +2647,12 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 							rz_strbuf_append(outbuf, "]}");
 						}
 					}
-					oldslide = slide;
+					format_data->oldslide = format_data->slide;
 					// slide -= (isptr) ? STRUCTPTR : NESTEDSTRUCT;
-					slide -= NESTEDSTRUCT;
+					format_data->slide -= NESTEDSTRUCT;
 					if (mode & RZ_PRINT_SEEFLAGS) {
-						oldslide = slide;
-						slide -= STRUCTFLAG;
+						format_data->oldslide = format_data->slide;
+						format_data->slide -= STRUCTFLAG;
 					}
 					break;
 				}
@@ -2685,10 +2685,10 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 				} // switch
 			}
 			if (MUSTSEESTRUCT) {
-				if (oldslide) {
-					ident -= 4;
-					rz_strbuf_appendf(outbuf, "%*c}", ident, ' ');
-					oldslide -= NESTEDSTRUCT;
+				if (format_data->oldslide) {
+					format_data->ident -= 4;
+					rz_strbuf_appendf(outbuf, "%*c}", format_data->ident, ' ');
+					format_data->oldslide -= NESTEDSTRUCT;
 				}
 				rz_strbuf_append(outbuf, "\n");
 			}
@@ -2742,12 +2742,12 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 			}
 		}
 		arg = orig;
-		oldslide = 0;
+		format_data->oldslide = 0;
 	}
-	if (mode & RZ_PRINT_JSON && slide == 0) {
+	if (mode & RZ_PRINT_JSON && format_data->slide == 0) {
 		rz_strbuf_append(outbuf, "]");
 	}
-	if (MUSTSEESTRUCT && slide == 0) {
+	if (MUSTSEESTRUCT && format_data->slide == 0) {
 		rz_strbuf_append(outbuf, "}\n");
 	}
 	if (mode & RZ_PRINT_DOT) {
@@ -2755,8 +2755,8 @@ static int rz_type_format_data_internal(const RzTypeDB *typedb, RzPrint *p, RzSt
 		// TODO: show nested structs and field reference lines
 	}
 beach:
-	if (slide == 0) {
-		oldslide = 0;
+	if (format_data->slide == 0) {
+		format_data->oldslide = 0;
 	}
 	free(internal_format);
 	free(oarg);
@@ -2779,7 +2779,7 @@ beach:
  * \param setval Format field value in the writing mode
  * \param ofield Format field
  */
-RZ_API RZ_OWN char *rz_type_format_data(const RzTypeDB *typedb, RzPrint *p, ut64 seek, const ut8 *b, const int len,
+RZ_API RZ_OWN char *rz_type_format_data(RZ_BORROW RzTypeDB *typedb, RzPrint *p, ut64 seek, const ut8 *b, const int len,
 	const char *formatname, int mode, const char *setval, char *ofield) {
 	RzStrBuf *outbuf = rz_strbuf_new("");
 	rz_type_format_data_internal(typedb, p, outbuf, seek, b, len, formatname, mode, setval, ofield);

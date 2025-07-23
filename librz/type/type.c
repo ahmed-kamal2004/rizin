@@ -43,6 +43,11 @@ RZ_API RzTypeDB *rz_type_db_new() {
 	if (!typedb->parser) {
 		goto rz_type_db_new_fail;
 	}
+	typedb->format_internal_data = RZ_NEW0(RzFormatDataInternal);
+	if (!typedb->format_internal_data) {
+		goto rz_type_db_new_fail;
+	}
+	typedb->format_internal_data->ident = 4;
 	rz_io_bind_init(typedb->iob);
 	return typedb;
 
@@ -52,6 +57,7 @@ rz_type_db_new_fail:
 	ht_sp_free(typedb->types);
 	ht_ss_free(typedb->formats);
 	ht_sp_free(typedb->callables);
+	free(typedb->format_internal_data);
 	free(typedb);
 	return NULL;
 }
@@ -70,6 +76,7 @@ RZ_API void rz_type_db_free(RzTypeDB *typedb) {
 	free(typedb->target->os);
 	free(typedb->target->cpu);
 	free(typedb->target);
+	free(typedb->format_internal_data);
 	free(typedb);
 }
 

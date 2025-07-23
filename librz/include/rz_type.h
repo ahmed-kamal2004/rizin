@@ -28,6 +28,12 @@ typedef struct rz_type_target_t {
 
 typedef struct rz_type_parser_t RzTypeParser;
 
+typedef struct rz_format_data_internal_t {
+	int slide;
+	int oldslide;
+	int ident;
+} RzFormatDataInternal;
+
 typedef struct rz_type_db_t {
 	void *user;
 	HtSP /*<char *, RzBaseType *>*/ *types; //< name -> base type
@@ -37,6 +43,7 @@ typedef struct rz_type_db_t {
 	RzTypeParser *parser;
 	RzNum *num;
 	RzIOBind iob; // for RzIO in formats
+	RzFormatDataInternal *format_internal_data; // for rz_type_format_data_internal state
 } RzTypeDB;
 
 // All types in RzTypeDB module are either concrete,
@@ -403,7 +410,7 @@ RZ_API void rz_type_db_format_purge(RzTypeDB *typedb);
 RZ_API RZ_OWN char *rz_base_type_as_format(const RzTypeDB *typedb, RZ_NONNULL RzBaseType *type);
 RZ_API RZ_OWN char *rz_type_format(RZ_NONNULL const RzTypeDB *typedb, RZ_NONNULL const char *type);
 RZ_API int rz_type_format_struct_size(const RzTypeDB *typedb, const char *f, int mode, int n);
-RZ_API RZ_OWN char *rz_type_format_data(const RzTypeDB *t, RzPrint *p, ut64 seek, const ut8 *b, const int len,
+RZ_API RZ_OWN char *rz_type_format_data(RZ_BORROW RzTypeDB *t, RzPrint *p, ut64 seek, const ut8 *b, const int len,
 	const char *formatname, int mode, const char *setval, char *ofield);
 RZ_API RZ_OWN char *rz_type_as_format(const RzTypeDB *typedb, RZ_NONNULL RzType *type);
 RZ_API RZ_OWN char *rz_type_as_format_pair(const RzTypeDB *typedb, RZ_NONNULL RzType *type);
