@@ -18,11 +18,10 @@ typedef struct slurp_data_t {
 	size_t nextlen;
 } SlurpData;
 
-void terminate(RZ_OWN Sdb *s, int save, int sig, RZ_OWN SlurpData *slurp_data) {
+void terminate(RZ_OWN Sdb *s, int save, int sig, RZ_BORROW SlurpData *slurp_data) {
 	if (slurp_data) {
 		free(slurp_data->next);
 	}
-	free(slurp_data);
 	if (!s) {
 		return;
 	}
@@ -41,7 +40,9 @@ static void write_null(void) {
 
 #define BS 128
 
-static char *slurp(RZ_BORROW SlurpData *slurp_data, FILE *f, size_t *sz) {
+static char *slurp(RZ_NONNULL RZ_BORROW SlurpData *slurp_data, FILE *f, size_t *sz) {
+	rz_return_val_if_fail(slurp_data, NULL);
+
 	int blocksize = BS;
 	size_t len, rr, rr2;
 	char *tmp, *buf = NULL;
@@ -183,7 +184,10 @@ static int insertkeys(Sdb *s, const char **args, int nargs) {
 	return must_save;
 }
 
-static int createdb(RZ_BORROW Sdb **s, RZ_BORROW SlurpData *slurp_data, const char *f, const char **args, int nargs) {
+static int createdb(RZ_NONNULL RZ_BORROW Sdb **s, RZ_NONNULL RZ_BORROW SlurpData *slurp_data, const char *f, const char **args, int nargs) {
+	rz_return_val_if_fail(s, 0);
+	rz_return_val_if_fail(slurp_data, 0);
+
 	*s = sdb_new(NULL, f, 0);
 	if (!(*s)) {
 		eprintf("Cannot create database\n");
@@ -234,7 +238,9 @@ static int showversion(void) {
 	return 0;
 }
 
-static int base64encode(RZ_BORROW SlurpData *slurp_data) {
+static int base64encode(RZ_NONNULL RZ_BORROW SlurpData *slurp_data) {
+	rz_return_val_if_fail(slurp_data, 0);
+
 	char *out;
 	size_t len = 0;
 	ut8 *in = (ut8 *)slurp(slurp_data, stdin, &len);
@@ -252,7 +258,9 @@ static int base64encode(RZ_BORROW SlurpData *slurp_data) {
 	return 0;
 }
 
-static int base64decode(RZ_BORROW SlurpData *slurp_data) {
+static int base64decode(RZ_NONNULL RZ_BORROW SlurpData *slurp_data) {
+	rz_return_val_if_fail(slurp_data, 0);
+
 	ut8 *out;
 	size_t len, ret = 1;
 	char *in = slurp(slurp_data, stdin, &len);
@@ -319,8 +327,8 @@ int main(int argc, const char **argv) {
 	int i, fmt = MODE_DFLT;
 	int db0 = 1, argi = 1, save = 0;
 	bool interactive = false;
-	SlurpData *slurp_data = RZ_NEW0(SlurpData);
-	slurp_data->bufsize = BS;
+	SlurpData slurp_data;
+	slurp_data.bufsize = BS;
 
 	/* terminate flags */
 	if (argc < 2) {
@@ -352,8 +360,8 @@ int main(int argc, const char **argv) {
 		case 'c': return (argc < 3) ? showusage(1) : showcount(&s, argv[2]);
 		case 'v': return showversion();
 		case 'h': return showusage(2);
-		case 'e': return base64encode(slurp_data);
-		case 'd': return base64decode(slurp_data);
+		case 'e': return base64encode(&slurp_data);
+		case 'd': return base64decode(&slurp_data);
 		case 'D':
 			if (argc == 4) {
 				return dbdiff(argv[2], argv[3]) ? 0 : 1;
@@ -393,7 +401,7 @@ int main(int argc, const char **argv) {
 			if (kvs < argc) {
 				save |= insertkeys(s, argv + argi + 2, argc - kvs);
 			}
-			for (; (line = slurp(slurp_data, stdin, NULL));) {
+			for (; (line = slurp(&slurp_data, stdin, NULL));) {
 				save |= sdb_query(s, line);
 				if (fmt) {
 					fflush(stdout);
@@ -403,9 +411,9 @@ int main(int argc, const char **argv) {
 			}
 		}
 	} else if (!strcmp(argv[db0 + 1], "=")) {
-		ret = createdb(&s, slurp_data, argv[db0], NULL, 0);
+		ret = createdb(&s, &slurp_data, argv[db0], NULL, 0);
 	} else if (!strcmp(argv[db0 + 1], "==")) {
-		ret = createdb(&s, slurp_data, argv[db0], argv + db0 + 2, argc - (db0 + 2));
+		ret = createdb(&s, &slurp_data, argv[db0], argv + db0 + 2, argc - (db0 + 2));
 	} else {
 		s = sdb_new(NULL, argv[db0], 0);
 		if (!s) {
@@ -421,6 +429,6 @@ int main(int argc, const char **argv) {
 		}
 	}
 
-	terminate(s, save, ret, slurp_data);
+	terminate(s, save, ret, &slurp_data);
 	return ret;
 }
