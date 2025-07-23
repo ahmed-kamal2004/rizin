@@ -327,7 +327,7 @@ int main(int argc, const char **argv) {
 	int i, fmt = MODE_DFLT;
 	int db0 = 1, argi = 1, save = 0;
 	bool interactive = false;
-	SlurpData slurp_data;
+	SlurpData slurp_data = { 0 };
 	slurp_data.bufsize = BS;
 
 	/* terminate flags */
