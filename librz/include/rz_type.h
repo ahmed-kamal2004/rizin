@@ -28,7 +28,7 @@ typedef struct rz_type_target_t {
 
 typedef struct rz_type_parser_t RzTypeParser;
 
-typedef struct rz_format_data_internal_t {
+RZ_DEPRECATE typedef struct rz_format_data_internal_t {
 	int slide;
 	int oldslide;
 	int ident;
@@ -43,7 +43,7 @@ typedef struct rz_type_db_t {
 	RzTypeParser *parser;
 	RzNum *num;
 	RzIOBind iob; // for RzIO in formats
-	RzFormatDataInternal *format_internal_data; // for rz_type_format_data_internal state
+	RZ_DEPRECATE RzFormatDataInternal *format_internal_data; // for rz_type_format_data_internal state
 } RzTypeDB;
 
 // All types in RzTypeDB module are either concrete,
