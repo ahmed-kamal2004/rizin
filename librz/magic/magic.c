@@ -237,41 +237,41 @@ RZ_API RzMagic *rz_magic_new(int flags) {
 		return NULL;
 	}
 	rz_magic_setflags(ms, flags);
-	ms->o.buf = ms->o.pbuf = NULL;
-	ms->c.li = malloc((ms->c.len = 10) * sizeof(*ms->c.li));
-	if (!ms->c.li) {
-		free(ms);
-		return NULL;
-	}
-	file_reset(ms);
-	ms->mlist = NULL;
-	ms->file = "unknown";
-	ms->line = 0;
+	// ms->o.buf = ms->o.pbuf = NULL;
+	// ms->c.li = malloc((ms->c.len = 10) * sizeof(*ms->c.li));
+	// if (!ms->c.li) {
+	// 	free(ms);
+	// 	return NULL;
+	// }
+	// file_reset(ms);
+	// ms->mlist = NULL;
+	// ms->file = "unknown";
+	// ms->line = 0;
 	return ms;
 }
 
 RZ_API void rz_magic_free(RzMagic *ms) {
 	if (ms) {
-		free_mlist(ms->mlist);
-		free(ms->o.pbuf);
-		free(ms->o.buf);
-		free(ms->c.li);
+		// free_mlist(ms->mlist);
+		// free(ms->o.pbuf);
+		// free(ms->o.buf);
+		// free(ms->c.li);
 		free(ms);
 	}
 }
 
 RZ_API bool rz_magic_load_buffer(RzMagic *ms, const char *magicdata) {
-	if (*magicdata == '#') {
-		struct mlist *ml = file_apprentice(ms, magicdata, FILE_LOAD);
-		if (ml) {
-			free_mlist(ms->mlist);
-			ms->mlist = ml;
-			return true;
-		}
-	} else {
-		eprintf("Magic buffers should start with #\n");
-	}
-	return false;
+	// if (*magicdata == '#') {
+	// 	struct mlist *ml = file_apprentice(ms, magicdata, FILE_LOAD);
+	// 	if (ml) {
+	// 		free_mlist(ms->mlist);
+	// 		ms->mlist = ml;
+	// 		return true;
+	// 	}
+	// } else {
+	// 	eprintf("Magic buffers should start with #\n");
+	// }
+	// return false;
 }
 
 RZ_API bool rz_magic_load(RzMagic *ms, const char *magicfile) {

@@ -1,12 +1,11 @@
 rz_magic_sources = [
-  'apprentice.c',
-  'ascmagic.c',
-  'fsmagic.c',
-  'funcs.c',
-  'is_tar.c',
+  'magic-common.c',
+  'magic-dump.c',
+  'magic-load.c',
+  'magic-test.c',
+  'text.c',
   'magic.c',
-  # XXX not used? 'print.c',
-  'softmagic.c'
+  'xmalloc.c'
 ]
 
 rz_magic_deps = [rz_util_dep]
