@@ -17,12 +17,13 @@
  */
 
 #include <sys/types.h>
+#include <rz_util.h>
+#include <rz_magic.h>
 
 #include <ctype.h>
 #include <string.h>
 
 #include "file.h"
-#include "magic.h"
 #include "xmalloc.h"
 
 static const char *text_words[][3] = {
@@ -79,7 +80,7 @@ static const char *text_words[][3] = {
 };
 
 static int
-text_is_ascii(u_char c) {
+text_is_ascii(ut8 c) {
 	const char cc[] = "\007\010\011\012\014\015\033";
 
 	if (c == '\0')
@@ -90,22 +91,22 @@ text_is_ascii(u_char c) {
 }
 
 static int
-text_is_latin1(u_char c) {
+text_is_latin1(ut8 c) {
 	if (c >= 160)
 		return (1);
 	return (text_is_ascii(c));
 }
 
 static int
-text_is_extended(u_char c) {
+text_is_extended(ut8 c) {
 	if (c >= 128)
 		return (1);
 	return (text_is_ascii(c));
 }
 
 static int
-text_try_test(const void *base, size_t size, int (*f)(u_char)) {
-	const u_char *data = base;
+text_try_test(const void *base, size_t size, int (*f)(ut8)) {
+	const ut8 *data = base;
 	size_t offset;
 
 	for (offset = 0; offset < size; offset++) {
@@ -130,15 +131,15 @@ const char *
 text_try_words(const void *base, size_t size, int flags) {
 	const char *cp, *end, *next, *word;
 	size_t wordlen;
-	u_int i;
+	ut32 i;
 
 	end = (const char *)base + size;
 	for (cp = base; cp != end; /* nothing */) {
-		while (cp != end && isspace((u_char)*cp))
+		while (cp != end && isspace((ut8)*cp))
 			cp++;
 
 		next = cp;
-		while (next != end && !isspace((u_char)*next))
+		while (next != end && !isspace((ut8)*next))
 			next++;
 
 		for (i = 0; /* nothing */; i++) {

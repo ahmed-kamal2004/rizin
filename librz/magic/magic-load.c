@@ -17,7 +17,8 @@
  */
 
 #include <sys/types.h>
-
+#include "rz_util.h"
+#include "rz_magic.h"
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
@@ -28,18 +29,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "magic.h"
 #include "xmalloc.h"
 
-static int
-magic_odigit(u_char c) {
+static int magic_odigit(ut8 c) {
 	if (c >= '0' && c <= '7')
 		return (c - '0');
 	return (-1);
 }
 
-static int
-magic_xdigit(u_char c) {
+static int magic_xdigit(ut8 c) {
 	if (c >= '0' && c <= '9')
 		return (c - '0');
 	if (c >= 'a' && c <= 'f')
@@ -49,16 +47,14 @@ magic_xdigit(u_char c) {
 	return (-1);
 }
 
-static void
-magic_mark_text(struct magic_line *ml, int text) {
+static void magic_mark_text(RzMagicLine *ml, int text) {
 	do {
 		ml->text = text;
 		ml = ml->parent;
 	} while (ml != NULL);
 }
 
-static int
-magic_make_pattern(struct magic_line *ml, const char *name, regex_t *re,
+static int magic_make_pattern(RzMagicLine *ml, const char *name, regex_t *re,
 	const char *p) {
 	int error;
 	char errbuf[256];
@@ -72,14 +68,13 @@ magic_make_pattern(struct magic_line *ml, const char *name, regex_t *re,
 	return (0);
 }
 
-static int
-magic_set_result(struct magic_line *ml, const char *s) {
+static int magic_set_result(RzMagicLine *ml, const char *s) {
 	const char *fmt, *endfmt, *cp;
 	regex_t *re = NULL;
 	regmatch_t pmatch;
 	size_t fmtlen;
 
-	while (isspace((u_char)*s))
+	while (isspace((ut8)*s))
 		s++;
 	if (*s == '\0') {
 		ml->result = NULL;
@@ -273,8 +268,7 @@ magic_set_result(struct magic_line *ml, const char *s) {
 	return (0);
 }
 
-static u_int
-magic_get_strength(struct magic_line *ml) {
+static ut32 magic_get_strength(RzMagicLine *ml) {
 	int n;
 	size_t size;
 
@@ -406,13 +400,12 @@ skip:
 	return (n <= 0 ? 1 : n);
 }
 
-static int
-magic_get_string(char **line, char *out, size_t *outlen) {
+static int magic_get_string(char **line, char *out, size_t *outlen) {
 	char *start, *cp, c;
 	int d0, d1, d2;
 
 	start = out;
-	for (cp = *line; *cp != '\0' && !isspace((u_char)*cp); cp++) {
+	for (cp = *line; *cp != '\0' && !isspace((ut8)*cp); cp++) {
 		if (*cp != '\\') {
 			*out++ = *cp;
 			continue;
@@ -511,14 +504,13 @@ magic_get_string(char **line, char *out, size_t *outlen) {
 	return (0);
 }
 
-static int
-magic_parse_offset(struct magic_line *ml, char **line) {
+static int magic_parse_offset(RzMagicLine *ml, char **line) {
 	char *copy, *s, *cp, *endptr;
 
-	while (isspace((u_char) * *line))
+	while (isspace((ut8) * *line))
 		(*line)++;
 	copy = s = cp = xmalloc(strlen(*line) + 1);
-	while (**line != '\0' && !isspace((u_char) * *line))
+	while (**line != '\0' && !isspace((ut8) * *line))
 		*cp++ = *(*line)++;
 	*cp = '\0';
 
@@ -613,14 +605,13 @@ fail:
 	return (-1);
 }
 
-static int
-magic_parse_type(struct magic_line *ml, char **line) {
+static int magic_parse_type(RzMagicLine *ml, char **line) {
 	char *copy, *s, *cp, *endptr;
 
-	while (isspace((u_char) * *line))
+	while (isspace((ut8) * *line))
 		(*line)++;
 	copy = s = cp = xmalloc(strlen(*line) + 1);
-	while (**line != '\0' && !isspace((u_char) * *line))
+	while (**line != '\0' && !isspace((ut8) * *line))
 		*cp++ = *(*line)++;
 	*cp = '\0';
 
@@ -819,13 +810,12 @@ fail:
 	return (-1);
 }
 
-static int
-magic_parse_value(struct magic_line *ml, char **line) {
+static int magic_parse_value(RzMagicLine *ml, char **line) {
 	char *copy, *s, *cp, *endptr;
 	size_t slen;
 	uint64_t u;
 
-	while (isspace((u_char) * *line))
+	while (isspace((ut8) * *line))
 		(*line)++;
 
 	ml->test_operator = '=';
@@ -839,7 +829,7 @@ magic_parse_value(struct magic_line *ml, char **line) {
 		return (0);
 
 	s = *line;
-	if (s[0] == 'x' && (s[1] == '\0' || isspace((u_char)s[1]))) {
+	if (s[0] == 'x' && (s[1] == '\0' || isspace((ut8)s[1]))) {
 		(*line)++;
 		ml->test_operator = 'x';
 		return (0);
@@ -893,7 +883,7 @@ magic_parse_value(struct magic_line *ml, char **line) {
 		break;
 	}
 
-	while (isspace((u_char) * *line))
+	while (isspace((ut8) * *line))
 		(*line)++;
 	if ((*line)[0] == '<' && (*line)[1] == '=') {
 		ml->test_operator = '[';
@@ -906,10 +896,10 @@ magic_parse_value(struct magic_line *ml, char **line) {
 		(*line)++;
 	}
 
-	while (isspace((u_char) * *line))
+	while (isspace((ut8) * *line))
 		(*line)++;
 	copy = cp = xmalloc(strlen(*line) + 1);
-	while (**line != '\0' && !isspace((u_char) * *line))
+	while (**line != '\0' && !isspace((ut8) * *line))
 		*cp++ = *(*line)++;
 	*cp = '\0';
 
@@ -955,7 +945,10 @@ fail:
 	return (-1);
 }
 
-int magic_compare(struct magic_line *ml1, struct magic_line *ml2) {
+int magic_compare(const void *incoming, const RBNode *in_tree, void *user) {
+	RzMagicLine *ml1 = (RzMagicLine *)incoming;
+	RzMagicLine *ml2 = container_of(in_tree, const RzMagicLine, rb);
+
 	if (ml1->strength < ml2->strength)
 		return (1);
 	if (ml1->strength > ml2->strength)
@@ -973,21 +966,21 @@ int magic_compare(struct magic_line *ml1, struct magic_line *ml2) {
 
 	return (0);
 }
-RB_GENERATE(magic_tree, magic_line, node, magic_compare);
 
-int magic_named_compare(struct magic_line *ml1, struct magic_line *ml2) {
+int magic_named_compare(const void *incoming, const RBNode *in_tree, void *user) {
+	RzMagicLine *ml1 = (RzMagicLine *)incoming;
+	RzMagicLine *ml2 = container_of(in_tree, const RzMagicLine, rb);
+
 	return (strcmp(ml1->name, ml2->name));
 }
-RB_GENERATE(magic_named_tree, magic_line, node, magic_named_compare);
 
-static void
-magic_adjust_strength(struct magic *m, u_int at, struct magic_line *ml,
+static void magic_adjust_strength(RzMagic *m, ut32 at, RzMagicLine *ml,
 	char *line) {
 	char *cp, *s;
 	int64_t value;
 
 	cp = line + (sizeof "!:strength") - 1;
-	while (isspace((u_char)*cp))
+	while (isspace((ut8)*cp))
 		cp++;
 	s = cp;
 
@@ -1002,10 +995,10 @@ magic_adjust_strength(struct magic *m, u_int at, struct magic_line *ml,
 	}
 	ml->strength_operator = *cp++;
 
-	while (isspace((u_char)*cp))
+	while (isspace((ut8)*cp))
 		cp++;
 	cp = magic_strtoll(cp, &value);
-	while (cp != NULL && isspace((u_char)*cp))
+	while (cp != NULL && isspace((ut8)*cp))
 		cp++;
 	if (cp == NULL || *cp != '\0' || value < 0 || value > 255) {
 		magic_warnm(m, at, "invalid strength value: %s", s);
@@ -1015,11 +1008,11 @@ magic_adjust_strength(struct magic *m, u_int at, struct magic_line *ml,
 }
 
 static void
-magic_set_mimetype(struct magic *m, u_int at, struct magic_line *ml, char *line) {
+magic_set_mimetype(RzMagic *m, ut32 at, RzMagicLine *ml, char *line) {
 	char *mimetype, *cp;
 
 	mimetype = line + (sizeof "!:mime") - 1;
-	while (isspace((u_char)*mimetype))
+	while (isspace((ut8)*mimetype))
 		mimetype++;
 
 	cp = strchr(mimetype, '#');
@@ -1028,13 +1021,13 @@ magic_set_mimetype(struct magic *m, u_int at, struct magic_line *ml, char *line)
 
 	if (*mimetype != '\0') {
 		cp = mimetype + strlen(mimetype) - 1;
-		while (cp != mimetype && isspace((u_char)*cp))
+		while (cp != mimetype && isspace((ut8)*cp))
 			*cp-- = '\0';
 	}
 
 	cp = mimetype;
 	while (*cp != '\0') {
-		if (!isalnum((u_char)*cp) && strchr("/-.+", *cp) == NULL)
+		if (!isalnum((ut8)*cp) && strchr("/-.+", *cp) == NULL)
 			break;
 		cp++;
 	}
@@ -1049,20 +1042,15 @@ magic_set_mimetype(struct magic *m, u_int at, struct magic_line *ml, char *line)
 	ml->mimetype = xstrdup(mimetype);
 }
 
-struct magic *
-magic_load(FILE *f, const char *path, int warnings) {
-	struct magic *m;
-	struct magic_line *ml = NULL, *parent, *parent0;
+bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
+	RzMagicLine *ml = NULL, *parent, *parent0;
 	char *line, *tmp;
 	size_t size;
 	ssize_t slen;
-	u_int at, level, n, i;
+	ut32 at, level, n, i;
 
-	m = xcalloc(1, sizeof *m);
 	m->path = xstrdup(path);
-	m->warnings = warnings;
-	RB_INIT(&m->tree);
-
+	m->flags = flags;
 	parent = NULL;
 	parent0 = NULL;
 	level = 0;
@@ -1077,7 +1065,7 @@ magic_load(FILE *f, const char *path, int warnings) {
 
 		at++;
 
-		while (isspace((u_char)*line))
+		while (isspace((ut8)*line))
 			line++;
 		if (*line == '\0' || *line == '#')
 			continue;
@@ -1092,7 +1080,7 @@ magic_load(FILE *f, const char *path, int warnings) {
 		}
 		if (strncmp(line, "!:", 2) == 0) {
 			for (i = 0; i < 64 && line[i] != '\0'; i++) {
-				if (isspace((u_char)line[i]))
+				if (isspace((ut8)line[i]))
 					break;
 			}
 			magic_warnm(m, at, "%.*s not supported", i, line);
@@ -1142,16 +1130,18 @@ magic_load(FILE *f, const char *path, int warnings) {
 		ml->strength = magic_get_strength(ml);
 		if (ml->parent == NULL) {
 			if (ml->name != NULL)
-				RB_INSERT(magic_named_tree, &m->named, ml);
+				rz_rbtree_insert(&m->magic_named_tree, ml, ml->rb, magic_named_compare, NULL);
 			else
-				RB_INSERT(magic_tree, &m->tree, ml);
+				rz_rbtree_insert(&m->magic_tree, ml, ml->rb, magic_compare, NULL);
 		} else
 			TAILQ_INSERT_TAIL(&ml->parent->children, ml, entry);
 		parent0 = ml;
 	}
 	free(tmp);
-	if (ferror(f))
+	if (ferror(f)) {
 		err(1, "%s", path);
+		return false;
+	}
 
-	return (m);
+	return true;
 }

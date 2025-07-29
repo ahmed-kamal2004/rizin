@@ -29,22 +29,30 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-
-#include "magic.h"
+#include "rz_magic.h"
+#include "rz_util.h"
 #include "xmalloc.h"
 
-static int magic_test_line(struct magic_line *, struct magic_state *);
+static int magic_test_line(RzMagicLine *, RzMagicState *);
 
-static struct magic_line *
-magic_get_named(struct magic *m, const char *name) {
-	struct magic_line ml;
+static RzMagicLine *magic_get_named(RzMagic *m, const char *name) {
+	RzMagicLine ml;
 
 	ml.name = name;
-	return (RB_FIND(magic_named_tree, &m->named, &ml));
+
+	RBNode *node = rz_rbtree_find(m->magic_named_tree, &ml, magic_named_compare, NULL);
+	if (!node) {
+		return NULL;
+	}
+	RzMagicLine *var = (RzMagicLine *)container_of(node, RzMagicLine, rb);
+	if (!var) {
+		return NULL;
+	}
+	return var;
 }
 
 static enum magic_type
-magic_reverse_type(struct magic_state *ms, enum magic_type type) {
+magic_reverse_type(RzMagicState *ms, enum magic_type type) {
 	if (!ms->reverse)
 		return (type);
 	switch (type) {
@@ -121,7 +129,7 @@ static int
 magic_one_eq(char a, char b, int cflag) {
 	if (a == b)
 		return (1);
-	if (cflag && islower((u_char)b) && tolower((u_char)a) == (u_char)b)
+	if (cflag && islower((ut8)b) && tolower((ut8)a) == (ut8)b)
 		return (1);
 	return (0);
 }
@@ -133,14 +141,14 @@ magic_test_eq(const char *ap, size_t asize, const char *bp, size_t bsize,
 
 	aoff = boff = 0;
 	while (aoff != asize && boff != bsize) {
-		if (Bflag && isspace((u_char)ap[aoff])) {
+		if (Bflag && isspace((ut8)ap[aoff])) {
 			aspaces = 0;
-			while (aoff != asize && isspace((u_char)ap[aoff])) {
+			while (aoff != asize && isspace((ut8)ap[aoff])) {
 				aspaces++;
 				aoff++;
 			}
 			bspaces = 0;
-			while (boff != bsize && isspace((u_char)bp[boff])) {
+			while (boff != bsize && isspace((ut8)bp[boff])) {
 				bspaces++;
 				boff++;
 			}
@@ -153,7 +161,7 @@ magic_test_eq(const char *ap, size_t asize, const char *bp, size_t bsize,
 			boff++;
 			continue;
 		}
-		if (bflag && isspace((u_char)bp[boff])) {
+		if (bflag && isspace((ut8)bp[boff])) {
 			boff++;
 			continue;
 		}
@@ -165,7 +173,7 @@ magic_test_eq(const char *ap, size_t asize, const char *bp, size_t bsize,
 }
 
 static int
-magic_copy_from(struct magic_state *ms, ssize_t offset, void *dst, size_t size) {
+magic_copy_from(RzMagicState *ms, ssize_t offset, void *dst, size_t size) {
 	if (offset < 0)
 		offset = ms->offset;
 	if (offset + size > ms->size)
@@ -175,7 +183,7 @@ magic_copy_from(struct magic_state *ms, ssize_t offset, void *dst, size_t size) 
 }
 
 static void
-magic_add_result(struct magic_state *ms, struct magic_line *ml,
+magic_add_result(RzMagicState *ms, RzMagicLine *ml,
 	const char *fmt, ...) {
 	va_list ap;
 	int separate;
@@ -216,7 +224,7 @@ magic_add_result(struct magic_state *ms, struct magic_line *ml,
 }
 
 static void
-magic_add_string(struct magic_state *ms, struct magic_line *ml,
+magic_add_string(RzMagicState *ms, RzMagicLine *ml,
 	const char *s, size_t slen) {
 	char *out;
 	size_t outlen, offset;
@@ -225,19 +233,19 @@ magic_add_string(struct magic_state *ms, struct magic_line *ml,
 	if (outlen > slen)
 		outlen = slen;
 	for (offset = 0; offset < outlen; offset++) {
-		if (s[offset] == '\0' || !isprint((u_char)s[offset])) {
+		if (s[offset] == '\0' || !isprint((ut8)s[offset])) {
 			outlen = offset;
 			break;
 		}
 	}
 	out = xreallocarray(NULL, 4, outlen + 1);
-	strvisx(out, s, outlen, VIS_TAB | VIS_NL | VIS_CSTYLE | VIS_OCTAL);
+	// strvisx(out, s, outlen, VIS_TAB | VIS_NL | VIS_CSTYLE | VIS_OCTAL);
 	magic_add_result(ms, ml, "%s", out);
 	free(out);
 }
 
 static int
-magic_test_signed(struct magic_line *ml, int64_t value, int64_t wanted) {
+magic_test_signed(RzMagicLine *ml, int64_t value, int64_t wanted) {
 	switch (ml->test_operator) {
 	case 'x':
 		return (1);
@@ -260,7 +268,7 @@ magic_test_signed(struct magic_line *ml, int64_t value, int64_t wanted) {
 }
 
 static int
-magic_test_unsigned(struct magic_line *ml, uint64_t value, uint64_t wanted) {
+magic_test_unsigned(RzMagicLine *ml, uint64_t value, uint64_t wanted) {
 	switch (ml->test_operator) {
 	case 'x':
 		return (1);
@@ -283,7 +291,7 @@ magic_test_unsigned(struct magic_line *ml, uint64_t value, uint64_t wanted) {
 }
 
 static int
-magic_test_double(struct magic_line *ml, double value, double wanted) {
+magic_test_double(RzMagicLine *ml, double value, double wanted) {
 	switch (ml->test_operator) {
 	case 'x':
 		return (1);
@@ -294,13 +302,13 @@ magic_test_double(struct magic_line *ml, double value, double wanted) {
 }
 
 static int
-magic_test_type_none(__unused struct magic_line *ml,
-	__unused struct magic_state *ms) {
+magic_test_type_none(__unused RzMagicLine *ml,
+	__unused RzMagicState *ms) {
 	return (0);
 }
 
 static int
-magic_test_type_byte(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_byte(RzMagicLine *ml, RzMagicState *ms) {
 	int8_t value;
 	int result;
 
@@ -331,7 +339,7 @@ magic_test_type_byte(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_short(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_short(RzMagicLine *ml, RzMagicState *ms) {
 	int16_t value;
 	int result;
 
@@ -366,7 +374,7 @@ magic_test_type_short(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_long(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_long(RzMagicLine *ml, RzMagicState *ms) {
 	int32_t value;
 	int result;
 
@@ -401,7 +409,7 @@ magic_test_type_long(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_quad(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_quad(RzMagicLine *ml, RzMagicState *ms) {
 	int64_t value;
 	int result;
 
@@ -436,7 +444,7 @@ magic_test_type_quad(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_ubyte(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_ubyte(RzMagicLine *ml, RzMagicState *ms) {
 	uint8_t value;
 	int result;
 
@@ -467,7 +475,7 @@ magic_test_type_ubyte(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_ushort(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_ushort(RzMagicLine *ml, RzMagicState *ms) {
 	uint16_t value;
 	int result;
 
@@ -502,7 +510,7 @@ magic_test_type_ushort(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_ulong(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_ulong(RzMagicLine *ml, RzMagicState *ms) {
 	uint32_t value;
 	int result;
 
@@ -537,7 +545,7 @@ magic_test_type_ulong(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_uquad(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_uquad(RzMagicLine *ml, RzMagicState *ms) {
 	uint64_t value;
 	int result;
 
@@ -572,7 +580,7 @@ magic_test_type_uquad(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_float(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_float(RzMagicLine *ml, RzMagicState *ms) {
 	uint32_t value0;
 	float value;
 	int result;
@@ -597,7 +605,7 @@ magic_test_type_float(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_double(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_double(RzMagicLine *ml, RzMagicState *ms) {
 	uint64_t value0;
 	double value;
 	int result;
@@ -622,7 +630,7 @@ magic_test_type_double(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_string(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_string(RzMagicLine *ml, RzMagicState *ms) {
 	const char *s, *cp;
 	size_t slen;
 	int result, cflag = 0, bflag = 0, Bflag = 0;
@@ -688,7 +696,7 @@ magic_test_type_string(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_pstring(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_pstring(RzMagicLine *ml, RzMagicState *ms) {
 	const char *s, *cp;
 	size_t slen;
 	int result;
@@ -709,7 +717,7 @@ magic_test_type_pstring(struct magic_line *ml, struct magic_state *ms) {
 	s = ms->base + ms->offset;
 	if (ms->size - ms->offset < 1)
 		return (-1);
-	slen = *(u_char *)s;
+	slen = *(ut8 *)s;
 	if (slen + 1 > ms->size - ms->offset)
 		return (-1);
 	s++;
@@ -747,7 +755,7 @@ magic_test_type_pstring(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_date(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_date(RzMagicLine *ml, RzMagicState *ms) {
 	int32_t value;
 	int result;
 	time_t t;
@@ -792,7 +800,7 @@ magic_test_type_date(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_qdate(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_qdate(RzMagicLine *ml, RzMagicState *ms) {
 	int64_t value;
 	int result;
 	time_t t;
@@ -837,7 +845,7 @@ magic_test_type_qdate(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_udate(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_udate(RzMagicLine *ml, RzMagicState *ms) {
 	uint32_t value;
 	int result;
 	time_t t;
@@ -882,7 +890,7 @@ magic_test_type_udate(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_uqdate(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_uqdate(RzMagicLine *ml, RzMagicState *ms) {
 	uint64_t value;
 	int result;
 	time_t t;
@@ -927,37 +935,37 @@ magic_test_type_uqdate(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_bestring16(__unused struct magic_line *ml,
-	__unused struct magic_state *ms) {
+magic_test_type_bestring16(__unused RzMagicLine *ml,
+	__unused RzMagicState *ms) {
 	return (-2);
 }
 
 static int
-magic_test_type_lestring16(__unused struct magic_line *ml,
-	__unused struct magic_state *ms) {
+magic_test_type_lestring16(__unused RzMagicLine *ml,
+	__unused RzMagicState *ms) {
 	return (-2);
 }
 
 static int
-magic_test_type_melong(__unused struct magic_line *ml,
-	__unused struct magic_state *ms) {
+magic_test_type_melong(__unused RzMagicLine *ml,
+	__unused RzMagicState *ms) {
 	return (-2);
 }
 
 static int
-magic_test_type_medate(__unused struct magic_line *ml,
-	__unused struct magic_state *ms) {
+magic_test_type_medate(__unused RzMagicLine *ml,
+	__unused RzMagicState *ms) {
 	return (-2);
 }
 
 static int
-magic_test_type_meldate(__unused struct magic_line *ml,
-	__unused struct magic_state *ms) {
+magic_test_type_meldate(__unused RzMagicLine *ml,
+	__unused RzMagicState *ms) {
 	return (-2);
 }
 
 static int
-magic_test_type_regex(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_regex(RzMagicLine *ml, RzMagicState *ms) {
 	const char *cp;
 	regex_t re;
 	regmatch_t m;
@@ -1005,7 +1013,7 @@ magic_test_type_regex(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_search(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_search(RzMagicLine *ml, RzMagicState *ms) {
 	const char *cp, *endptr, *start, *found;
 	size_t size, end, i;
 	uint64_t range;
@@ -1103,33 +1111,33 @@ magic_test_type_search(struct magic_line *ml, struct magic_state *ms) {
 }
 
 static int
-magic_test_type_default(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_default(RzMagicLine *ml, RzMagicState *ms) {
 	if (!ms->matched && ml->result != NULL)
 		magic_add_result(ms, ml, "%s", "");
 	return (!ms->matched);
 }
 
 static int
-magic_test_type_clear(struct magic_line *ml, struct magic_state *ms) {
+magic_test_type_clear(RzMagicLine *ml, RzMagicState *ms) {
 	if (ml->result != NULL)
 		magic_add_result(ms, ml, "%s", "");
 	return (1);
 }
 
 static int
-magic_test_type_name(__unused struct magic_line *ml,
-	__unused struct magic_state *ms) {
+magic_test_type_name(__unused RzMagicLine *ml,
+	__unused RzMagicState *ms) {
 	return (-1);
 }
 
 static int
-magic_test_type_use(__unused struct magic_line *ml,
-	__unused struct magic_state *ms) {
+magic_test_type_use(__unused RzMagicLine *ml,
+	__unused RzMagicState *ms) {
 	return (1);
 }
 
-static int (*magic_test_functions[])(struct magic_line *,
-	struct magic_state *) = {
+static int (*magic_test_functions[])(RzMagicLine *,
+	RzMagicState *) = {
 	magic_test_type_none,
 	magic_test_type_byte,
 	magic_test_type_short,
@@ -1197,9 +1205,9 @@ static int (*magic_test_functions[])(struct magic_line *,
 };
 
 static void
-magic_test_children(struct magic_line *ml, struct magic_state *ms, size_t start,
+magic_test_children(RzMagicLine *ml, RzMagicState *ms, size_t start,
 	int reverse) {
-	struct magic_line *child;
+	RzMagicLine *child;
 	size_t saved_start, saved_offset;
 	int saved_reverse;
 
@@ -1223,9 +1231,9 @@ magic_test_children(struct magic_line *ml, struct magic_state *ms, size_t start,
 }
 
 static int
-magic_test_line(struct magic_line *ml, struct magic_state *ms) {
-	struct magic *m = ml->root;
-	struct magic_line *named;
+magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
+	RzMagic *m = ml->root;
+	RzMagicLine *named;
 	int64_t offset, wanted, next;
 	int result;
 	uint8_t b;
@@ -1343,9 +1351,9 @@ magic_test_line(struct magic_line *ml, struct magic_state *ms) {
 }
 
 const char *
-magic_test(struct magic *m, const void *base, size_t size, int flags) {
-	struct magic_line *ml;
-	static struct magic_state ms;
+magic_test(RzMagic *m, const void *base, size_t size, int flags) {
+	RzMagicLine *ml;
+	static RzMagicState ms;
 
 	memset(&ms, 0, sizeof ms);
 
@@ -1354,7 +1362,8 @@ magic_test(struct magic *m, const void *base, size_t size, int flags) {
 
 	ms.text = !!(flags & MAGIC_TEST_TEXT);
 
-	RB_FOREACH(ml, magic_tree, &m->tree) {
+	RBIter rbiter;
+	rz_rbtree_foreach (m->magic_tree, rbiter, ml, RzMagicLine, rb) {
 		ms.offset = 0;
 		if (ml->text == ms.text && magic_test_line(ml, &ms))
 			break;

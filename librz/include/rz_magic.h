@@ -5,6 +5,13 @@
 #define RZ_MAGIC_H
 
 #include <rz_types.h>
+#include <sys/types.h>
+#include <rz_util/rz_rbtree.h>
+#include <sys/queue.h>
+
+#include <regex.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -216,95 +223,211 @@ struct mlist {
 	struct mlist *next, *prev;
 };
 
-#define RZ_MAGIC_NONE              0x000000 /* No flags */
-#define RZ_MAGIC_DEBUG             0x000001 /* Turn on debugging */
-#define RZ_MAGIC_SYMLINK           0x000002 /* Follow symlinks */
-#define RZ_MAGIC_COMPRESS          0x000004 /* Check inside compressed files */
-#define RZ_MAGIC_DEVICES           0x000008 /* Look at the contents of devices */
-#define RZ_MAGIC_MIME_TYPE         0x000010 /* Return only the MIME type */
-#define RZ_MAGIC_CONTINUE          0x000020 /* Return all matches */
-#define RZ_MAGIC_CHECK             0x000040 /* Print warnings to stderr */
-#define RZ_MAGIC_PRESERVE_ATIME    0x000080 /* Restore access time on exit */
-#define RZ_MAGIC_RAW               0x000100 /* Don't translate unprint chars */
-#define RZ_MAGIC_ERROR             0x000200 /* Handle ENOENT etc as real errors */
-#define RZ_MAGIC_MIME_ENCODING     0x000400 /* Return only the MIME encoding */
-#define RZ_MAGIC_MIME              (RZ_MAGIC_MIME_TYPE | RZ_MAGIC_MIME_ENCODING)
-#define RZ_MAGIC_NO_CHECK_COMPRESS 0x001000 /* Don't check for compressed files */
-#define RZ_MAGIC_NO_CHECK_TAR      0x002000 /* Don't check for tar files */
-#define RZ_MAGIC_NO_CHECK_SOFT     0x004000 /* Don't check magic entries */
-#define RZ_MAGIC_NO_CHECK_APPTYPE  0x008000 /* Don't check application type */
-#define RZ_MAGIC_NO_CHECK_ELF      0x010000 /* Don't check for elf details */
-#define RZ_MAGIC_NO_CHECK_ASCII    0x020000 /* Don't check for ascii files */
-#define RZ_MAGIC_NO_CHECK_TOKENS   0x100000 /* Don't check ascii/tokens */
+#define MAGIC_STRING_SIZE         31
+#define MAGIC_STRENGTH_MULTIPLIER 10
 
-/* Defined for backwards compatibility; do nothing */
-#define MAGIC_NO_CHECK_FORTRAN 0x000000 /* Don't check ascii/fortran */
-#define MAGIC_NO_CHECK_TROFF   0x000000 /* Don't check ascii/troff */
+#define MAGIC_TEST_TEXT 0x1
+#define MAGIC_TEST_MIME 0x2
 
-struct rz_magic_set {
-	struct mlist *mlist;
-	struct cont {
-		size_t len;
-		struct level_info {
-			st32 off;
-			int got_match;
-			int last_match;
-			int last_cond; /* used for error checking by parse() */
-		} *li;
-	} c;
-	struct out {
-		char *buf; /* Accumulation buffer */
-		char *pbuf; /* Printable buffer */
-	} o;
-	ut32 offset;
-	int error;
-	int flags;
-	int haderr;
-	const char *file;
-	size_t line; /* current magic line number */
+#define __unused __attribute__((__unused__))
 
-	/* data for searches */
-	struct {
-		const char *s; /* start of search in original source */
-		size_t s_len; /* length of search region */
-		size_t offset; /* starting offset in source: XXX - should this be off_t? */
-		size_t rm_len; /* match length */
-	} search;
+/*
+ * to select alternate encoding format
+ */
+#define VIS_OCTAL  0x01 /* use octal \ddd format */
+#define VIS_CSTYLE 0x02 /* use \[nrft0..] where appropriate */
 
-	/* FIXME: Make the string dynamically allocated so that e.g.
-	   strings matched in files can be longer than MAXstring */
-	union VALUETYPE ms_value; /* either number or string */
+/*
+ * to alter set of characters encoded (default is to encode all
+ * non-graphic except space, tab, and newline).
+ */
+#define VIS_SP    0x04 /* also encode space */
+#define VIS_TAB   0x08 /* also encode tab */
+#define VIS_NL    0x10 /* also encode newline */
+#define VIS_WHITE (VIS_SP | VIS_TAB | VIS_NL)
+#define VIS_SAFE  0x20 /* only encode "unsafe" characters */
+#define VIS_DQ    0x200 /* backslash-escape double quotes */
+#define VIS_ALL   0x400 /* encode all characters */
 
-	// Previously global non-constant variables in librz/magic/
-	bool ms_setup_done; ///< True if the members below were initialized.
-	int magic_file_formats[FILE_NAMES_SIZE];
-	const char *magic_file_names[FILE_NAMES_SIZE];
-	size_t maxmagic;
+/*
+ * other
+ */
+#define VIS_NOSLASH 0x40 /* inhibit printing '\' */
+#define VIS_GLOB    0x100 /* encode glob(3) magics and '#' */
+
+enum magic_type {
+	MAGIC_TYPE_NONE = 0,
+	MAGIC_TYPE_BYTE,
+	MAGIC_TYPE_SHORT,
+	MAGIC_TYPE_LONG,
+	MAGIC_TYPE_QUAD,
+	MAGIC_TYPE_UBYTE,
+	MAGIC_TYPE_USHORT,
+	MAGIC_TYPE_ULONG,
+	MAGIC_TYPE_UQUAD,
+	MAGIC_TYPE_FLOAT,
+	MAGIC_TYPE_DOUBLE,
+	MAGIC_TYPE_STRING,
+	MAGIC_TYPE_PSTRING,
+	MAGIC_TYPE_DATE,
+	MAGIC_TYPE_QDATE,
+	MAGIC_TYPE_LDATE,
+	MAGIC_TYPE_QLDATE,
+	MAGIC_TYPE_UDATE,
+	MAGIC_TYPE_UQDATE,
+	MAGIC_TYPE_ULDATE,
+	MAGIC_TYPE_UQLDATE,
+	MAGIC_TYPE_BESHORT,
+	MAGIC_TYPE_BELONG,
+	MAGIC_TYPE_BEQUAD,
+	MAGIC_TYPE_UBESHORT,
+	MAGIC_TYPE_UBELONG,
+	MAGIC_TYPE_UBEQUAD,
+	MAGIC_TYPE_BEFLOAT,
+	MAGIC_TYPE_BEDOUBLE,
+	MAGIC_TYPE_BEDATE,
+	MAGIC_TYPE_BEQDATE,
+	MAGIC_TYPE_BELDATE,
+	MAGIC_TYPE_BEQLDATE,
+	MAGIC_TYPE_UBEDATE,
+	MAGIC_TYPE_UBEQDATE,
+	MAGIC_TYPE_UBELDATE,
+	MAGIC_TYPE_UBEQLDATE,
+	MAGIC_TYPE_BESTRING16,
+	MAGIC_TYPE_LESHORT,
+	MAGIC_TYPE_LELONG,
+	MAGIC_TYPE_LEQUAD,
+	MAGIC_TYPE_ULESHORT,
+	MAGIC_TYPE_ULELONG,
+	MAGIC_TYPE_ULEQUAD,
+	MAGIC_TYPE_LEFLOAT,
+	MAGIC_TYPE_LEDOUBLE,
+	MAGIC_TYPE_LEDATE,
+	MAGIC_TYPE_LEQDATE,
+	MAGIC_TYPE_LELDATE,
+	MAGIC_TYPE_LEQLDATE,
+	MAGIC_TYPE_ULEDATE,
+	MAGIC_TYPE_ULEQDATE,
+	MAGIC_TYPE_ULELDATE,
+	MAGIC_TYPE_ULEQLDATE,
+	MAGIC_TYPE_LESTRING16,
+	MAGIC_TYPE_MELONG,
+	MAGIC_TYPE_MEDATE,
+	MAGIC_TYPE_MELDATE,
+	MAGIC_TYPE_REGEX,
+	MAGIC_TYPE_SEARCH,
+	MAGIC_TYPE_DEFAULT,
+	MAGIC_TYPE_CLEAR,
+	MAGIC_TYPE_NAME,
+	MAGIC_TYPE_USE,
 };
 
-#if USE_LIB_MAGIC
-#define RzMagic struct magic_set
-#else
-typedef struct rz_magic_set RzMagic;
-#endif
+TAILQ_HEAD(magic_lines, rz_magic_line_t);
+
+typedef struct rz_magic_line_t RzMagicLine;
+typedef struct rz_magic_t RzMagic;
+
+struct rz_magic_line_t {
+	RBNode *rb;
+	RzMagic *root;
+	ut32 line;
+	ut32 strength;
+	RzMagicLine *parent;
+
+	char strength_operator;
+	ut32 strength_value;
+
+	int text;
+
+	int64_t offset;
+	int offset_relative;
+
+	char indirect_type;
+	int indirect_relative;
+	int64_t indirect_offset;
+	char indirect_operator;
+	int64_t indirect_operand;
+
+	const char *name;
+
+	enum magic_type type;
+	const char *type_string;
+	char type_operator;
+	int64_t type_operand;
+
+	char test_operator;
+	int test_not;
+	const char *test_string;
+	size_t test_string_size;
+	uint64_t test_unsigned;
+	int64_t test_signed;
+	double test_double;
+
+	int stringify;
+	const char *result;
+	const char *mimetype;
+
+	struct magic_lines children;
+	TAILQ_ENTRY(magic_line)
+	entry;
+};
+
+struct rz_magic_t {
+	const char *path;
+	int flags;
+
+	RBTree magic_tree;
+	RBTree magic_named_tree;
+
+	int compiled;
+	regex_t format_short;
+	regex_t format_long;
+	regex_t format_quad;
+	regex_t format_float;
+	regex_t format_string;
+};
+
+typedef struct rz_magic_state_t {
+	char out[4096];
+	const char *mimetype;
+	int text;
+
+	const char *base;
+	size_t size;
+	RBTree magic_tree;
+
+	size_t offset;
+	int matched;
+
+	size_t start;
+	int reverse;
+} RzMagicState;
 
 #ifdef RZ_API
 RZ_API RzMagic *rz_magic_new(int flags);
 RZ_API void rz_magic_free(RzMagic *);
 
-RZ_API const char *rz_magic_file(RzMagic *, const char *);
-RZ_API const char *rz_magic_descriptor(RzMagic *, int);
 RZ_API const char *rz_magic_buffer(RzMagic *, const ut8 *, size_t);
 
-RZ_API const char *rz_magic_error(RzMagic *);
 RZ_API void rz_magic_setflags(RzMagic *, int);
 
 RZ_API bool rz_magic_load(RzMagic *, const char *);
-RZ_API bool rz_magic_load_buffer(RzMagic *, const char *);
-RZ_API bool rz_magic_compile(RzMagic *, const char *);
-RZ_API bool rz_magic_check(RzMagic *, const char *);
-RZ_API int rz_magic_errno(RzMagic *);
 #endif
+
+int magic_compare(const void *incoming, const RBNode *in_tree, void *user);
+int magic_named_compare(const void *incoming, const RBNode *in_tree, void *user);
+
+char *magic_strtoull(const char *, ut64 *);
+char *magic_strtoll(const char *, int64_t *);
+void magic_vwarnm(RzMagic *, ut32, const char *, va_list);
+void magic_warnm(RzMagic *, ut32, const char *, ...)
+	__attribute__((format(printf, 3, 4)));
+void magic_warn(RzMagicLine *, const char *, ...)
+	__attribute__((format(printf, 2, 3)));
+
+void magic_dump(RzMagic *);
+bool magic_load(RzMagic *, FILE *f, const char *path, int flags);
+const char *magic_test(RzMagic *, const void *, size_t, int);
 
 #endif
 

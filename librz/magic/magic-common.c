@@ -17,6 +17,8 @@
  */
 
 #include <sys/types.h>
+#include <rz_util.h>
+#include <rz_magic.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -26,10 +28,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "magic.h"
-
 char *
-magic_strtoull(const char *s, uint64_t *u) {
+magic_strtoull(const char *s, ut64 *u) {
 	char *endptr;
 
 	if (*s == '-' || *s == '\0')
@@ -64,10 +64,10 @@ magic_strtoll(const char *s, int64_t *i) {
 	return (endptr);
 }
 
-void magic_vwarnm(struct magic *m, u_int line, const char *fmt, va_list ap) {
+void magic_vwarnm(RzMagic *m, ut32 line, const char *fmt, va_list ap) {
 	char *msg;
 
-	if (!m->warnings)
+	if (!m->flags)
 		return;
 
 	if (vasprintf(&msg, fmt, ap) == -1)
@@ -76,7 +76,7 @@ void magic_vwarnm(struct magic *m, u_int line, const char *fmt, va_list ap) {
 	free(msg);
 }
 
-void magic_warnm(struct magic *m, u_int line, const char *fmt, ...) {
+void magic_warnm(RzMagic *m, ut32 line, const char *fmt, ...) {
 	va_list ap;
 
 	va_start(ap, fmt);
@@ -84,7 +84,7 @@ void magic_warnm(struct magic *m, u_int line, const char *fmt, ...) {
 	va_end(ap);
 }
 
-void magic_warn(struct magic_line *ml, const char *fmt, ...) {
+void magic_warn(RzMagicLine *ml, const char *fmt, ...) {
 	va_list ap;
 
 	va_start(ap, fmt);

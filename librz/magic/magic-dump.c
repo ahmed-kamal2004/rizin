@@ -17,15 +17,14 @@
  */
 
 #include <sys/types.h>
+#include <rz_magic.h>
 
 #include <stdio.h>
 
-#include "magic.h"
-
 static void
-magic_dump_line(struct magic_line *ml, u_int depth) {
-	struct magic_line *child;
-	u_int i;
+magic_dump_line(RzMagicLine *ml, ut32 depth) {
+	RzMagicLine *child;
+	ut32 i;
 
 	printf("%u", ml->line);
 	for (i = 0; i < depth; i++)
@@ -45,12 +44,14 @@ magic_dump_line(struct magic_line *ml, u_int depth) {
 	magic_dump_line(child, depth + 1);
 }
 
-void magic_dump(struct magic *m) {
-	struct magic_line *ml;
+void magic_dump(RzMagic *m) {
+	RBIter it;
+	RzMagicLine *ml;
 
-	RB_FOREACH(ml, magic_tree, &m->tree)
-	magic_dump_line(ml, 0);
-
-	RB_FOREACH(ml, magic_named_tree, &m->named)
-	magic_dump_line(ml, 0);
+	rz_rbtree_foreach (m->magic_tree, it, ml, RzMagicLine, rb) {
+		magic_dump_line(ml, 0);
+	}
+	rz_rbtree_foreach (m->magic_named_tree, it, ml, RzMagicLine, rb) {
+		magic_dump_line(ml, 0);
+	}
 }
