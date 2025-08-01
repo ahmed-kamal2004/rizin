@@ -44,7 +44,7 @@ static RzMagicLine *magic_get_named(RzMagic *m, const char *name) {
 	if (!node) {
 		return NULL;
 	}
-	RzMagicLine *var = (RzMagicLine *)container_of(node, RzMagicLine, rb);
+	RzMagicLine *var = container_of(node, RzMagicLine, rb);
 	if (!var) {
 		return NULL;
 	}
@@ -1016,7 +1016,7 @@ static int
 magic_test_type_search(RzMagicLine *ml, RzMagicState *ms) {
 	const char *cp, *endptr, *start, *found;
 	size_t size, end, i;
-	uint64_t range;
+	ut64 range;
 	int result, n, cflag = 0, bflag = 0, Bflag = 0;
 
 	cp = &ml->type_string[(sizeof "search") - 1];
@@ -1236,9 +1236,9 @@ magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 	RzMagicLine *named;
 	int64_t offset, wanted, next;
 	int result;
-	uint8_t b;
-	uint16_t s;
-	uint32_t l;
+	ut8 b;
+	ut16 s;
+	ut32 l;
 
 	if (ml->indirect_type == ' ')
 		wanted = ms->start + ml->offset;
@@ -1323,7 +1323,7 @@ magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 	if (ml->mimetype != NULL)
 		ms->mimetype = ml->mimetype;
 
-	magic_warn(ml, "test %s/%c matched at offset %lld (now %zu): "
+	magic_warn(ml, "test %s/%c matched at offset %ld (now %zu): "
 		       "'%s'",
 		ml->type_string, ml->test_operator, offset,
 		ms->offset, ml->result == NULL ? "" : ml->result);
@@ -1337,7 +1337,7 @@ magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 			magic_warn(ml, "no name found for use %s", ml->name);
 			return (0);
 		}
-		magic_warn(ml, "use %s at offset %lld", ml->name, offset);
+		magic_warn(ml, "use %s at offset %ld", ml->name, offset);
 		magic_test_children(named, ms, offset, *ml->name == '^');
 	}
 

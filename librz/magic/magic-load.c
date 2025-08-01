@@ -673,7 +673,7 @@ static int magic_parse_type(RzMagicLine *ml, char **line) {
 	cp = &s[strcspn(s, "+-&/%*")];
 	if (*cp != '\0') {
 		ml->type_operator = *cp;
-		endptr = magic_strtoull(cp + 1, &ml->type_operand);
+		endptr = magic_strtoull(cp + 1, (ut64 *)&ml->type_operand);
 		if (endptr == NULL || *endptr != '\0') {
 			magic_warn(ml, "can't parse operand: %s", cp + 1);
 			goto fail;
@@ -813,7 +813,7 @@ fail:
 static int magic_parse_value(RzMagicLine *ml, char **line) {
 	char *copy, *s, *cp, *endptr;
 	size_t slen;
-	uint64_t u;
+	ut64 u;
 
 	while (isspace((ut8) * *line))
 		(*line)++;
@@ -947,7 +947,7 @@ fail:
 
 int magic_compare(const void *incoming, const RBNode *in_tree, void *user) {
 	RzMagicLine *ml1 = (RzMagicLine *)incoming;
-	RzMagicLine *ml2 = container_of(in_tree, const RzMagicLine, rb);
+	const RzMagicLine *ml2 = container_of(in_tree, const RzMagicLine, rb);
 
 	if (ml1->strength < ml2->strength)
 		return (1);
@@ -969,7 +969,7 @@ int magic_compare(const void *incoming, const RBNode *in_tree, void *user) {
 
 int magic_named_compare(const void *incoming, const RBNode *in_tree, void *user) {
 	RzMagicLine *ml1 = (RzMagicLine *)incoming;
-	RzMagicLine *ml2 = container_of(in_tree, const RzMagicLine, rb);
+	const RzMagicLine *ml2 = container_of(in_tree, const RzMagicLine, rb);
 
 	return (strcmp(ml1->name, ml2->name));
 }
@@ -1049,8 +1049,6 @@ bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
 	ssize_t slen;
 	ut32 at, level, n, i;
 
-	m->path = xstrdup(path);
-	m->flags = flags;
 	parent = NULL;
 	parent0 = NULL;
 	level = 0;
@@ -1058,6 +1056,7 @@ bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
 	at = 0;
 	tmp = NULL;
 	size = 0;
+
 	while ((slen = getline(&tmp, &size, f)) != -1) {
 		line = tmp;
 		if (line[slen - 1] == '\n')
@@ -1130,9 +1129,9 @@ bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
 		ml->strength = magic_get_strength(ml);
 		if (ml->parent == NULL) {
 			if (ml->name != NULL)
-				rz_rbtree_insert(&m->magic_named_tree, ml, ml->rb, magic_named_compare, NULL);
+				rz_rbtree_insert(&m->magic_named_tree, ml, &ml->rb, magic_named_compare, NULL);
 			else
-				rz_rbtree_insert(&m->magic_tree, ml, ml->rb, magic_compare, NULL);
+				rz_rbtree_insert(&m->magic_tree, ml, &ml->rb, magic_compare, NULL);
 		} else
 			TAILQ_INSERT_TAIL(&ml->parent->children, ml, entry);
 		parent0 = ml;

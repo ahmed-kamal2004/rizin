@@ -4,6 +4,7 @@
 
 #include <rz_userconf.h>
 #include <rz_magic.h>
+#include <rz_util.h>
 
 RZ_LIB_VERSION(rz_magic);
 
@@ -18,7 +19,7 @@ RZ_LIB_VERSION(rz_magic);
 #endif
 
 static void magic_node_free_rb(RBNode *node, void *user) {
-	RzMagicLine *ml = (RzMagicLine *)container_of(node, RzMagicLine, rb);
+	RzMagicLine *ml = container_of(node, RzMagicLine, rb);
 	free(ml);
 }
 
@@ -42,23 +43,42 @@ RZ_API void rz_magic_free(RzMagic *ms) {
 	}
 }
 
-RZ_API bool rz_magic_load(RzMagic *ms, const char *magicfile) {
-	FILE *file = open(magicfile, "r");
-	if (magic_load(ms, file, ms->path, ms->flags)) {
-		fclose(file);
-		return true;
+RZ_API bool rz_magic_load(RzMagic *ms, const char *magic_path) {
+	DIR *dir = opendir(magic_path);
+	bool result = true;
+	struct dirent *entry;
+	char *filepath = NULL;
+
+	if (ms->path) {
+		free(ms->path);
 	}
-	return false;
+	ms->path = rz_str_dup(magic_path);
+
+	while ((entry = readdir(dir)) != NULL && result) {
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+			continue;
+
+		filepath = rz_str_newf("%s/%s", magic_path, entry->d_name);
+
+		FILE *file = fopen(filepath, "r");
+
+		if (magic_load(ms, file, filepath, ms->flags)) {
+			result &= true;
+		} else {
+			result &= false;
+		}
+
+		fclose(file);
+	}
+	free(filepath);
+	return result;
 }
 
 RZ_API const char *rz_magic_buffer(RzMagic *ms, const ut8 *buf, size_t nb) {
-	// if (file_reset(ms) == -1) {
-	// 	return NULL;
-	// }
-	// if (file_buffer(ms, -1, NULL, buf, nb) == -1) {
-	// 	return NULL;
-	// }
-	// return file_getbuffer(ms);
+	if (nb == 0) {
+		return NULL;
+	}
+	return magic_test(ms, buf, nb, ms->flags);
 }
 
 RZ_API void rz_magic_setflags(RzMagic *ms, int flags) {

@@ -322,13 +322,13 @@ enum magic_type {
 	MAGIC_TYPE_USE,
 };
 
-TAILQ_HEAD(magic_lines, rz_magic_line_t);
-
 typedef struct rz_magic_line_t RzMagicLine;
 typedef struct rz_magic_t RzMagic;
 
+TAILQ_HEAD(RzMagicLines, rz_magic_line_t);
+
 struct rz_magic_line_t {
-	RBNode *rb;
+	RBNode rb;
 	RzMagic *root;
 	ut32 line;
 	ut32 strength;
@@ -359,7 +359,7 @@ struct rz_magic_line_t {
 	int test_not;
 	const char *test_string;
 	size_t test_string_size;
-	uint64_t test_unsigned;
+	ut64 test_unsigned;
 	int64_t test_signed;
 	double test_double;
 
@@ -367,13 +367,13 @@ struct rz_magic_line_t {
 	const char *result;
 	const char *mimetype;
 
-	struct magic_lines children;
-	TAILQ_ENTRY(magic_line)
+	struct RzMagicLines children;
+	TAILQ_ENTRY(rz_magic_line_t)
 	entry;
 };
 
 struct rz_magic_t {
-	const char *path;
+	char *path;
 	int flags;
 
 	RBTree magic_tree;
