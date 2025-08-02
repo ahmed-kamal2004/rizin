@@ -29,6 +29,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <endian.h>
 #include "rz_magic.h"
 #include "rz_util.h"
 #include "xmalloc.h"
