@@ -29,10 +29,13 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <endian.h>
 #include "rz_magic.h"
 #include "rz_util.h"
 #include "xmalloc.h"
+
+#if __APPLE__
+#include <machine/endian.h>
+#endif
 
 static int magic_test_line(RzMagicLine *, RzMagicState *);
 
