@@ -31,6 +31,8 @@ RZ_API RzMagic *rz_magic_new(int flags) {
 	if (!ms) {
 		return NULL;
 	}
+	ms->magic_tree = NULL;
+	ms->magic_named_tree = NULL;
 	rz_magic_setflags(ms, flags);
 	return ms;
 }

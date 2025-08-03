@@ -1255,7 +1255,7 @@ static int
 magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 	RzMagic *m = ml->root;
 	RzMagicLine *named;
-	int64_t offset, wanted, next;
+	st64 offset, wanted, next;
 	int result;
 	ut8 b;
 	ut16 s;
@@ -1344,9 +1344,9 @@ magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 	if (ml->mimetype != NULL)
 		ms->mimetype = ml->mimetype;
 
-	magic_warn(ml, "test %s/%c matched at offset %lld (now %zu): "
+	magic_warn(ml, "test %s/%c matched at offset %" PFMT64d " (now %zu): "
 		       "'%s'",
-		ml->type_string, ml->test_operator, (long long)offset,
+		ml->type_string, ml->test_operator, offset,
 		ms->offset, ml->result == NULL ? "" : ml->result);
 
 	if (ml->type == MAGIC_TYPE_USE) {
@@ -1358,7 +1358,7 @@ magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 			magic_warn(ml, "no name found for use %s", ml->name);
 			return (0);
 		}
-		magic_warn(ml, "use %s at offset %lld", ml->name, (long long)offset);
+		magic_warn(ml, "use %s at offset %" PFMT64d "", ml->name, offset);
 		magic_test_children(named, ms, offset, *ml->name == '^');
 	}
 
