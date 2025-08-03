@@ -29,8 +29,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "xmalloc.h"
-
 static int magic_odigit(ut8 c) {
 	if (c >= '0' && c <= '7')
 		return (c - '0');
@@ -80,7 +78,7 @@ static int magic_set_result(RzMagicLine *ml, const char *s) {
 		ml->result = NULL;
 		return (0);
 	}
-	ml->result = xstrdup(s);
+	ml->result = rz_str_dup(s);
 
 	fmt = NULL;
 	for (cp = s; *cp != '\0'; cp++) {
@@ -509,7 +507,7 @@ static int magic_parse_offset(RzMagicLine *ml, char **line) {
 
 	while (isspace((ut8) * *line))
 		(*line)++;
-	copy = s = cp = xmalloc(strlen(*line) + 1);
+	copy = s = cp = malloc(strlen(*line) + 1);
 	while (**line != '\0' && !isspace((ut8) * *line))
 		*cp++ = *(*line)++;
 	*cp = '\0';
@@ -610,7 +608,7 @@ static int magic_parse_type(RzMagicLine *ml, char **line) {
 
 	while (isspace((ut8) * *line))
 		(*line)++;
-	copy = s = cp = xmalloc(strlen(*line) + 1);
+	copy = s = cp = malloc(strlen(*line) + 1);
 	while (**line != '\0' && !isspace((ut8) * *line))
 		*cp++ = *(*line)++;
 	*cp = '\0';
@@ -621,21 +619,21 @@ static int magic_parse_type(RzMagicLine *ml, char **line) {
 
 	if (strcmp(s, "name") == 0) {
 		ml->type = MAGIC_TYPE_NAME;
-		ml->type_string = xstrdup(s);
+		ml->type_string = rz_str_dup(s);
 		goto done;
 	}
 	if (strcmp(s, "use") == 0) {
 		ml->type = MAGIC_TYPE_USE;
-		ml->type_string = xstrdup(s);
+		ml->type_string = rz_str_dup(s);
 		goto done;
 	}
 
 	if (strncmp(s, "string", (sizeof "string") - 1) == 0 ||
 		strncmp(s, "ustring", (sizeof "ustring") - 1) == 0) {
 		if (*s == 'u')
-			ml->type_string = xstrdup(s + 1);
+			ml->type_string = rz_str_dup(s + 1);
 		else
-			ml->type_string = xstrdup(s);
+			ml->type_string = rz_str_dup(s);
 		ml->type = MAGIC_TYPE_STRING;
 		magic_mark_text(ml, 0);
 		goto done;
@@ -643,9 +641,9 @@ static int magic_parse_type(RzMagicLine *ml, char **line) {
 	if (strncmp(s, "pstring", (sizeof "pstring") - 1) == 0 ||
 		strncmp(s, "upstring", (sizeof "upstring") - 1) == 0) {
 		if (*s == 'u')
-			ml->type_string = xstrdup(s + 1);
+			ml->type_string = rz_str_dup(s + 1);
 		else
-			ml->type_string = xstrdup(s);
+			ml->type_string = rz_str_dup(s);
 		ml->type = MAGIC_TYPE_PSTRING;
 		magic_mark_text(ml, 0);
 		goto done;
@@ -653,22 +651,22 @@ static int magic_parse_type(RzMagicLine *ml, char **line) {
 	if (strncmp(s, "search", (sizeof "search") - 1) == 0 ||
 		strncmp(s, "usearch", (sizeof "usearch") - 1) == 0) {
 		if (*s == 'u')
-			ml->type_string = xstrdup(s + 1);
+			ml->type_string = rz_str_dup(s + 1);
 		else
-			ml->type_string = xstrdup(s);
+			ml->type_string = rz_str_dup(s);
 		ml->type = MAGIC_TYPE_SEARCH;
 		goto done;
 	}
 	if (strncmp(s, "regex", (sizeof "regex") - 1) == 0 ||
 		strncmp(s, "uregex", (sizeof "uregex") - 1) == 0) {
 		if (*s == 'u')
-			ml->type_string = xstrdup(s + 1);
+			ml->type_string = rz_str_dup(s + 1);
 		else
-			ml->type_string = xstrdup(s);
+			ml->type_string = rz_str_dup(s);
 		ml->type = MAGIC_TYPE_REGEX;
 		goto done;
 	}
-	ml->type_string = xstrdup(s);
+	ml->type_string = rz_str_dup(s);
 
 	cp = &s[strcspn(s, "+-&/%*")];
 	if (*cp != '\0') {
@@ -849,7 +847,7 @@ static int magic_parse_value(RzMagicLine *ml, char **line) {
 	switch (ml->type) {
 	case MAGIC_TYPE_NAME:
 	case MAGIC_TYPE_USE:
-		copy = s = xmalloc(strlen(*line) + 1);
+		copy = s = malloc(strlen(*line) + 1);
 		if (magic_get_string(line, s, &slen) != 0 || slen == 0) {
 			magic_warn(ml, "can't parse string");
 			goto fail;
@@ -871,7 +869,7 @@ static int magic_parse_value(RzMagicLine *ml, char **line) {
 	case MAGIC_TYPE_REGEX:
 		if (**line == '=')
 			(*line)++;
-		copy = s = xmalloc(strlen(*line) + 1);
+		copy = s = malloc(strlen(*line) + 1);
 		if (magic_get_string(line, s, &slen) != 0) {
 			magic_warn(ml, "can't parse string");
 			goto fail;
@@ -898,7 +896,7 @@ static int magic_parse_value(RzMagicLine *ml, char **line) {
 
 	while (isspace((ut8) * *line))
 		(*line)++;
-	copy = cp = xmalloc(strlen(*line) + 1);
+	copy = cp = malloc(strlen(*line) + 1);
 	while (**line != '\0' && !isspace((ut8) * *line))
 		*cp++ = *(*line)++;
 	*cp = '\0';
@@ -1039,7 +1037,7 @@ magic_set_mimetype(RzMagic *m, ut32 at, RzMagicLine *ml, char *line) {
 		magic_warnm(m, at, "stray MIME type: %s", mimetype);
 		return;
 	}
-	ml->mimetype = xstrdup(mimetype);
+	ml->mimetype = rz_str_dup(mimetype);
 }
 
 bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
@@ -1090,7 +1088,12 @@ bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
 		for (; *line == '>'; line++)
 			n++;
 
-		ml = xcalloc(1, sizeof *ml);
+		ml = rz_magic_line_new();
+
+		if (!ml) {
+			return false;
+		}
+
 		ml->root = m;
 		ml->line = at;
 		ml->type = MAGIC_TYPE_NONE;

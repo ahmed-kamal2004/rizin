@@ -4,8 +4,7 @@ rz_magic_sources = [
   'magic-load.c',
   'magic-test.c',
   'text.c',
-  'magic.c',
-  'xmalloc.c'
+  'magic.c'
 ]
 
 rz_magic_deps = [rz_util_dep]

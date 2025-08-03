@@ -20,7 +20,7 @@ RZ_LIB_VERSION(rz_magic);
 
 static void magic_node_free_rb(RBNode *node, void *user) {
 	RzMagicLine *ml = container_of(node, RzMagicLine, rb);
-	free(ml);
+	rz_magic_line_free(ml);
 }
 
 /* API */
@@ -85,4 +85,19 @@ RZ_API void rz_magic_setflags(RzMagic *ms, int flags) {
 	if (ms) {
 		ms->flags = flags;
 	}
+}
+
+RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void) {
+	RzMagicLine *ml = RZ_NEW0(RzMagicLine);
+	return ml;
+}
+
+RZ_API void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *ml) {
+	if (!ml) {
+		return;
+	}
+	free(ml->type_string);
+	free(ml->result);
+	free(ml->mimetype);
+	free(ml);
 }

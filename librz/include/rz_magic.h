@@ -351,7 +351,7 @@ struct rz_magic_line_t {
 	const char *name;
 
 	enum magic_type type;
-	const char *type_string;
+	char *type_string;
 	char type_operator;
 	int64_t type_operand;
 
@@ -364,8 +364,8 @@ struct rz_magic_line_t {
 	double test_double;
 
 	int stringify;
-	const char *result;
-	const char *mimetype;
+	char *result;
+	char *mimetype;
 
 	struct RzMagicLines children;
 	TAILQ_ENTRY(rz_magic_line_t)
@@ -412,6 +412,9 @@ RZ_API const char *rz_magic_buffer(RzMagic *, const ut8 *, size_t);
 RZ_API void rz_magic_setflags(RzMagic *, int);
 
 RZ_API bool rz_magic_load(RzMagic *, const char *);
+
+RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void);
+RZ_API void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *);
 #endif
 
 int magic_compare(const void *incoming, const RBNode *in_tree, void *user);

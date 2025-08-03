@@ -24,7 +24,6 @@
 #include <string.h>
 
 #include "file.h"
-#include "xmalloc.h"
 
 static const char *text_words[][3] = {
 	{ "msgid", "PO (gettext message catalogue)", "text/x-po" },

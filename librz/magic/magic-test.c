@@ -31,10 +31,26 @@
 #include <unistd.h>
 #include "rz_magic.h"
 #include "rz_util.h"
-#include "xmalloc.h"
 
 #if __APPLE__
-#include <machine/endian.h>
+
+#include <libkern/OSByteOrder.h>
+
+#define htobe16(x) OSSwapHostToBigInt16(x)
+#define htole16(x) OSSwapHostToLittleInt16(x)
+#define be16toh(x) OSSwapBigToHostInt16(x)
+#define le16toh(x) OSSwapLittleToHostInt16(x)
+
+#define htobe32(x) OSSwapHostToBigInt32(x)
+#define htole32(x) OSSwapHostToLittleInt32(x)
+#define be32toh(x) OSSwapBigToHostInt32(x)
+#define le32toh(x) OSSwapLittleToHostInt32(x)
+
+#define htobe64(x) OSSwapHostToBigInt64(x)
+#define htole64(x) OSSwapHostToLittleInt64(x)
+#define be64toh(x) OSSwapBigToHostInt64(x)
+#define le64toh(x) OSSwapLittleToHostInt64(x)
+
 #endif
 
 static int magic_test_line(RzMagicLine *, RzMagicState *);
@@ -242,7 +258,8 @@ magic_add_string(RzMagicState *ms, RzMagicLine *ml,
 			break;
 		}
 	}
-	out = xreallocarray(NULL, 4, outlen + 1);
+	size_t requested = 4 * (outlen + 1);
+	out = realloc(NULL, requested);
 	// strvisx(out, s, outlen, VIS_TAB | VIS_NL | VIS_CSTYLE | VIS_OCTAL);
 	magic_add_result(ms, ml, "%s", out);
 	free(out);
