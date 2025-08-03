@@ -1055,6 +1055,11 @@ bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
 	tmp = NULL;
 	size = 0;
 
+	ml = rz_magic_line_new();
+	if (!ml) {
+		return false;
+	}
+
 	while ((slen = getline(&tmp, &size, f)) != -1) {
 		line = tmp;
 		if (line[slen - 1] == '\n')
@@ -1087,12 +1092,6 @@ bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
 		n = 0;
 		for (; *line == '>'; line++)
 			n++;
-
-		ml = rz_magic_line_new();
-
-		if (!ml) {
-			return false;
-		}
 
 		ml->root = m;
 		ml->line = at;
