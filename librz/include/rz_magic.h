@@ -411,7 +411,7 @@ RZ_API const char *rz_magic_buffer(RzMagic *, const ut8 *, size_t);
 
 RZ_API void rz_magic_setflags(RzMagic *, int);
 
-RZ_API bool rz_magic_load(RzMagic *, const char *);
+RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *, const char *);
 
 RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void);
 RZ_API void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *);

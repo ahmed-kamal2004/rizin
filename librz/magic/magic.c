@@ -23,6 +23,23 @@ static void magic_node_free_rb(RBNode *node, void *user) {
 	rz_magic_line_free(ml);
 }
 
+static bool magic_load_file(RZ_NONNULL RzMagic *ms, const char *file_path) {
+	rz_return_val_if_fail(ms, false);
+
+	int result;
+	FILE *file = fopen(file_path, "r");
+	if (!file) {
+		return false;
+	}
+	if (magic_load(ms, file, file_path, ms->flags)) {
+		result = true;
+	} else {
+		result = false;
+	}
+	fclose(file);
+	return result;
+}
+
 /* API */
 
 // TODO: reinitialize all the time
@@ -46,35 +63,38 @@ RZ_API void rz_magic_free(RzMagic *ms) {
 	}
 }
 
-RZ_API bool rz_magic_load(RzMagic *ms, const char *magic_path) {
-	DIR *dir = opendir(magic_path);
-	bool result = true;
-	struct dirent *entry;
-	char *filepath = NULL;
+RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *ms, const char *magic_path) {
+	rz_return_val_if_fail(ms, false);
 
 	if (ms->path) {
 		free(ms->path);
 	}
 	ms->path = rz_str_dup(magic_path);
 
-	while ((entry = readdir(dir)) != NULL && result) {
-		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
-			continue;
-
-		filepath = rz_str_newf("%s/%s", magic_path, entry->d_name);
-
-		FILE *file = fopen(filepath, "r");
-
-		if (magic_load(ms, file, filepath, ms->flags)) {
-			result &= true;
-		} else {
-			result &= false;
+	if (rz_file_is_regular(magic_path)) {
+		return magic_load_file(ms, magic_path);
+	} else if (rz_file_is_directory(magic_path)) {
+		DIR *dir = opendir(magic_path);
+		if (!dir) {
+			return false;
 		}
+		bool result = true;
+		struct dirent *entry;
+		char *filepath = NULL;
 
-		fclose(file);
+		while ((entry = readdir(dir)) != NULL && result) {
+			if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+				continue;
+
+			filepath = rz_str_newf("%s/%s", magic_path, entry->d_name);
+			result &= magic_load_file(ms, filepath);
+			free(filepath);
+		}
+		closedir(dir);
+		return result;
+	} else {
+		return false;
 	}
-	free(filepath);
-	return result;
 }
 
 RZ_API const char *rz_magic_buffer(RzMagic *ms, const ut8 *buf, size_t nb) {
