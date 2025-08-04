@@ -1107,7 +1107,7 @@ bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
 				parent = parent->parent;
 		} else if (n != level) {
 			magic_warn(ml, "level skipped (%u->%u)", level, n);
-			free(ml);
+			RZ_FREE_CUSTOM(ml, rz_magic_line_free);
 			continue;
 		}
 		ml->parent = parent;

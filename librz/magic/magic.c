@@ -41,6 +41,7 @@ RZ_API void rz_magic_free(RzMagic *ms) {
 	if (ms) {
 		free(ms->path);
 		rz_rbtree_free(ms->magic_tree, magic_node_free_rb, NULL);
+		rz_rbtree_free(ms->magic_named_tree, magic_node_free_rb, NULL);
 		free(ms);
 	}
 }
