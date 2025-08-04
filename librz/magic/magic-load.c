@@ -969,7 +969,7 @@ int magic_named_compare(const void *incoming, const RBNode *in_tree, void *user)
 	RzMagicLine *ml1 = (RzMagicLine *)incoming;
 	const RzMagicLine *ml2 = container_of(in_tree, const RzMagicLine, rb);
 
-	return (strcmp(ml1->name, ml2->name));
+	return strcmp(ml1->name, ml2->name);
 }
 
 static void magic_adjust_strength(RzMagic *m, ut32 at, RzMagicLine *ml,
@@ -1055,11 +1055,6 @@ bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
 	tmp = NULL;
 	size = 0;
 
-	ml = rz_magic_line_new();
-	if (!ml) {
-		return false;
-	}
-
 	while ((slen = getline(&tmp, &size, f)) != -1) {
 		line = tmp;
 		if (line[slen - 1] == '\n')
@@ -1093,6 +1088,7 @@ bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
 		for (; *line == '>'; line++)
 			n++;
 
+		ml = rz_magic_line_new();
 		ml->root = m;
 		ml->line = at;
 		ml->type = MAGIC_TYPE_NONE;
@@ -1130,12 +1126,14 @@ bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
 
 		ml->strength = magic_get_strength(ml);
 		if (ml->parent == NULL) {
-			if (ml->name != NULL)
+			if (ml->name != NULL) {
 				rz_rbtree_insert(&m->magic_named_tree, ml, &ml->rb, magic_named_compare, NULL);
-			else
+			} else {
 				rz_rbtree_insert(&m->magic_tree, ml, &ml->rb, magic_compare, NULL);
-		} else
+			}
+		} else {
 			TAILQ_INSERT_TAIL(&ml->parent->children, ml, entry);
+		}
 		parent0 = ml;
 	}
 	free(tmp);

@@ -1344,7 +1344,7 @@ magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 	if (ml->mimetype != NULL)
 		ms->mimetype = ml->mimetype;
 
-	magic_warn(ml, "test %s/%c matched at offset %" PFMT64d " (now %zu): "
+	magic_warn(ml, "test %s/%c matched at offset %" PFMT64d " (now %" PFMTSZu "): "
 		       "'%s'",
 		ml->type_string, ml->test_operator, offset,
 		ms->offset, ml->result == NULL ? "" : ml->result);
@@ -1358,7 +1358,7 @@ magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 			magic_warn(ml, "no name found for use %s", ml->name);
 			return (0);
 		}
-		magic_warn(ml, "use %s at offset %" PFMT64d "", ml->name, offset);
+		magic_warn(ml, "use %s at offset %" PFMT64d, ml->name, offset);
 		magic_test_children(named, ms, offset, *ml->name == '^');
 	}
 
