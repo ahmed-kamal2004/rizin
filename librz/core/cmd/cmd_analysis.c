@@ -1605,6 +1605,23 @@ RZ_IPI RzCmdStatus rz_analysis_recover_rtti_all_handler(RzCore *core, int argc, 
 	return RZ_CMD_STATUS_OK;
 }
 
+RZ_IPI RzCmdStatus rz_analysis_virtual_xrefs_handler(RzCore *core, int argc, const char **argv, RzCmdStateOutput *state) {
+	const char *vfunc_name = argv[1];
+	switch (state->mode) {
+	case RZ_OUTPUT_MODE_STANDARD:
+		rz_analysis_virtual_xrefs_print(core->analysis, vfunc_name);
+		break;
+	case RZ_OUTPUT_MODE_TABLE: {
+		rz_cmd_state_output_set_columnsf(state, "X", "from");
+		rz_analysis_virtual_xrefs_print_table(core->analysis, vfunc_name, state->d.t);
+		break;
+	}
+	default:
+		return RZ_CMD_STATUS_ERROR;
+	}
+	return RZ_CMD_STATUS_OK;
+}
+
 RZ_IPI RzCmdStatus rz_analysis_rtti_demangle_class_name_handler(RzCore *core, int argc, const char **argv) {
 	if (argc == 2) {
 		char *classname = (char *)argv[1];
@@ -6096,6 +6113,11 @@ RZ_IPI RzCmdStatus rz_global_imports_handler(RzCore *core, int argc, const char 
 
 RZ_IPI RzCmdStatus rz_delete_global_imports_handler(RzCore *core, int argc, const char **argv, RzCmdStateOutput *state) {
 	rz_analysis_purge_imports(core->analysis);
+	return RZ_CMD_STATUS_OK;
+}
+
+RZ_IPI RzCmdStatus rz_analysis_devirtualize_handler(RzCore *core, int argc, const char **argv) {
+	rz_analysis_devirtualize_methods(core->analysis);
 	return RZ_CMD_STATUS_OK;
 }
 

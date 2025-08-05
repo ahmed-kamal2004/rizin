@@ -548,6 +548,7 @@ typedef struct rz_analysis_t {
 	char *sdb_types_path; ///<  system path prefix, whether created in initialization or passed by RzCore.
 	ut64 cmpval; ///< last compare value for jump table.
 	ut64 lea_jmptbl_ip; ///< jump table x86 lea ip
+	HtSP /*<const char *, RzSetU *>*/ *ht_cpp_virtual_xrefs; ///< addresses of cpp virtual function calls
 } RzAnalysis;
 
 typedef enum rz_analysis_addr_hint_type_t {
@@ -2291,6 +2292,20 @@ RZ_API void rz_analysis_rtti_recover_all(RzAnalysis *analysis);
 
 RZ_API RzList /*<RzSearchKeyword *>*/ *rz_analysis_preludes(RzAnalysis *analysis);
 RZ_API bool rz_analysis_is_prelude(RzAnalysis *analysis, const ut8 *data, int len);
+
+/* devirualize */
+typedef struct rz_variable_book_t {
+	RzAnalysisFunction *function; ///< function to analyze
+	HtUP /*<ut64, RzVariable *>*/ *class_variables; ///< hash map of stack address and variables that store objects
+	RzList /*<CppVariable *>*/ *stack_variables; ///< list of all stack variables
+	RzList /*<CppVariable *>*/ *class_var_list; ///< list of all variables that store objects
+} RzCppVariableBook;
+
+RZ_API RzCppVariableBook *rz_analysis_mark_classes(RzAnalysis *analysis);
+RZ_API void rz_analysis_devirtualize_methods(RzAnalysis *analysis);
+RZ_API void rz_analysis_devirtualize(RzAnalysis *analysis, RzCppVariableBook *var_book);
+RZ_API void rz_analysis_virtual_xrefs_print(RzAnalysis *analysis, const char *vfunc);
+RZ_API void rz_analysis_virtual_xrefs_print_table(RzAnalysis *analysis, const char *vfunc, RzTable *table);
 
 /* classes */
 typedef enum {

@@ -679,6 +679,8 @@ RZ_IPI RzCmdStatus rz_global_imports_handler(RzCore *core, int argc, const char 
 RZ_IPI RzCmdStatus rz_delete_global_imports_handler(RzCore *core, int argc, const char **argv, RzCmdStateOutput *state);
 // "av"
 RZ_IPI RzCmdStatus rz_analysis_list_vtables_handler(RzCore *core, int argc, const char **argv, RzOutputMode mode);
+// "avD"
+RZ_IPI RzCmdStatus rz_analysis_devirtualize_handler(RzCore *core, int argc, const char **argv);
 // "avgl"
 RZ_IPI RzCmdStatus rz_analysis_print_global_variable_handler(RzCore *core, int argc, const char **argv, RzCmdStateOutput *state);
 // "avga"
@@ -703,6 +705,8 @@ RZ_IPI RzCmdStatus rz_analysis_print_rtti_all_handler(RzCore *core, int argc, co
 RZ_IPI RzCmdStatus rz_analysis_recover_rtti_all_handler(RzCore *core, int argc, const char **argv);
 // "avrD"
 RZ_IPI RzCmdStatus rz_analysis_rtti_demangle_class_name_handler(RzCore *core, int argc, const char **argv);
+// "avx"
+RZ_IPI RzCmdStatus rz_analysis_virtual_xrefs_handler(RzCore *core, int argc, const char **argv, RzCmdStateOutput *state);
 // "ax"
 RZ_IPI RzCmdStatus rz_analysis_xrefs_set_0_handler(RzCore *core, int argc, const char **argv);
 // "axc"

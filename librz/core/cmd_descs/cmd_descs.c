@@ -327,6 +327,7 @@ static const RzCmdDescArg analysis_global_variable_print_args[2];
 static const RzCmdDescArg analysis_global_variable_retype_args[3];
 static const RzCmdDescArg analysis_global_variable_xrefs_args[2];
 static const RzCmdDescArg analysis_rtti_demangle_class_name_args[2];
+static const RzCmdDescArg analysis_virtual_xrefs_args[2];
 static const RzCmdDescArg analysis_xrefs_set_0_args[2];
 static const RzCmdDescArg analysis_xrefs_set_c_args[2];
 static const RzCmdDescArg analysis_xrefs_set_C_args[2];
@@ -6137,6 +6138,14 @@ static const RzCmdDescHelp analysis_list_vtables_help = {
 	.args = analysis_list_vtables_args,
 };
 
+static const RzCmdDescArg analysis_devirtualize_args[] = {
+	{ 0 },
+};
+static const RzCmdDescHelp analysis_devirtualize_help = {
+	.summary = "Mark objects and devirtualize calls to virtual functions for function at the current offset",
+	.args = analysis_devirtualize_args,
+};
+
 static const RzCmdDescHelp avg_help = {
 	.summary = "Global variables",
 };
@@ -6298,6 +6307,20 @@ static const RzCmdDescArg analysis_rtti_demangle_class_name_args[] = {
 static const RzCmdDescHelp analysis_rtti_demangle_class_name_help = {
 	.summary = "demangle a class name from RTTI",
 	.args = analysis_rtti_demangle_class_name_args,
+};
+
+static const RzCmdDescArg analysis_virtual_xrefs_args[] = {
+	{
+		.name = "virtual function name",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+		.flags = RZ_CMD_ARG_FLAG_LAST,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp analysis_virtual_xrefs_help = {
+	.summary = "Show the addresses of calls to the virtual function.",
+	.args = analysis_virtual_xrefs_args,
 };
 
 static const RzCmdDescHelp ax_help = {
@@ -22004,6 +22027,9 @@ RZ_IPI void rzshell_cmddescs_init(RzCore *core) {
 
 	RzCmdDesc *av_cd = rz_cmd_desc_group_modes_new(core->rcmd, cmd_analysis_cd, "av", RZ_OUTPUT_MODE_STANDARD | RZ_OUTPUT_MODE_RIZIN | RZ_OUTPUT_MODE_JSON, rz_analysis_list_vtables_handler, &analysis_list_vtables_help, &av_help);
 	rz_warn_if_fail(av_cd);
+	RzCmdDesc *analysis_devirtualize_cd = rz_cmd_desc_argv_new(core->rcmd, av_cd, "avD", rz_analysis_devirtualize_handler, &analysis_devirtualize_help);
+	rz_warn_if_fail(analysis_devirtualize_cd);
+
 	RzCmdDesc *avg_cd = rz_cmd_desc_group_new(core->rcmd, av_cd, "avg", NULL, NULL, &avg_help);
 	rz_warn_if_fail(avg_cd);
 	RzCmdDesc *analysis_print_global_variable_cd = rz_cmd_desc_argv_state_new(core->rcmd, avg_cd, "avgl", RZ_OUTPUT_MODE_STANDARD | RZ_OUTPUT_MODE_QUIET | RZ_OUTPUT_MODE_JSON | RZ_OUTPUT_MODE_TABLE, rz_analysis_print_global_variable_handler, &analysis_print_global_variable_help);
@@ -22041,6 +22067,9 @@ RZ_IPI void rzshell_cmddescs_init(RzCore *core) {
 
 	RzCmdDesc *analysis_rtti_demangle_class_name_cd = rz_cmd_desc_argv_new(core->rcmd, av_cd, "avrD", rz_analysis_rtti_demangle_class_name_handler, &analysis_rtti_demangle_class_name_help);
 	rz_warn_if_fail(analysis_rtti_demangle_class_name_cd);
+
+	RzCmdDesc *analysis_virtual_xrefs_cd = rz_cmd_desc_argv_state_new(core->rcmd, av_cd, "avx", RZ_OUTPUT_MODE_STANDARD | RZ_OUTPUT_MODE_TABLE, rz_analysis_virtual_xrefs_handler, &analysis_virtual_xrefs_help);
+	rz_warn_if_fail(analysis_virtual_xrefs_cd);
 
 	RzCmdDesc *ax_cd = rz_cmd_desc_group_new(core->rcmd, cmd_analysis_cd, "ax", rz_analysis_xrefs_set_0_handler, &analysis_xrefs_set_0_help, &ax_help);
 	rz_warn_if_fail(ax_cd);
