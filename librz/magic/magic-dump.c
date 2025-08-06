@@ -18,11 +18,14 @@
 
 #include <sys/types.h>
 #include <rz_magic.h>
+#include <rz_util.h>
 
 #include <stdio.h>
 
 static void
-magic_dump_line(RzMagicLine *ml, ut32 depth) {
+magic_dump_line(RZ_NONNULL const RzMagicLine *ml, ut32 depth) {
+	rz_return_if_fail(ml);
+
 	RzMagicLine *child;
 	ut32 i;
 
@@ -44,7 +47,9 @@ magic_dump_line(RzMagicLine *ml, ut32 depth) {
 	magic_dump_line(child, depth + 1);
 }
 
-void magic_dump(RzMagic *m) {
+void magic_dump(RZ_NONNULL const RzMagic *m) {
+	rz_return_if_fail(m);
+
 	RBIter it;
 	RzMagicLine *ml;
 

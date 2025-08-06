@@ -1040,7 +1040,10 @@ magic_set_mimetype(RzMagic *m, ut32 at, RzMagicLine *ml, char *line) {
 	ml->mimetype = rz_str_dup(mimetype);
 }
 
-bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
+bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f, const char *path, int flags) {
+	rz_return_val_if_fail(m, false);
+	rz_return_val_if_fail(f, false);
+
 	RzMagicLine *ml = NULL, *parent, *parent0;
 	char *line, *tmp;
 	size_t size;

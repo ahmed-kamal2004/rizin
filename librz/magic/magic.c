@@ -96,7 +96,7 @@ RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, const char *magic_pat
 	}
 }
 
-RZ_API char *rz_magic_buffer(RZ_NONNULL const RzMagic *m, const ut8 *buf, size_t nb) {
+RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *m, const ut8 *buf, size_t nb) {
 	rz_return_val_if_fail(m, NULL);
 
 	if (nb == 0) {
@@ -119,11 +119,6 @@ RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void) {
 RZ_API void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *ml) {
 	if (!ml) {
 		return;
-	}
-	RzMagicLine *child;
-	TAILQ_FOREACH(child, &ml->children, entry) {
-		TAILQ_REMOVE(&ml->children, child, entry);
-		rz_magic_line_free(child);
 	}
 	free(ml->type_string);
 	free(ml->result);

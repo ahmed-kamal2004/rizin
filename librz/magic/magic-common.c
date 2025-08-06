@@ -64,7 +64,9 @@ magic_strtoll(const char *s, int64_t *i) {
 	return (endptr);
 }
 
-void magic_vwarnm(RzMagic *m, ut32 line, const char *fmt, va_list ap) {
+void magic_vwarnm(RZ_NONNULL const RzMagic *m, ut32 line, const char *fmt, va_list ap) {
+	rz_return_if_fail(m);
+
 	char *msg;
 
 	if (!m->flags)
@@ -76,7 +78,9 @@ void magic_vwarnm(RzMagic *m, ut32 line, const char *fmt, va_list ap) {
 	free(msg);
 }
 
-void magic_warnm(RzMagic *m, ut32 line, const char *fmt, ...) {
+void magic_warnm(RZ_NONNULL const RzMagic *m, ut32 line, const char *fmt, ...) {
+	rz_return_if_fail(m);
+
 	va_list ap;
 
 	va_start(ap, fmt);
@@ -84,7 +88,9 @@ void magic_warnm(RzMagic *m, ut32 line, const char *fmt, ...) {
 	va_end(ap);
 }
 
-void magic_warn(RzMagicLine *ml, const char *fmt, ...) {
+void magic_warn(RZ_NONNULL const RzMagicLine *ml, const char *fmt, ...) {
+	rz_return_if_fail(ml);
+
 	va_list ap;
 
 	va_start(ap, fmt);

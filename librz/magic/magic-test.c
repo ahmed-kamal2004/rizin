@@ -1371,14 +1371,11 @@ magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 	return (ml->result != NULL);
 }
 
-char *
-magic_test(RZ_NONNULL const RzMagic *m, const void *base, size_t size, int flags) {
+RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *m, const void *base, size_t size, int flags) {
 	rz_return_val_if_fail(m, NULL);
 
 	RzMagicLine *ml;
-	RzMagicState ms;
-
-	memset(&ms, 0, sizeof ms);
+	RzMagicState ms = { 0 };
 
 	ms.base = base;
 	ms.size = size;

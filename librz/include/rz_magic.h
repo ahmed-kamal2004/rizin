@@ -407,7 +407,7 @@ typedef struct rz_magic_state_t {
 RZ_API RzMagic *rz_magic_new(int flags);
 RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *);
 
-RZ_API char *rz_magic_buffer(RZ_NONNULL const RzMagic *, const ut8 *, size_t);
+RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *, const ut8 *, size_t);
 
 RZ_API void rz_magic_setflags(RzMagic *, int);
 
@@ -422,15 +422,15 @@ int magic_named_compare(const void *incoming, const RBNode *in_tree, void *user)
 
 char *magic_strtoull(const char *, ut64 *);
 char *magic_strtoll(const char *, int64_t *);
-void magic_vwarnm(RzMagic *, ut32, const char *, va_list);
-void magic_warnm(RzMagic *, ut32, const char *, ...)
+void magic_vwarnm(RZ_NONNULL const RzMagic *, ut32, const char *, va_list);
+void magic_warnm(RZ_NONNULL const RzMagic *, ut32, const char *, ...)
 	__attribute__((format(printf, 3, 4)));
-void magic_warn(RzMagicLine *, const char *, ...)
+void magic_warn(RZ_NONNULL const RzMagicLine *, const char *, ...)
 	__attribute__((format(printf, 2, 3)));
 
-void magic_dump(RzMagic *);
-bool magic_load(RzMagic *, FILE *f, const char *path, int flags);
-char *magic_test(RZ_NONNULL const RzMagic *, const void *, size_t, int);
+void magic_dump(RZ_NONNULL const RzMagic *);
+bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL FILE *f, const char *path, int flags);
+RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *, const void *, size_t, int);
 
 #endif
 
