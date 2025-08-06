@@ -405,9 +405,9 @@ typedef struct rz_magic_state_t {
 
 #ifdef RZ_API
 RZ_API RzMagic *rz_magic_new(int flags);
-RZ_API void rz_magic_free(RzMagic *);
+RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *);
 
-RZ_API const char *rz_magic_buffer(RzMagic *, const ut8 *, size_t);
+RZ_API char *rz_magic_buffer(RZ_NONNULL const RzMagic *, const ut8 *, size_t);
 
 RZ_API void rz_magic_setflags(RzMagic *, int);
 
@@ -430,7 +430,7 @@ void magic_warn(RzMagicLine *, const char *, ...)
 
 void magic_dump(RzMagic *);
 bool magic_load(RzMagic *, FILE *f, const char *path, int flags);
-const char *magic_test(RzMagic *, const void *, size_t, int);
+char *magic_test(RZ_NONNULL const RzMagic *, const void *, size_t, int);
 
 #endif
 

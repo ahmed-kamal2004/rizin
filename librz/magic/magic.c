@@ -23,19 +23,15 @@ static void magic_node_free_rb(RBNode *node, void *user) {
 	rz_magic_line_free(ml);
 }
 
-static bool magic_load_file(RZ_NONNULL RzMagic *ms, const char *file_path) {
-	rz_return_val_if_fail(ms, false);
+static bool magic_load_file(RZ_NONNULL RZ_BORROW RzMagic *m, const char *file_path) {
+	rz_return_val_if_fail(m, false);
 
 	int result;
 	FILE *file = fopen(file_path, "r");
 	if (!file) {
 		return false;
 	}
-	if (magic_load(ms, file, file_path, ms->flags)) {
-		result = true;
-	} else {
-		result = false;
-	}
+	result = magic_load(m, file, file_path, m->flags);
 	fclose(file);
 	return result;
 }
@@ -48,65 +44,70 @@ RZ_API RzMagic *rz_magic_new(int flags) {
 	if (!ms) {
 		return NULL;
 	}
-	ms->magic_tree = NULL;
-	ms->magic_named_tree = NULL;
 	rz_magic_setflags(ms, flags);
 	return ms;
 }
 
-RZ_API void rz_magic_free(RzMagic *ms) {
-	if (ms) {
-		free(ms->path);
-		rz_rbtree_free(ms->magic_tree, magic_node_free_rb, NULL);
-		rz_rbtree_free(ms->magic_named_tree, magic_node_free_rb, NULL);
-		free(ms);
+RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *m) {
+	if (m) {
+		free(m->path);
+		rz_rbtree_free(m->magic_tree, magic_node_free_rb, NULL);
+		rz_rbtree_free(m->magic_named_tree, magic_node_free_rb, NULL);
+		free(m);
 	}
 }
 
-RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *ms, const char *magic_path) {
-	rz_return_val_if_fail(ms, false);
+RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, const char *magic_path) {
+	rz_return_val_if_fail(m, false);
 
-	if (ms->path) {
-		free(ms->path);
+	if (m->path) {
+		free(m->path);
 	}
-	ms->path = rz_str_dup(magic_path);
+	m->path = rz_str_dup(magic_path);
 
 	if (rz_file_is_regular(magic_path)) {
-		return magic_load_file(ms, magic_path);
+		return magic_load_file(m, magic_path);
 	} else if (rz_file_is_directory(magic_path)) {
-		DIR *dir = opendir(magic_path);
-		if (!dir) {
+		RzList *files = rz_sys_dir(magic_path);
+		if (!files) {
 			return false;
 		}
-		bool result = true;
-		struct dirent *entry;
+		RzListIter *it;
+		const char *subname;
 		char *filepath = NULL;
-
-		while ((entry = readdir(dir)) != NULL && result) {
-			if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+		RzStrBuf subpath;
+		rz_strbuf_init(&subpath);
+		bool result = true;
+		rz_list_foreach (files, it, subname) {
+			if (*subname == '.') {
 				continue;
-
-			filepath = rz_str_newf("%s/%s", magic_path, entry->d_name);
-			result &= magic_load_file(ms, filepath);
+			}
+			if (!rz_str_cmp(subname, "..", -1)) {
+				continue;
+			}
+			filepath = rz_file_path_join(magic_path, subname);
+			result &= magic_load_file(m, filepath);
 			free(filepath);
 		}
-		closedir(dir);
+		rz_list_free(files);
 		return result;
 	} else {
 		return false;
 	}
 }
 
-RZ_API const char *rz_magic_buffer(RzMagic *ms, const ut8 *buf, size_t nb) {
+RZ_API char *rz_magic_buffer(RZ_NONNULL const RzMagic *m, const ut8 *buf, size_t nb) {
+	rz_return_val_if_fail(m, NULL);
+
 	if (nb == 0) {
 		return NULL;
 	}
-	return magic_test(ms, buf, nb, ms->flags);
+	return magic_test(m, buf, nb, m->flags);
 }
 
-RZ_API void rz_magic_setflags(RzMagic *ms, int flags) {
-	if (ms) {
-		ms->flags = flags;
+RZ_API void rz_magic_setflags(RzMagic *m, int flags) {
+	if (m) {
+		m->flags = flags;
 	}
 }
 
@@ -118,6 +119,11 @@ RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void) {
 RZ_API void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *ml) {
 	if (!ml) {
 		return;
+	}
+	RzMagicLine *child;
+	TAILQ_FOREACH(child, &ml->children, entry) {
+		TAILQ_REMOVE(&ml->children, child, entry);
+		rz_magic_line_free(child);
 	}
 	free(ml->type_string);
 	free(ml->result);

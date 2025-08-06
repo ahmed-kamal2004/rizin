@@ -1371,10 +1371,12 @@ magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 	return (ml->result != NULL);
 }
 
-const char *
-magic_test(RzMagic *m, const void *base, size_t size, int flags) {
+char *
+magic_test(RZ_NONNULL const RzMagic *m, const void *base, size_t size, int flags) {
+	rz_return_val_if_fail(m, NULL);
+
 	RzMagicLine *ml;
-	static RzMagicState ms;
+	RzMagicState ms;
 
 	memset(&ms, 0, sizeof ms);
 
@@ -1392,11 +1394,14 @@ magic_test(RzMagic *m, const void *base, size_t size, int flags) {
 
 	if (*ms.out != '\0') {
 		if (flags & MAGIC_TEST_MIME) {
-			if (ms.mimetype != NULL)
-				return (ms.mimetype);
+			if (ms.mimetype != NULL) {
+				char *mimetype = rz_str_dup(ms.mimetype);
+				return mimetype;
+			}
 			return (NULL);
 		}
-		return (ms.out);
+		char *out = rz_str_dup(ms.out);
+		return out;
 	}
 	return (NULL);
 }

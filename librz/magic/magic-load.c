@@ -1089,6 +1089,12 @@ bool magic_load(RzMagic *m, FILE *f, const char *path, int flags) {
 			n++;
 
 		ml = rz_magic_line_new();
+
+		if (!ml) {
+			free(tmp);
+			return false;
+		}
+
 		ml->root = m;
 		ml->line = at;
 		ml->type = MAGIC_TYPE_NONE;
