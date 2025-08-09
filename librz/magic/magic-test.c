@@ -983,18 +983,27 @@ static int magic_test_type_regex(RzMagicLine *ml, RzMagicState *ms) {
 		return -1;
 	}
 
-	bool res = rz_regex_match(re, ms->base, ms->size, ms->offset, RZ_REGEX_EXTENDED | flags | sflag) != RZ_REGEX_ERROR_NOMATCH;
-	if (res == !ml->test_not) {
-		if (ml->result != NULL) {
-			magic_add_string(ms, ml, ms->base + ms->offset,
-				ms->size - ms->offset);
-		}
-		if (res) {
-			if (!sflag) {
-				ms->offset = ms->size;
-			}
-		}
+	bool res = true;
+	RzPVector *matches = rz_regex_match_first(re, ms->base, ms->size, ms->offset, RZ_REGEX_EXTENDED | flags);
+	if (!matches || rz_pvector_empty(matches)) {
+		res = false;
 	}
+	if (res == !ml->test_not) {
+		RzRegexMatch *match = NULL;
+		if (ml->result != NULL && res) {
+			match = rz_pvector_pop_front(matches);
+			magic_add_string(ms, ml, ms->base + match->start,
+				match->len - match->start);
+		}
+		if (res && match) {
+			if (sflag)
+				ms->offset = match->start;
+			else
+				ms->offset = match->len;
+		}
+		free(match);
+	}
+	rz_pvector_free(matches);
 	return (res);
 }
 

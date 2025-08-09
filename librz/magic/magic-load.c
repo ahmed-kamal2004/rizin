@@ -259,7 +259,7 @@ static int magic_set_result(RzMagicLine *ml, const char *s) {
 		}
 	}
 
-	bool res = rz_regex_match(re, fmt, RZ_REGEX_ZERO_TERMINATED, 0, RZ_REGEX_DEFAULT) != RZ_REGEX_ERROR_NOMATCH;
+	bool res = (rz_regex_match(re, fmt, fmtlen, 0, RZ_REGEX_DEFAULT) > 0);
 	if (!res) {
 		magic_warn(ml, "bad format for %s: %%%.*s", ml->type_string,
 			(int)fmtlen, fmt);
