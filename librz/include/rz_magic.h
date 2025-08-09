@@ -7,9 +7,7 @@
 #include <rz_types.h>
 #include <sys/types.h>
 #include <rz_util/rz_rbtree.h>
-#include <sys/queue.h>
-
-#include <regex.h>
+#include <rz_util/rz_regex.h>
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -325,8 +323,6 @@ enum magic_type {
 typedef struct rz_magic_line_t RzMagicLine;
 typedef struct rz_magic_t RzMagic;
 
-TAILQ_HEAD(RzMagicLines, rz_magic_line_t);
-
 struct rz_magic_line_t {
 	RBNode rb;
 	RzMagic *root;
@@ -367,9 +363,7 @@ struct rz_magic_line_t {
 	char *result;
 	char *mimetype;
 
-	struct RzMagicLines children;
-	TAILQ_ENTRY(rz_magic_line_t)
-	entry;
+	RzList *children;
 };
 
 struct rz_magic_t {
@@ -380,11 +374,11 @@ struct rz_magic_t {
 	RBTree magic_named_tree;
 
 	int compiled;
-	regex_t format_short;
-	regex_t format_long;
-	regex_t format_quad;
-	regex_t format_float;
-	regex_t format_string;
+	RzRegex *format_short;
+	RzRegex *format_long;
+	RzRegex *format_quad;
+	RzRegex *format_float;
+	RzRegex *format_string;
 };
 
 typedef struct rz_magic_state_t {
@@ -407,30 +401,30 @@ typedef struct rz_magic_state_t {
 RZ_API RzMagic *rz_magic_new(int flags);
 RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *);
 
-RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *, const ut8 *, size_t);
+RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *, RZ_NONNULL const ut8 *, size_t);
 
-RZ_API void rz_magic_setflags(RzMagic *, int);
+RZ_API void rz_magic_setflags(RZ_NULLABLE RzMagic *, int);
 
-RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *, const char *);
+RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL const char *);
 
 RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void);
 RZ_API void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *);
 #endif
 
-int magic_compare(const void *incoming, const RBNode *in_tree, void *user);
-int magic_named_compare(const void *incoming, const RBNode *in_tree, void *user);
+RZ_IPI int magic_compare(const void *incoming, const RBNode *in_tree, void *user);
+RZ_IPI int magic_named_compare(const void *incoming, const RBNode *in_tree, void *user);
 
-char *magic_strtoull(const char *, ut64 *);
-char *magic_strtoll(const char *, int64_t *);
-void magic_vwarnm(RZ_NONNULL const RzMagic *, ut32, const char *, va_list);
-void magic_warnm(RZ_NONNULL const RzMagic *, ut32, const char *, ...)
+RZ_IPI char *magic_strtoull(RZ_NONNULL const char *, RZ_NONNULL ut64 *);
+RZ_IPI char *magic_strtoll(RZ_NONNULL const char *, RZ_NONNULL int64_t *);
+RZ_IPI void magic_vwarnm(RZ_NONNULL const RzMagic *, ut32, RZ_NONNULL const char *, va_list);
+RZ_IPI void magic_warnm(RZ_NONNULL const RzMagic *, ut32, RZ_NONNULL const char *, ...)
 	__attribute__((format(printf, 3, 4)));
-void magic_warn(RZ_NONNULL const RzMagicLine *, const char *, ...)
+RZ_IPI void magic_warn(RZ_NONNULL const RzMagicLine *, RZ_NONNULL const char *, ...)
 	__attribute__((format(printf, 2, 3)));
 
-void magic_dump(RZ_NONNULL const RzMagic *);
-bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL FILE *f, const char *path, int flags);
-RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *, const void *, size_t, int);
+RZ_IPI void magic_dump(RZ_NONNULL const RzMagic *);
+RZ_IPI bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL FILE *f, int flags);
+RZ_IPI RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *, RZ_NONNULL const void *, size_t, int);
 
 #endif
 

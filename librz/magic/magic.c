@@ -31,7 +31,7 @@ static bool magic_load_file(RZ_NONNULL RZ_BORROW RzMagic *m, const char *file_pa
 	if (!file) {
 		return false;
 	}
-	result = magic_load(m, file, file_path, m->flags);
+	result = magic_load(m, file, m->flags);
 	fclose(file);
 	return result;
 }
@@ -40,12 +40,12 @@ static bool magic_load_file(RZ_NONNULL RZ_BORROW RzMagic *m, const char *file_pa
 
 // TODO: reinitialize all the time
 RZ_API RzMagic *rz_magic_new(int flags) {
-	RzMagic *ms = RZ_NEW0(RzMagic);
-	if (!ms) {
+	RzMagic *m = RZ_NEW0(RzMagic);
+	if (!m) {
 		return NULL;
 	}
-	rz_magic_setflags(ms, flags);
-	return ms;
+	rz_magic_setflags(m, flags);
+	return m;
 }
 
 RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *m) {
@@ -53,11 +53,16 @@ RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *m) {
 		free(m->path);
 		rz_rbtree_free(m->magic_tree, magic_node_free_rb, NULL);
 		rz_rbtree_free(m->magic_named_tree, magic_node_free_rb, NULL);
+		rz_regex_free(m->format_short);
+		rz_regex_free(m->format_long);
+		rz_regex_free(m->format_quad);
+		rz_regex_free(m->format_float);
+		rz_regex_free(m->format_string);
 		free(m);
 	}
 }
 
-RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, const char *magic_path) {
+RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL const char *magic_path) {
 	rz_return_val_if_fail(m, false);
 
 	if (m->path) {
@@ -65,9 +70,7 @@ RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, const char *magic_pat
 	}
 	m->path = rz_str_dup(magic_path);
 
-	if (rz_file_is_regular(magic_path)) {
-		return magic_load_file(m, magic_path);
-	} else if (rz_file_is_directory(magic_path)) {
+	if (rz_file_is_directory(magic_path)) {
 		RzList *files = rz_sys_dir(magic_path);
 		if (!files) {
 			return false;
@@ -79,25 +82,28 @@ RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, const char *magic_pat
 		rz_strbuf_init(&subpath);
 		bool result = true;
 		rz_list_foreach (files, it, subname) {
-			if (*subname == '.') {
+			if (RZ_STR_EQ(subname, ".")) {
 				continue;
 			}
-			if (!rz_str_cmp(subname, "..", -1)) {
+			if (RZ_STR_EQ(subname, "..")) {
 				continue;
 			}
 			filepath = rz_file_path_join(magic_path, subname);
 			result &= magic_load_file(m, filepath);
+			if (!result) {
+				RZ_LOG_WARN("Failed to load magic file '%s'.\n", filepath);
+				break;
+			}
 			free(filepath);
 		}
 		rz_list_free(files);
 		return result;
-	} else {
-		return false;
 	}
+	return magic_load_file(m, magic_path);
 }
 
-RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *m, const ut8 *buf, size_t nb) {
-	rz_return_val_if_fail(m, NULL);
+RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *m, RZ_NONNULL const ut8 *buf, size_t nb) {
+	rz_return_val_if_fail(m && buf, NULL);
 
 	if (nb == 0) {
 		return NULL;
@@ -105,7 +111,7 @@ RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *m, const ut8 *buf,
 	return magic_test(m, buf, nb, m->flags);
 }
 
-RZ_API void rz_magic_setflags(RzMagic *m, int flags) {
+RZ_API void rz_magic_setflags(RZ_NULLABLE RzMagic *m, int flags) {
 	if (m) {
 		m->flags = flags;
 	}
@@ -113,6 +119,14 @@ RZ_API void rz_magic_setflags(RzMagic *m, int flags) {
 
 RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void) {
 	RzMagicLine *ml = RZ_NEW0(RzMagicLine);
+	if (!ml) {
+		return NULL;
+	}
+	ml->children = rz_list_new();
+	if (!ml->children) {
+		rz_magic_line_free(ml);
+		return NULL;
+	}
 	return ml;
 }
 
@@ -120,6 +134,11 @@ RZ_API void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *ml) {
 	if (!ml) {
 		return;
 	}
+	while (!rz_list_empty(ml->children)) {
+		RzMagicLine *child = rz_list_pop(ml->children);
+		rz_magic_line_free(child);
+	}
+	rz_list_free(ml->children);
 	free(ml->type_string);
 	free(ml->result);
 	free(ml->mimetype);

@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <rz_th.h>
 
 static int magic_odigit(ut8 c) {
 	if (c >= '0' && c <= '7')
@@ -52,15 +53,19 @@ static void magic_mark_text(RzMagicLine *ml, int text) {
 	} while (ml != NULL);
 }
 
-static int magic_make_pattern(RzMagicLine *ml, const char *name, regex_t *re,
+static int magic_make_pattern(RzMagicLine *ml, const char *name, RzRegex **re,
 	const char *p) {
-	int error;
-	char errbuf[256];
 
-	error = regcomp(re, p, REG_EXTENDED | REG_NOSUB);
-	if (error != 0) {
-		regerror(error, re, errbuf, sizeof errbuf);
-		magic_warn(ml, "bad %s pattern: %s", name, errbuf);
+	if (!re) {
+		return (-1);
+	}
+
+	if (*re) {
+		RZ_FREE_CUSTOM(*re, rz_regex_free);
+	}
+
+	*re = rz_regex_new(p, RZ_REGEX_EXTENDED, 0, NULL);
+	if (!(*re)) {
 		return (-1);
 	}
 	return (0);
@@ -68,8 +73,7 @@ static int magic_make_pattern(RzMagicLine *ml, const char *name, regex_t *re,
 
 static int magic_set_result(RzMagicLine *ml, const char *s) {
 	const char *fmt, *endfmt, *cp;
-	regex_t *re = NULL;
-	regmatch_t pmatch;
+	RzRegex *re = NULL;
 	size_t fmtlen;
 
 	while (isspace((ut8)*s))
@@ -174,7 +178,7 @@ static int magic_set_result(RzMagicLine *ml, const char *s) {
 	}
 
 	if (ml->stringify)
-		re = &ml->root->format_string;
+		re = ml->root->format_string;
 	else {
 		switch (ml->type) {
 		case MAGIC_TYPE_NONE:
@@ -191,7 +195,7 @@ static int magic_set_result(RzMagicLine *ml, const char *s) {
 		case MAGIC_TYPE_UBESHORT:
 		case MAGIC_TYPE_LESHORT:
 		case MAGIC_TYPE_ULESHORT:
-			re = &ml->root->format_short;
+			re = ml->root->format_short;
 			break;
 		case MAGIC_TYPE_LONG:
 		case MAGIC_TYPE_ULONG:
@@ -200,7 +204,7 @@ static int magic_set_result(RzMagicLine *ml, const char *s) {
 		case MAGIC_TYPE_LELONG:
 		case MAGIC_TYPE_ULELONG:
 		case MAGIC_TYPE_MELONG:
-			re = &ml->root->format_long;
+			re = ml->root->format_long;
 			break;
 		case MAGIC_TYPE_QUAD:
 		case MAGIC_TYPE_UQUAD:
@@ -208,7 +212,7 @@ static int magic_set_result(RzMagicLine *ml, const char *s) {
 		case MAGIC_TYPE_UBEQUAD:
 		case MAGIC_TYPE_LEQUAD:
 		case MAGIC_TYPE_ULEQUAD:
-			re = &ml->root->format_quad;
+			re = ml->root->format_quad;
 			break;
 		case MAGIC_TYPE_FLOAT:
 		case MAGIC_TYPE_BEFLOAT:
@@ -216,7 +220,7 @@ static int magic_set_result(RzMagicLine *ml, const char *s) {
 		case MAGIC_TYPE_DOUBLE:
 		case MAGIC_TYPE_BEDOUBLE:
 		case MAGIC_TYPE_LEDOUBLE:
-			re = &ml->root->format_float;
+			re = ml->root->format_float;
 			break;
 		case MAGIC_TYPE_DATE:
 		case MAGIC_TYPE_LDATE:
@@ -250,14 +254,13 @@ static int magic_set_result(RzMagicLine *ml, const char *s) {
 		case MAGIC_TYPE_SEARCH:
 		case MAGIC_TYPE_DEFAULT:
 		case MAGIC_TYPE_CLEAR:
-			re = &ml->root->format_string;
+			re = ml->root->format_string;
 			break;
 		}
 	}
 
-	pmatch.rm_so = 0;
-	pmatch.rm_eo = fmtlen;
-	if (regexec(re, fmt, 1, &pmatch, REG_STARTEND) != 0) {
+	bool res = rz_regex_match(re, fmt, RZ_REGEX_ZERO_TERMINATED, 0, RZ_REGEX_DEFAULT) != RZ_REGEX_ERROR_NOMATCH;
+	if (!res) {
 		magic_warn(ml, "bad format for %s: %%%.*s", ml->type_string,
 			(int)fmtlen, fmt);
 		return (-1);
@@ -1005,8 +1008,7 @@ static void magic_adjust_strength(RzMagic *m, ut32 at, RzMagicLine *ml,
 	ml->strength_value = value;
 }
 
-static void
-magic_set_mimetype(RzMagic *m, ut32 at, RzMagicLine *ml, char *line) {
+static void magic_set_mimetype(RzMagic *m, ut32 at, RzMagicLine *ml, char *line) {
 	char *mimetype, *cp;
 
 	mimetype = line + (sizeof "!:mime") - 1;
@@ -1040,7 +1042,7 @@ magic_set_mimetype(RzMagic *m, ut32 at, RzMagicLine *ml, char *line) {
 	ml->mimetype = rz_str_dup(mimetype);
 }
 
-bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f, const char *path, int flags) {
+RZ_IPI bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f, int flags) {
 	rz_return_val_if_fail(m, false);
 	rz_return_val_if_fail(f, false);
 
@@ -1101,7 +1103,6 @@ bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f, const char 
 		ml->root = m;
 		ml->line = at;
 		ml->type = MAGIC_TYPE_NONE;
-		TAILQ_INIT(&ml->children);
 		ml->text = 1;
 
 		/*
@@ -1141,15 +1142,10 @@ bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f, const char 
 				rz_rbtree_insert(&m->magic_tree, ml, &ml->rb, magic_compare, NULL);
 			}
 		} else {
-			TAILQ_INSERT_TAIL(&ml->parent->children, ml, entry);
+			rz_list_append(ml->parent->children, ml);
 		}
 		parent0 = ml;
 	}
 	free(tmp);
-	if (ferror(f)) {
-		err(1, "%s", path);
-		return false;
-	}
-
 	return true;
 }

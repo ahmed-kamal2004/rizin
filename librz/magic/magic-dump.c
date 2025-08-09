@@ -22,8 +22,7 @@
 
 #include <stdio.h>
 
-static void
-magic_dump_line(RZ_NONNULL const RzMagicLine *ml, ut32 depth) {
+static void magic_dump_line(RZ_NONNULL const RzMagicLine *ml, ut32 depth) {
 	rz_return_if_fail(ml);
 
 	RzMagicLine *child;
@@ -43,11 +42,13 @@ magic_dump_line(RZ_NONNULL const RzMagicLine *ml, ut32 depth) {
 			ml->strength, ml->text ? " (text)" : "");
 	}
 
-	TAILQ_FOREACH(child, &ml->children, entry)
-	magic_dump_line(child, depth + 1);
+	RzListIter *iter;
+	rz_list_foreach (ml->children, iter, child) {
+		magic_dump_line(child, depth + 1);
+	}
 }
 
-void magic_dump(RZ_NONNULL const RzMagic *m) {
+RZ_IPI void magic_dump(RZ_NONNULL const RzMagic *m) {
 	rz_return_if_fail(m);
 
 	RBIter it;

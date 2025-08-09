@@ -3,7 +3,6 @@ rz_magic_sources = [
   'magic-dump.c',
   'magic-load.c',
   'magic-test.c',
-  'text.c',
   'magic.c'
 ]
 
