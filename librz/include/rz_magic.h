@@ -4,12 +4,8 @@
 #ifndef RZ_MAGIC_H
 #define RZ_MAGIC_H
 
-#include <rz_types.h>
-#include <sys/types.h>
 #include <rz_util/rz_rbtree.h>
 #include <rz_util/rz_regex.h>
-#include <stdio.h>
-#include <stdarg.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -227,8 +223,6 @@ struct mlist {
 #define MAGIC_TEST_TEXT 0x1
 #define MAGIC_TEST_MIME 0x2
 
-#define __unused __attribute__((__unused__))
-
 /*
  * to select alternate encoding format
  */
@@ -397,7 +391,6 @@ typedef struct rz_magic_state_t {
 	int reverse;
 } RzMagicState;
 
-#ifdef RZ_API
 RZ_API RzMagic *rz_magic_new(int flags);
 RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *);
 
@@ -409,22 +402,21 @@ RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL const char 
 
 RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void);
 RZ_API void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *);
-#endif
 
-RZ_IPI int magic_compare(const void *incoming, const RBNode *in_tree, void *user);
-RZ_IPI int magic_named_compare(const void *incoming, const RBNode *in_tree, void *user);
+RZ_API int magic_compare(const void *incoming, const RBNode *in_tree, void *user);
+RZ_API int magic_named_compare(const void *incoming, const RBNode *in_tree, void *user);
 
-RZ_IPI char *magic_strtoull(RZ_NONNULL const char *, RZ_NONNULL ut64 *);
-RZ_IPI char *magic_strtoll(RZ_NONNULL const char *, RZ_NONNULL int64_t *);
-RZ_IPI void magic_vwarnm(RZ_NONNULL const RzMagic *, ut32, RZ_NONNULL const char *, va_list);
-RZ_IPI void magic_warnm(RZ_NONNULL const RzMagic *, ut32, RZ_NONNULL const char *, ...)
-	__attribute__((format(printf, 3, 4)));
-RZ_IPI void magic_warn(RZ_NONNULL const RzMagicLine *, RZ_NONNULL const char *, ...)
-	__attribute__((format(printf, 2, 3)));
+RZ_API char *magic_strtoull(RZ_NONNULL const char *, RZ_NONNULL ut64 *);
+RZ_API char *magic_strtoll(RZ_NONNULL const char *, RZ_NONNULL int64_t *);
+RZ_API void magic_vwarnm(RZ_NONNULL const RzMagic *, ut32, RZ_NONNULL const char *, va_list);
+RZ_API void magic_warnm(RZ_NONNULL const RzMagic *, ut32, RZ_NONNULL const char *, ...)
+	RZ_PRINTF_CHECK(3, 4);
+RZ_API void magic_warn(RZ_NONNULL const RzMagicLine *, RZ_NONNULL const char *, ...)
+	RZ_PRINTF_CHECK(2, 3);
 
-RZ_IPI void magic_dump(RZ_NONNULL const RzMagic *);
-RZ_IPI bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL FILE *f, int flags);
-RZ_IPI RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *, RZ_NONNULL const void *, size_t, int);
+RZ_API void magic_dump(RZ_NONNULL const RzMagic *);
+RZ_API bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL FILE *f, int flags);
+RZ_API RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *, RZ_NONNULL const void *, size_t, int);
 
 #endif
 
@@ -432,4 +424,4 @@ RZ_IPI RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *, RZ_NONNULL const void
 }
 #endif
 
-#endif /* _MAGIC_H */
+#endif

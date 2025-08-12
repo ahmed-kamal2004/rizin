@@ -16,11 +16,7 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/types.h>
 #include <rz_magic.h>
-#include <rz_util.h>
-
-#include <stdio.h>
 
 static void magic_dump_line(RZ_NONNULL const RzMagicLine *ml, ut32 depth) {
 	rz_return_if_fail(ml);
@@ -48,7 +44,7 @@ static void magic_dump_line(RZ_NONNULL const RzMagicLine *ml, ut32 depth) {
 	}
 }
 
-RZ_IPI void magic_dump(RZ_NONNULL const RzMagic *m) {
+RZ_API void magic_dump(RZ_NONNULL const RzMagic *m) {
 	rz_return_if_fail(m);
 
 	RBIter it;

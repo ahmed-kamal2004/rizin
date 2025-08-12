@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 /* $OpenBSD: magic.c,v 1.8 2009/10/27 23:59:37 deraadt Exp $ */
 
-#include <rz_userconf.h>
 #include <rz_magic.h>
 #include <rz_util.h>
 

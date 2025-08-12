@@ -16,19 +16,9 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/types.h>
-#include <rz_util.h>
 #include <rz_magic.h>
 
-#include <ctype.h>
-#include <errno.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-RZ_IPI char *magic_strtoull(RZ_NONNULL const char *s, RZ_NONNULL ut64 *u) {
+RZ_API char *magic_strtoull(RZ_NONNULL const char *s, RZ_NONNULL ut64 *u) {
 	rz_return_val_if_fail(s && u, NULL);
 
 	char *endptr;
@@ -47,7 +37,7 @@ RZ_IPI char *magic_strtoull(RZ_NONNULL const char *s, RZ_NONNULL ut64 *u) {
 	return (endptr);
 }
 
-RZ_IPI char *magic_strtoll(RZ_NONNULL const char *s, RZ_NONNULL int64_t *i) {
+RZ_API char *magic_strtoll(RZ_NONNULL const char *s, RZ_NONNULL int64_t *i) {
 	rz_return_val_if_fail(s && i, NULL);
 
 	char *endptr;
@@ -66,7 +56,7 @@ RZ_IPI char *magic_strtoll(RZ_NONNULL const char *s, RZ_NONNULL int64_t *i) {
 	return (endptr);
 }
 
-RZ_IPI void magic_vwarnm(RZ_NONNULL const RzMagic *m, ut32 line, RZ_NONNULL const char *fmt, va_list ap) {
+RZ_API void magic_vwarnm(RZ_NONNULL const RzMagic *m, ut32 line, RZ_NONNULL const char *fmt, va_list ap) {
 	rz_return_if_fail(m && fmt);
 
 	char *msg;
@@ -80,7 +70,7 @@ RZ_IPI void magic_vwarnm(RZ_NONNULL const RzMagic *m, ut32 line, RZ_NONNULL cons
 	free(msg);
 }
 
-RZ_IPI void magic_warnm(RZ_NONNULL const RzMagic *m, ut32 line, RZ_NONNULL const char *fmt, ...) {
+RZ_API void magic_warnm(RZ_NONNULL const RzMagic *m, ut32 line, RZ_NONNULL const char *fmt, ...) {
 	rz_return_if_fail(m && fmt);
 
 	va_list ap;
@@ -90,7 +80,7 @@ RZ_IPI void magic_warnm(RZ_NONNULL const RzMagic *m, ut32 line, RZ_NONNULL const
 	va_end(ap);
 }
 
-RZ_IPI void magic_warn(RZ_NONNULL const RzMagicLine *ml, RZ_NONNULL const char *fmt, ...) {
+RZ_API void magic_warn(RZ_NONNULL const RzMagicLine *ml, RZ_NONNULL const char *fmt, ...) {
 	rz_return_if_fail(ml && fmt);
 
 	va_list ap;

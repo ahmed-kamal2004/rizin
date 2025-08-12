@@ -16,19 +16,6 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/types.h>
-
-#include <ctype.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
 #include "rz_magic.h"
 #include "rz_util.h"
 
@@ -313,8 +300,8 @@ static int magic_test_double(RzMagicLine *ml, double value, double wanted) {
 	return (-1);
 }
 
-static int magic_test_type_none(__unused RzMagicLine *ml,
-	__unused RzMagicState *ms) {
+static int magic_test_type_none(RZ_UNUSED RzMagicLine *ml,
+	RZ_UNUSED RzMagicState *ms) {
 	return (0);
 }
 
@@ -930,28 +917,28 @@ static int magic_test_type_uqdate(RzMagicLine *ml, RzMagicState *ms) {
 	return (result);
 }
 
-static int magic_test_type_bestring16(__unused RzMagicLine *ml,
-	__unused RzMagicState *ms) {
+static int magic_test_type_bestring16(RZ_UNUSED RzMagicLine *ml,
+	RZ_UNUSED RzMagicState *ms) {
 	return (-2);
 }
 
-static int magic_test_type_lestring16(__unused RzMagicLine *ml,
-	__unused RzMagicState *ms) {
+static int magic_test_type_lestring16(RZ_UNUSED RzMagicLine *ml,
+	RZ_UNUSED RzMagicState *ms) {
 	return (-2);
 }
 
-static int magic_test_type_melong(__unused RzMagicLine *ml,
-	__unused RzMagicState *ms) {
+static int magic_test_type_melong(RZ_UNUSED RzMagicLine *ml,
+	RZ_UNUSED RzMagicState *ms) {
 	return (-2);
 }
 
-static int magic_test_type_medate(__unused RzMagicLine *ml,
-	__unused RzMagicState *ms) {
+static int magic_test_type_medate(RZ_UNUSED RzMagicLine *ml,
+	RZ_UNUSED RzMagicState *ms) {
 	return (-2);
 }
 
-static int magic_test_type_meldate(__unused RzMagicLine *ml,
-	__unused RzMagicState *ms) {
+static int magic_test_type_meldate(RZ_UNUSED RzMagicLine *ml,
+	RZ_UNUSED RzMagicState *ms) {
 	return (-2);
 }
 
@@ -978,13 +965,13 @@ static int magic_test_type_regex(RzMagicLine *ml, RzMagicState *ms) {
 			}
 		}
 	}
-	re = rz_regex_new(ml->test_string, RZ_REGEX_EXTENDED | flags, 0, NULL);
+	re = rz_regex_new(ml->test_string, RZ_REGEX_EXTENDED | flags, RZ_REGEX_DEFAULT, NULL);
 	if (!re) {
 		return -1;
 	}
 
 	bool res = true;
-	RzPVector *matches = rz_regex_match_first(re, ms->base, ms->size, ms->offset, RZ_REGEX_EXTENDED | flags);
+	RzPVector *matches = rz_regex_match_first(re, ms->base, ms->size, ms->offset, RZ_REGEX_DEFAULT);
 	if (!matches || rz_pvector_empty(matches)) {
 		res = false;
 	}
@@ -993,17 +980,18 @@ static int magic_test_type_regex(RzMagicLine *ml, RzMagicState *ms) {
 		if (ml->result != NULL && res) {
 			match = rz_pvector_pop_front(matches);
 			magic_add_string(ms, ml, ms->base + match->start,
-				match->len - match->start);
+				match->len);
 		}
 		if (res && match) {
 			if (sflag)
 				ms->offset = match->start;
 			else
-				ms->offset = match->len;
+				ms->offset = match->start + match->len;
 		}
 		free(match);
 	}
 	rz_pvector_free(matches);
+	rz_regex_free(re);
 	return (res);
 }
 
@@ -1116,13 +1104,13 @@ static int magic_test_type_clear(RzMagicLine *ml, RzMagicState *ms) {
 	return (1);
 }
 
-static int magic_test_type_name(__unused RzMagicLine *ml,
-	__unused RzMagicState *ms) {
+static int magic_test_type_name(RZ_UNUSED RzMagicLine *ml,
+	RZ_UNUSED RzMagicState *ms) {
 	return (-1);
 }
 
-static int magic_test_type_use(__unused RzMagicLine *ml,
-	__unused RzMagicState *ms) {
+static int magic_test_type_use(RZ_UNUSED RzMagicLine *ml,
+	RZ_UNUSED RzMagicState *ms) {
 	return (1);
 }
 
@@ -1339,7 +1327,7 @@ static int magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 	return (ml->result != NULL);
 }
 
-RZ_IPI RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *m, RZ_NONNULL const void *base, size_t size, int flags) {
+RZ_API RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *m, RZ_NONNULL const void *base, size_t size, int flags) {
 	rz_return_val_if_fail(m && base, NULL);
 
 	RzMagicLine *ml;

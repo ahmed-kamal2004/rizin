@@ -16,19 +16,8 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <sys/types.h>
 #include "rz_util.h"
 #include "rz_magic.h"
-#include <ctype.h>
-#include <err.h>
-#include <errno.h>
-#include <limits.h>
-#include <regex.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <rz_th.h>
 
 static int magic_odigit(ut8 c) {
 	if (c >= '0' && c <= '7')
@@ -64,7 +53,7 @@ static int magic_make_pattern(RzMagicLine *ml, const char *name, RzRegex **re,
 		RZ_FREE_CUSTOM(*re, rz_regex_free);
 	}
 
-	*re = rz_regex_new(p, RZ_REGEX_EXTENDED, 0, NULL);
+	*re = rz_regex_new(p, RZ_REGEX_EXTENDED, RZ_REGEX_DEFAULT, NULL);
 	if (!(*re)) {
 		return (-1);
 	}
@@ -1042,7 +1031,7 @@ static void magic_set_mimetype(RzMagic *m, ut32 at, RzMagicLine *ml, char *line)
 	ml->mimetype = rz_str_dup(mimetype);
 }
 
-RZ_IPI bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f, int flags) {
+RZ_API bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f, int flags) {
 	rz_return_val_if_fail(m, false);
 	rz_return_val_if_fail(f, false);
 
