@@ -724,6 +724,24 @@ EXPECT=<<EOF
 EOF
 RUN
 
+NAME=pm perl/exam.pm
+FILE=bins/perl/exam.pm
+ARGS=-n
+CMDS=pm
+EXPECT=<<EOF
+0x00000000 Perl5 module source text
+EOF
+RUN
+
+NAME=pm perl/exam.pl
+FILE=bins/perl/exam.pl
+ARGS=-n
+CMDS=pm
+EXPECT=<<EOF
+0x00000000 Perl script text executable
+EOF
+RUN
+
 NAME=pm java/Hello.class
 FILE=bins/java/Hello.class
 ARGS=-n

@@ -55,37 +55,3 @@ RZ_API char *magic_strtoll(RZ_NONNULL const char *s, RZ_NONNULL int64_t *i) {
 		endptr++;
 	return (endptr);
 }
-
-RZ_API void magic_vwarnm(RZ_NONNULL const RzMagic *m, ut32 line, RZ_NONNULL const char *fmt, va_list ap) {
-	rz_return_if_fail(m && fmt);
-
-	char *msg;
-
-	if (!m->flags)
-		return;
-
-	if (vasprintf(&msg, fmt, ap) == -1)
-		return;
-	fprintf(stderr, "%s:%u: %s\n", m->path, line, msg);
-	free(msg);
-}
-
-RZ_API void magic_warnm(RZ_NONNULL const RzMagic *m, ut32 line, RZ_NONNULL const char *fmt, ...) {
-	rz_return_if_fail(m && fmt);
-
-	va_list ap;
-
-	va_start(ap, fmt);
-	magic_vwarnm(m, line, fmt, ap);
-	va_end(ap);
-}
-
-RZ_API void magic_warn(RZ_NONNULL const RzMagicLine *ml, RZ_NONNULL const char *fmt, ...) {
-	rz_return_if_fail(ml && fmt);
-
-	va_list ap;
-
-	va_start(ap, fmt);
-	magic_vwarnm(ml->root, ml->line, fmt, ap);
-	va_end(ap);
-}

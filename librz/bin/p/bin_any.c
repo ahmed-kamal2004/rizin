@@ -11,7 +11,7 @@
 static char *get_filetype(RzBuffer *b) {
 	ut8 buf[4096] = { 0 };
 	char *res = NULL;
-	RzMagic *ck = rz_magic_new(0);
+	RzMagic *ck = rz_magic_new();
 	if (!ck) {
 		return NULL;
 	}

@@ -317,6 +317,13 @@ enum magic_type {
 typedef struct rz_magic_line_t RzMagicLine;
 typedef struct rz_magic_t RzMagic;
 
+/**
+ * \brief Represents a single parsed rule from a magic file.
+ *
+ * This structure contains all metadata and matching criteria for a single magic
+ * rule, including its type, operators, matching strength, and any child rules.
+ * It is to evaluate file signatures.
+ */
 struct rz_magic_line_t {
 	RBNode rb;
 	RzMagic *root;
@@ -360,9 +367,14 @@ struct rz_magic_line_t {
 	RzList *children;
 };
 
+/**
+ * \brief Container for compiled magic rules and related metadata.
+ *
+ * Holds the path to the magic file(s), RBTree indexes for rule storage and lookup,
+ * and precompiled regex patterns for various data types.
+ */
 struct rz_magic_t {
 	char *path;
-	int flags;
 
 	RBTree magic_tree;
 	RBTree magic_named_tree;
@@ -375,28 +387,28 @@ struct rz_magic_t {
 	RzRegex *format_string;
 };
 
+/**
+ * \brief Represents the state of magic rules processing.
+ *
+ * This structure stores details about the data being analyzed.
+ * It is used during magic rules evaluation.
+ */
 typedef struct rz_magic_state_t {
 	char out[4096];
 	const char *mimetype;
 	int text;
-
 	const char *base;
 	size_t size;
-	RBTree magic_tree;
-
 	size_t offset;
 	int matched;
-
 	size_t start;
 	int reverse;
 } RzMagicState;
 
-RZ_API RzMagic *rz_magic_new(int flags);
+RZ_API RzMagic *rz_magic_new();
 RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *);
 
 RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *, RZ_NONNULL const ut8 *, size_t);
-
-RZ_API void rz_magic_setflags(RZ_NULLABLE RzMagic *, int);
 
 RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL const char *);
 
@@ -408,14 +420,9 @@ RZ_API int magic_named_compare(const void *incoming, const RBNode *in_tree, void
 
 RZ_API char *magic_strtoull(RZ_NONNULL const char *, RZ_NONNULL ut64 *);
 RZ_API char *magic_strtoll(RZ_NONNULL const char *, RZ_NONNULL int64_t *);
-RZ_API void magic_vwarnm(RZ_NONNULL const RzMagic *, ut32, RZ_NONNULL const char *, va_list);
-RZ_API void magic_warnm(RZ_NONNULL const RzMagic *, ut32, RZ_NONNULL const char *, ...)
-	RZ_PRINTF_CHECK(3, 4);
-RZ_API void magic_warn(RZ_NONNULL const RzMagicLine *, RZ_NONNULL const char *, ...)
-	RZ_PRINTF_CHECK(2, 3);
 
 RZ_API void magic_dump(RZ_NONNULL const RzMagic *);
-RZ_API bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL FILE *f, int flags);
+RZ_API bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL FILE *f);
 RZ_API RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *, RZ_NONNULL const void *, size_t, int);
 
 #endif

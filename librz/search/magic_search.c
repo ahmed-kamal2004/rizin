@@ -10,7 +10,7 @@
 #include "search_internal.h"
 
 static RzMagic *setup_magic_instance(const char *magic_dir) {
-	RzMagic *magic = rz_magic_new(0);
+	RzMagic *magic = rz_magic_new();
 	if (!magic) {
 		RZ_LOG_ERROR("search: cannot initialize RzMagic.\n");
 		return NULL;

@@ -30,7 +30,7 @@ static bool magic_load_file(RZ_NONNULL RZ_BORROW RzMagic *m, const char *file_pa
 	if (!file) {
 		return false;
 	}
-	result = magic_load(m, file, m->flags);
+	result = magic_load(m, file);
 	fclose(file);
 	return result;
 }
@@ -38,12 +38,11 @@ static bool magic_load_file(RZ_NONNULL RZ_BORROW RzMagic *m, const char *file_pa
 /* API */
 
 // TODO: reinitialize all the time
-RZ_API RzMagic *rz_magic_new(int flags) {
+RZ_API RzMagic *rz_magic_new() {
 	RzMagic *m = RZ_NEW0(RzMagic);
 	if (!m) {
 		return NULL;
 	}
-	rz_magic_setflags(m, flags);
 	return m;
 }
 
@@ -107,13 +106,12 @@ RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *m, RZ_NONNULL cons
 	if (nb == 0) {
 		return NULL;
 	}
-	return magic_test(m, buf, nb, m->flags);
-}
 
-RZ_API void rz_magic_setflags(RZ_NULLABLE RzMagic *m, int flags) {
-	if (m) {
-		m->flags = flags;
+	char *output = magic_test(m, buf, nb, MAGIC_TEST_TEXT);
+	if (!output) {
+		return magic_test(m, buf, nb, 0);
 	}
+	return output;
 }
 
 RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void) {

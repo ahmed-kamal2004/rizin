@@ -965,7 +965,7 @@ static int magic_test_type_regex(RzMagicLine *ml, RzMagicState *ms) {
 			}
 		}
 	}
-	re = rz_regex_new(ml->test_string, RZ_REGEX_EXTENDED | flags, RZ_REGEX_DEFAULT, NULL);
+	re = rz_regex_new(ml->test_string, RZ_REGEX_EXTENDED | RZ_REGEX_MULTILINE | flags, RZ_REGEX_DEFAULT, NULL);
 	if (!re) {
 		return -1;
 	}
@@ -978,7 +978,7 @@ static int magic_test_type_regex(RzMagicLine *ml, RzMagicState *ms) {
 	if (res == !ml->test_not) {
 		RzRegexMatch *match = NULL;
 		if (ml->result != NULL && res) {
-			match = rz_pvector_pop_front(matches);
+			match = rz_pvector_at(matches, 0);
 			magic_add_string(ms, ml, ms->base + match->start,
 				match->len);
 		}
@@ -988,7 +988,6 @@ static int magic_test_type_regex(RzMagicLine *ml, RzMagicState *ms) {
 			else
 				ms->offset = match->start + match->len;
 		}
-		free(match);
 	}
 	rz_pvector_free(matches);
 	rz_regex_free(re);
@@ -1286,13 +1285,9 @@ static int magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 
 	result = magic_test_functions[ml->type](ml, ms);
 	if (result == -1) {
-		magic_warn(ml, "test %s/%c failed", ml->type_string,
-			ml->test_operator);
 		return (0);
 	}
 	if (result == -2) {
-		magic_warn(ml, "test %s/%c not implemented", ml->type_string,
-			ml->test_operator);
 		return (0);
 	}
 	if (result == ml->test_not)
@@ -1300,21 +1295,14 @@ static int magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 	if (ml->mimetype != NULL)
 		ms->mimetype = ml->mimetype;
 
-	magic_warn(ml, "test %s/%c matched at offset %" PFMT64d " (now %" PFMTSZu "): "
-		       "'%s'",
-		ml->type_string, ml->test_operator, offset,
-		ms->offset, ml->result == NULL ? "" : ml->result);
-
 	if (ml->type == MAGIC_TYPE_USE) {
 		if (*ml->name == '^')
 			named = magic_get_named(m, ml->name + 1);
 		else
 			named = magic_get_named(m, ml->name);
 		if (named == NULL) {
-			magic_warn(ml, "no name found for use %s", ml->name);
 			return (0);
 		}
-		magic_warn(ml, "use %s at offset %" PFMT64d, ml->name, offset);
 		magic_test_children(named, ms, offset, *ml->name == '^');
 	}
 
