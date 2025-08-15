@@ -55,7 +55,7 @@ static int magic_make_pattern(RzMagicLine *ml, const char *name, RzRegex **re,
 
 	*re = rz_regex_new(p, RZ_REGEX_EXTENDED, RZ_REGEX_DEFAULT, NULL);
 	if (!(*re)) {
-		RZ_LOG_WARN("bad %s pattern", name);
+		RZ_LOG_WARN("bad %s pattern\n", name);
 		return (-1);
 	}
 	return (0);
@@ -78,7 +78,7 @@ static int magic_set_result(RzMagicLine *ml, const char *s) {
 	for (cp = s; *cp != '\0'; cp++) {
 		if (cp[0] == '%' && cp[1] != '%') {
 			if (fmt != NULL) {
-				RZ_LOG_WARN("multiple formats");
+				RZ_LOG_WARN("multiple formats\n");
 				return (-1);
 			}
 			fmt = cp;
@@ -93,12 +93,12 @@ static int magic_set_result(RzMagicLine *ml, const char *s) {
 			break;
 	}
 	if (*endfmt == '\0') {
-		RZ_LOG_WARN("unterminated format");
+		RZ_LOG_WARN("unterminated format\n");
 		return (-1);
 	}
 	fmtlen = endfmt + 1 - fmt;
 	if (fmtlen > 32) {
-		RZ_LOG_WARN("format too long");
+		RZ_LOG_WARN("format too long\n");
 		return (-1);
 	}
 
@@ -251,7 +251,7 @@ static int magic_set_result(RzMagicLine *ml, const char *s) {
 
 	bool res = (rz_regex_match(re, fmt, fmtlen, 0, RZ_REGEX_DEFAULT) > 0);
 	if (!res) {
-		RZ_LOG_WARN("bad format for %s: %%%.*s", ml->type_string,
+		RZ_LOG_WARN("bad format for %s: %%%.*s\n", ml->type_string,
 			(int)fmtlen, fmt);
 		return (-1);
 	}
@@ -522,11 +522,11 @@ static int magic_parse_offset(RzMagicLine *ml, char **line) {
 	if (*s != '(') {
 		endptr = magic_strtoll(s, &ml->offset);
 		if (endptr == NULL || *endptr != '\0') {
-			RZ_LOG_WARN("missing closing bracket");
+			RZ_LOG_WARN("missing closing bracket\n");
 			goto fail;
 		}
 		if (ml->offset < 0 && !ml->offset_relative) {
-			RZ_LOG_WARN("negative absolute offset");
+			RZ_LOG_WARN("negative absolute offset\n");
 			goto fail;
 		}
 		goto done;
@@ -540,7 +540,7 @@ static int magic_parse_offset(RzMagicLine *ml, char **line) {
 
 	endptr = magic_strtoll(s, &ml->indirect_offset);
 	if (endptr == NULL) {
-		RZ_LOG_WARN("can't parse offset: %s", s);
+		RZ_LOG_WARN("can't parse offset: %s\n", s);
 		goto fail;
 	}
 	s = endptr;
@@ -550,7 +550,7 @@ static int magic_parse_offset(RzMagicLine *ml, char **line) {
 	if (*s == '.') {
 		s++;
 		if (*s == '\0' || strchr("bslBSL", *s) == NULL) {
-			RZ_LOG_WARN("unknown offset type: %c", *s);
+			RZ_LOG_WARN("unknown offset type: %c\n", *s);
 			goto fail;
 		}
 		ml->indirect_type = *s;
@@ -560,7 +560,7 @@ static int magic_parse_offset(RzMagicLine *ml, char **line) {
 	}
 
 	if (*s == '\0' || strchr("+-*", *s) == NULL) {
-		RZ_LOG_WARN("unknown offset operator: %c", *s);
+		RZ_LOG_WARN("unknown offset operator: %c\n", *s);
 		goto fail;
 	}
 	ml->indirect_operator = *s;
@@ -572,17 +572,17 @@ static int magic_parse_offset(RzMagicLine *ml, char **line) {
 		s++;
 		endptr = magic_strtoll(s, &ml->indirect_operand);
 		if (endptr == NULL || *endptr != ')') {
-			RZ_LOG_WARN("missing closing bracket");
+			RZ_LOG_WARN("missing closing bracket\n");
 			goto fail;
 		}
 		if (*++endptr != ')') {
-			RZ_LOG_WARN("missing closing bracket");
+			RZ_LOG_WARN("missing closing bracket\n");
 			goto fail;
 		}
 	} else {
 		endptr = magic_strtoll(s, &ml->indirect_operand);
 		if (endptr == NULL || *endptr != ')') {
-			RZ_LOG_WARN("missing closing bracket");
+			RZ_LOG_WARN("missing closing bracket\n");
 			goto fail;
 		}
 	}
@@ -666,7 +666,7 @@ static int magic_parse_type(RzMagicLine *ml, char **line) {
 		ml->type_operator = *cp;
 		endptr = magic_strtoull(cp + 1, (ut64 *)&ml->type_operand);
 		if (endptr == NULL || *endptr != '\0') {
-			RZ_LOG_WARN("can't parse operand: %s", cp + 1);
+			RZ_LOG_WARN("can't parse operand: %s\n", cp + 1);
 			goto fail;
 		}
 		*cp = '\0';
@@ -787,7 +787,7 @@ static int magic_parse_type(RzMagicLine *ml, char **line) {
 	else if (strcmp(s, "clear") == 0 || strcmp(s, "uclear") == 0)
 		ml->type = MAGIC_TYPE_CLEAR;
 	else {
-		RZ_LOG_WARN("unknown type: %s", s);
+		RZ_LOG_WARN("unknown type: %s\n", s);
 		goto fail;
 	}
 	magic_mark_text(ml, 0);
@@ -827,7 +827,7 @@ static int magic_parse_value(RzMagicLine *ml, char **line) {
 	}
 
 	if (ml->type == MAGIC_TYPE_DEFAULT || ml->type == MAGIC_TYPE_CLEAR) {
-		RZ_LOG_DEBUG("test specified for default or clear");
+		RZ_LOG_DEBUG("test specified for default or clear\n");
 		ml->test_operator = 'x';
 		return (0);
 	}
@@ -842,11 +842,11 @@ static int magic_parse_value(RzMagicLine *ml, char **line) {
 	case MAGIC_TYPE_USE:
 		copy = s = malloc(strlen(*line) + 1);
 		if (magic_get_string(line, s, &slen) != 0 || slen == 0) {
-			RZ_LOG_WARN("can't parse string");
+			RZ_LOG_WARN("can't parse string\n");
 			goto fail;
 		}
 		if (slen == 0 || *s == '\0' || strcmp(s, "^") == 0) {
-			RZ_LOG_WARN("invalid name");
+			RZ_LOG_WARN("invalid name\n");
 			goto fail;
 		}
 		ml->name = s;
@@ -864,7 +864,7 @@ static int magic_parse_value(RzMagicLine *ml, char **line) {
 			(*line)++;
 		copy = s = malloc(strlen(*line) + 1);
 		if (magic_get_string(line, s, &slen) != 0) {
-			RZ_LOG_WARN("can't parse string");
+			RZ_LOG_WARN("can't parse string\n");
 			goto fail;
 		}
 		ml->test_string_size = slen;
@@ -924,7 +924,7 @@ static int magic_parse_value(RzMagicLine *ml, char **line) {
 		break;
 	}
 	if (endptr == NULL || *endptr != '\0') {
-		RZ_LOG_WARN("can't parse number: %s", copy);
+		RZ_LOG_WARN("can't parse number: %s\n", copy);
 		goto fail;
 	}
 
@@ -981,7 +981,7 @@ static void magic_adjust_strength(RzMagic *m, ut32 at, RzMagicLine *ml,
 	cp = s;
 
 	if (*s == '\0' || strchr("+-*/", *s) == NULL) {
-		RZ_LOG_DEBUG("invalid strength operator: %s", s);
+		RZ_LOG_DEBUG("invalid strength operator: %s\n", s);
 		return;
 	}
 	ml->strength_operator = *cp++;
@@ -992,7 +992,7 @@ static void magic_adjust_strength(RzMagic *m, ut32 at, RzMagicLine *ml,
 	while (cp != NULL && isspace((ut8)*cp))
 		cp++;
 	if (cp == NULL || *cp != '\0' || value < 0 || value > 255) {
-		RZ_LOG_DEBUG("invalid strength value: %s", s);
+		RZ_LOG_DEBUG("invalid strength value: %s\n", s);
 		return;
 	}
 	ml->strength_value = value;
@@ -1022,11 +1022,11 @@ static void magic_set_mimetype(RzMagic *m, ut32 at, RzMagicLine *ml, char *line)
 		cp++;
 	}
 	if (*mimetype == '\0' || *cp != '\0') {
-		RZ_LOG_DEBUG("invalid MIME type: %s", mimetype);
+		RZ_LOG_DEBUG("invalid MIME type: %s\n", mimetype);
 		return;
 	}
 	if (ml == NULL) {
-		RZ_LOG_DEBUG("stray MIME type: %s", mimetype);
+		RZ_LOG_DEBUG("stray MIME type: %s\n", mimetype);
 		return;
 	}
 	ml->mimetype = rz_str_dup(mimetype);
@@ -1075,7 +1075,7 @@ RZ_API bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f) {
 				if (isspace((ut8)line[i]))
 					break;
 			}
-			RZ_LOG_DEBUG("%.*s not supported", i, line);
+			RZ_LOG_DEBUG("%.*s not supported\n", i, line);
 			continue;
 		}
 
@@ -1106,7 +1106,7 @@ RZ_API bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f) {
 			for (i = n; i < level && parent != NULL; i++)
 				parent = parent->parent;
 		} else if (n != level) {
-			RZ_LOG_DEBUG("level skipped (%u->%u)", level, n);
+			RZ_LOG_DEBUG("level skipped (%u->%u)\n", level, n);
 			RZ_FREE_CUSTOM(ml, rz_magic_line_free);
 			continue;
 		}

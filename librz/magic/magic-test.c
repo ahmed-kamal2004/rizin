@@ -19,70 +19,42 @@
 #include "rz_magic.h"
 #include "rz_util.h"
 
-#if __APPLE__
+#if RZ_SYS_ENDIAN == 0 // LE
 
-#include <libkern/OSByteOrder.h>
+#define htobe16_mg(dest, x) rz_write_be16(dest, x)
+#define htole16_mg(dest, x) *dest = x
+#define be16toh_mg(dest, x) rz_write_le16(dest, x)
+#define le16toh_mg(dest, x) *dest = x
 
-#define htobe16(x) OSSwapHostToBigInt16(x)
-#define htole16(x) OSSwapHostToLittleInt16(x)
-#define be16toh(x) OSSwapBigToHostInt16(x)
-#define le16toh(x) OSSwapLittleToHostInt16(x)
+#define htobe32_mg(dest, x) rz_write_be32(dest, x)
+#define htole32_mg(dest, x) *dest = x
+#define be32toh_mg(dest, x) rz_write_le32(dest, x)
+#define le32toh_mg(dest, x) *dest = x
 
-#define htobe32(x) OSSwapHostToBigInt32(x)
-#define htole32(x) OSSwapHostToLittleInt32(x)
-#define be32toh(x) OSSwapBigToHostInt32(x)
-#define le32toh(x) OSSwapLittleToHostInt32(x)
+#define htobe64_mg(dest, x) rz_write_be64(dest, x)
+#define htole64_mg(dest, x) *dest = x
+#define be64toh_mg(dest, x) rz_write_le64(dest, x)
+#define le64toh_mg(dest, x) *dest = x
 
-#define htobe64(x) OSSwapHostToBigInt64(x)
-#define htole64(x) OSSwapHostToLittleInt64(x)
-#define be64toh(x) OSSwapBigToHostInt64(x)
-#define le64toh(x) OSSwapLittleToHostInt64(x)
+#elif RZ_SYS_ENDIAN == 1 // BE
 
-#elif __WINDOWS__
+#define htobe16_mg(dest, x) *dest = x
+#define htole16_mg(dest, x) rz_write_le16(dest, x)
+#define be16toh_mg(dest, x) *dest = x
+#define le16toh_mg(dest, x) rz_write_be16(dest, x)
 
-#include <winsock2.h>
-#ifdef __GNUC__
-#include <sys/param.h>
-#endif
+#define htobe32_mg(dest, x) *dest = x
+#define htole32_mg(dest, x) rz_write_le32(dest, x)
+#define be32toh_mg(dest, x) *dest = x
+#define le32toh_mg(dest, x) rz_write_be32(dest, x)
 
-#if BYTE_ORDER == LITTLE_ENDIAN // In Rizin, BYTE_ORDER is LITTLE_INDIAN
-
-#define htobe16(x) htons(x)
-#define htole16(x) (x)
-#define be16toh(x) ntohs(x)
-#define le16toh(x) (x)
-
-#define htobe32(x) htonl(x)
-#define htole32(x) (x)
-#define be32toh(x) ntohl(x)
-#define le32toh(x) (x)
-
-#define htobe64(x) htonll(x)
-#define htole64(x) (x)
-#define be64toh(x) ntohll(x)
-#define le64toh(x) (x)
-
-#elif BYTE_ORDER == BIG_ENDIAN
-
-/* that would be xbox 360 */
-#define htobe16(x) (x)
-#define htole16(x) __builtin_bswap16(x)
-#define be16toh(x) (x)
-#define le16toh(x) __builtin_bswap16(x)
-
-#define htobe32(x) (x)
-#define htole32(x) __builtin_bswap32(x)
-#define be32toh(x) (x)
-#define le32toh(x) __builtin_bswap32(x)
-
-#define htobe64(x) (x)
-#define htole64(x) __builtin_bswap64(x)
-#define be64toh(x) (x)
-#define le64toh(x) __builtin_bswap64(x)
+#define htobe64_mg(dest, x) *dest = x
+#define htole64_mg(dest, x) rz_write_le64(dest, x)
+#define be64toh_mg(dest, x) *dest = x
+#define le64toh_mg(dest, x) rz_write_be64(dest, x)
 
 #else
-#error byte order not supported
-#endif
+#error Byte order not supported.
 #endif
 
 static int magic_test_line(RzMagicLine *, RzMagicState *);
@@ -395,9 +367,9 @@ static int magic_test_type_short(RzMagicLine *ml, RzMagicState *ms) {
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BESHORT))
-		value = be16toh(value);
+		be16toh_mg(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LESHORT))
-		value = le16toh(value);
+		le16toh_mg(&value, value);
 
 	if (ml->type_operator == '&')
 		value &= (int16_t)ml->type_operand;
@@ -429,9 +401,10 @@ static int magic_test_type_long(RzMagicLine *ml, RzMagicState *ms) {
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BELONG))
-		value = be32toh(value);
+		be32toh_mg(&value, value);
+
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LELONG))
-		value = le32toh(value);
+		le32toh_mg(&value, value);
 
 	if (ml->type_operator == '&')
 		value &= (int32_t)ml->type_operand;
@@ -463,9 +436,9 @@ static int magic_test_type_quad(RzMagicLine *ml, RzMagicState *ms) {
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEQUAD))
-		value = be64toh(value);
+		be64toh_mg(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LEQUAD))
-		value = le64toh(value);
+		le64toh_mg(&value, value);
 
 	if (ml->type_operator == '&')
 		value &= (int64_t)ml->type_operand;
@@ -527,9 +500,9 @@ static int magic_test_type_ushort(RzMagicLine *ml, RzMagicState *ms) {
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
 	if (ml->type == MAGIC_TYPE_UBESHORT)
-		value = be16toh(value);
+		be16toh_mg(&value, value);
 	if (ml->type == MAGIC_TYPE_ULESHORT)
-		value = le16toh(value);
+		le16toh_mg(&value, value);
 
 	if (ml->type_operator == '&')
 		value &= (uint16_t)ml->type_operand;
@@ -561,9 +534,9 @@ static int magic_test_type_ulong(RzMagicLine *ml, RzMagicState *ms) {
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
 	if (ml->type == MAGIC_TYPE_UBELONG)
-		value = be32toh(value);
+		be32toh_mg(&value, value);
 	if (ml->type == MAGIC_TYPE_ULELONG)
-		value = le32toh(value);
+		le32toh_mg(&value, value);
 
 	if (ml->type_operator == '&')
 		value &= (uint32_t)ml->type_operand;
@@ -595,9 +568,9 @@ static int magic_test_type_uquad(RzMagicLine *ml, RzMagicState *ms) {
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
 	if (ml->type == MAGIC_TYPE_UBEQUAD)
-		value = be64toh(value);
+		be64toh_mg(&value, value);
 	if (ml->type == MAGIC_TYPE_ULEQUAD)
-		value = le64toh(value);
+		le64toh_mg(&value, value);
 
 	if (ml->type_operator == '&')
 		value &= (uint64_t)ml->type_operand;
@@ -630,9 +603,9 @@ static int magic_test_type_float(RzMagicLine *ml, RzMagicState *ms) {
 	if (magic_copy_from(ms, -1, &value0, sizeof value0) != 0)
 		return (0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEFLOAT))
-		value0 = be32toh(value0);
+		be32toh_mg(&value0, value0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LEFLOAT))
-		value0 = le32toh(value0);
+		le32toh_mg(&value0, value0);
 	memcpy(&value, &value0, sizeof value);
 
 	if (ml->type_operator != ' ')
@@ -655,9 +628,9 @@ magic_test_type_double(RzMagicLine *ml, RzMagicState *ms) {
 	if (magic_copy_from(ms, -1, &value0, sizeof value0) != 0)
 		return (0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEDOUBLE))
-		value0 = be64toh(value0);
+		be64toh_mg(&value0, value0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LEDOUBLE))
-		value0 = le64toh(value0);
+		le64toh_mg(&value0, value0);
 	memcpy(&value, &value0, sizeof value);
 
 	if (ml->type_operator != ' ')
@@ -804,10 +777,10 @@ static int magic_test_type_date(RzMagicLine *ml, RzMagicState *ms) {
 		return (0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEDATE) ||
 		ml->type == magic_reverse_type(ms, MAGIC_TYPE_BELDATE))
-		value = be32toh(value);
+		be32toh_mg(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LEDATE) ||
 		ml->type == magic_reverse_type(ms, MAGIC_TYPE_LELDATE))
-		value = le32toh(value);
+		le32toh_mg(&value, value);
 
 	if (ml->type_operator == '&')
 		value &= (int32_t)ml->type_operand;
@@ -848,10 +821,10 @@ static int magic_test_type_qdate(RzMagicLine *ml, RzMagicState *ms) {
 		return (0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEQDATE) ||
 		ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEQLDATE))
-		value = be64toh(value);
+		be64toh_mg(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LEQDATE) ||
 		ml->type == magic_reverse_type(ms, MAGIC_TYPE_LEQLDATE))
-		value = le64toh(value);
+		le64toh_mg(&value, value);
 
 	if (ml->type_operator == '&')
 		value &= (int64_t)ml->type_operand;
@@ -892,10 +865,10 @@ static int magic_test_type_udate(RzMagicLine *ml, RzMagicState *ms) {
 		return (0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEDATE) ||
 		ml->type == magic_reverse_type(ms, MAGIC_TYPE_BELDATE))
-		value = be32toh(value);
+		be32toh_mg(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LEDATE) ||
 		ml->type == magic_reverse_type(ms, MAGIC_TYPE_LELDATE))
-		value = le32toh(value);
+		le32toh_mg(&value, value);
 
 	if (ml->type_operator == '&')
 		value &= (uint32_t)ml->type_operand;
@@ -936,10 +909,10 @@ static int magic_test_type_uqdate(RzMagicLine *ml, RzMagicState *ms) {
 		return (0);
 	if (ml->type == MAGIC_TYPE_UBEQDATE ||
 		ml->type == MAGIC_TYPE_UBEQLDATE)
-		value = be64toh(value);
+		be64toh_mg(&value, value);
 	if (ml->type == MAGIC_TYPE_ULEQDATE ||
 		ml->type == MAGIC_TYPE_ULEQLDATE)
-		value = le64toh(value);
+		le64toh_mg(&value, value);
 
 	if (ml->type_operator == '&')
 		value &= (uint64_t)ml->type_operand;
@@ -1292,22 +1265,22 @@ static int magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 		case 's':
 			if (magic_copy_from(ms, next, &s, sizeof s) != 0)
 				return (0);
-			wanted = le16toh(s);
+			le16toh_mg(&wanted, s);
 			break;
 		case 'S':
 			if (magic_copy_from(ms, next, &s, sizeof s) != 0)
 				return (0);
-			wanted = be16toh(s);
+			be16toh_mg(&wanted, s);
 			break;
 		case 'l':
 			if (magic_copy_from(ms, next, &l, sizeof l) != 0)
 				return (0);
-			wanted = le16toh(l);
+			le16toh_mg(&wanted, l);
 			break;
 		case 'L':
 			if (magic_copy_from(ms, next, &l, sizeof l) != 0)
 				return (0);
-			wanted = be16toh(l);
+			be16toh_mg(&wanted, l);
 			break;
 		}
 
@@ -1338,12 +1311,12 @@ static int magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 
 	result = magic_test_functions[ml->type](ml, ms);
 	if (result == -1) {
-		RZ_LOG_DEBUG("test %s/%c failed", ml->type_string,
+		RZ_LOG_DEBUG("test %s/%c failed\n", ml->type_string,
 			ml->test_operator);
 		return (0);
 	}
 	if (result == -2) {
-		RZ_LOG_DEBUG("test %s/%c not implemented", ml->type_string,
+		RZ_LOG_DEBUG("test %s/%c not implemented\n", ml->type_string,
 			ml->test_operator);
 		return (0);
 	}
@@ -1353,7 +1326,7 @@ static int magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 		ms->mimetype = ml->mimetype;
 
 	RZ_LOG_DEBUG("test %s/%c matched at offset %" PFMT64d " (now %zu): "
-		     "'%s'",
+		     "'%s'\n",
 		ml->type_string, ml->test_operator, offset,
 		ms->offset, ml->result == NULL ? "" : ml->result);
 
@@ -1363,10 +1336,10 @@ static int magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 		else
 			named = magic_get_named(m, ml->name);
 		if (named == NULL) {
-			RZ_LOG_DEBUG("no name found for use %s", ml->name);
+			RZ_LOG_DEBUG("no name found for use %s\n", ml->name);
 			return (0);
 		}
-		RZ_LOG_DEBUG("use %s at offset %" PFMT64d "", ml->name, offset);
+		RZ_LOG_DEBUG("use %s at offset %" PFMT64d "\n", ml->name, offset);
 		magic_test_children(named, ms, offset, *ml->name == '^');
 	}
 
