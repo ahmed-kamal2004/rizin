@@ -38,6 +38,51 @@
 #define be64toh(x) OSSwapBigToHostInt64(x)
 #define le64toh(x) OSSwapLittleToHostInt64(x)
 
+#elif __WINDOWS__
+
+#include <winsock2.h>
+#ifdef __GNUC__
+#include <sys/param.h>
+#endif
+
+#if BYTE_ORDER == LITTLE_ENDIAN // In Rizin, BYTE_ORDER is LITTLE_INDIAN
+
+#define htobe16(x) htons(x)
+#define htole16(x) (x)
+#define be16toh(x) ntohs(x)
+#define le16toh(x) (x)
+
+#define htobe32(x) htonl(x)
+#define htole32(x) (x)
+#define be32toh(x) ntohl(x)
+#define le32toh(x) (x)
+
+#define htobe64(x) htonll(x)
+#define htole64(x) (x)
+#define be64toh(x) ntohll(x)
+#define le64toh(x) (x)
+
+#elif BYTE_ORDER == BIG_ENDIAN
+
+/* that would be xbox 360 */
+#define htobe16(x) (x)
+#define htole16(x) __builtin_bswap16(x)
+#define be16toh(x) (x)
+#define le16toh(x) __builtin_bswap16(x)
+
+#define htobe32(x) (x)
+#define htole32(x) __builtin_bswap32(x)
+#define be32toh(x) (x)
+#define le32toh(x) __builtin_bswap32(x)
+
+#define htobe64(x) (x)
+#define htole64(x) __builtin_bswap64(x)
+#define be64toh(x) (x)
+#define le64toh(x) __builtin_bswap64(x)
+
+#else
+#error byte order not supported
+#endif
 #endif
 
 static int magic_test_line(RzMagicLine *, RzMagicState *);
@@ -241,7 +286,15 @@ static void magic_add_string(RzMagicState *ms, RzMagicLine *ml,
 	}
 	size_t requested = 4 * (outlen + 1);
 	out = realloc(NULL, requested);
-	// strvisx(out, s, outlen, VIS_TAB | VIS_NL | VIS_CSTYLE | VIS_OCTAL);
+	RzStrEscOptions opt = {
+		.show_asciidot = true,
+		.esc_bslash = true,
+		.esc_double_quotes = true,
+		.dot_nl = true, // VIS_NL
+		.keep_printable = true,
+	};
+	out = rz_str_escape_utf8(s, &opt);
+
 	magic_add_result(ms, ml, "%s", out);
 	free(out);
 }
@@ -772,10 +825,10 @@ static int magic_test_type_date(RzMagicLine *ml, RzMagicState *ms) {
 		case MAGIC_TYPE_LDATE:
 		case MAGIC_TYPE_LELDATE:
 		case MAGIC_TYPE_BELDATE:
-			ctime_r(&t, s);
+			rz_ctime_r(&t, s);
 			break;
 		default:
-			asctime_r(gmtime(&t), s);
+			rz_asctime_r(gmtime(&t), s);
 			break;
 		}
 		s[strcspn(s, "\n")] = '\0';
@@ -816,10 +869,10 @@ static int magic_test_type_qdate(RzMagicLine *ml, RzMagicState *ms) {
 		case MAGIC_TYPE_QLDATE:
 		case MAGIC_TYPE_LEQLDATE:
 		case MAGIC_TYPE_BEQLDATE:
-			ctime_r(&t, s);
+			rz_ctime_r(&t, s);
 			break;
 		default:
-			asctime_r(gmtime(&t), s);
+			rz_asctime_r(gmtime(&t), s);
 			break;
 		}
 		s[strcspn(s, "\n")] = '\0';
@@ -860,10 +913,10 @@ static int magic_test_type_udate(RzMagicLine *ml, RzMagicState *ms) {
 		case MAGIC_TYPE_LDATE:
 		case MAGIC_TYPE_LELDATE:
 		case MAGIC_TYPE_BELDATE:
-			ctime_r(&t, s);
+			rz_ctime_r(&t, s);
 			break;
 		default:
-			asctime_r(gmtime(&t), s);
+			rz_asctime_r(gmtime(&t), s);
 			break;
 		}
 		s[strcspn(s, "\n")] = '\0';
@@ -904,10 +957,10 @@ static int magic_test_type_uqdate(RzMagicLine *ml, RzMagicState *ms) {
 		case MAGIC_TYPE_UQLDATE:
 		case MAGIC_TYPE_ULEQLDATE:
 		case MAGIC_TYPE_UBEQLDATE:
-			ctime_r(&t, s);
+			rz_ctime_r(&t, s);
 			break;
 		default:
-			asctime_r(gmtime(&t), s);
+			rz_asctime_r(gmtime(&t), s);
 			break;
 		}
 		s[strcspn(s, "\n")] = '\0';
@@ -1285,9 +1338,13 @@ static int magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 
 	result = magic_test_functions[ml->type](ml, ms);
 	if (result == -1) {
+		RZ_LOG_DEBUG("test %s/%c failed", ml->type_string,
+			ml->test_operator);
 		return (0);
 	}
 	if (result == -2) {
+		RZ_LOG_DEBUG("test %s/%c not implemented", ml->type_string,
+			ml->test_operator);
 		return (0);
 	}
 	if (result == ml->test_not)
@@ -1295,14 +1352,21 @@ static int magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 	if (ml->mimetype != NULL)
 		ms->mimetype = ml->mimetype;
 
+	RZ_LOG_DEBUG("test %s/%c matched at offset %" PFMT64d " (now %zu): "
+		     "'%s'",
+		ml->type_string, ml->test_operator, offset,
+		ms->offset, ml->result == NULL ? "" : ml->result);
+
 	if (ml->type == MAGIC_TYPE_USE) {
 		if (*ml->name == '^')
 			named = magic_get_named(m, ml->name + 1);
 		else
 			named = magic_get_named(m, ml->name);
 		if (named == NULL) {
+			RZ_LOG_DEBUG("no name found for use %s", ml->name);
 			return (0);
 		}
+		RZ_LOG_DEBUG("use %s at offset %" PFMT64d "", ml->name, offset);
 		magic_test_children(named, ms, offset, *ml->name == '^');
 	}
 

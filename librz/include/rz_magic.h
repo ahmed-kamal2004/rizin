@@ -322,7 +322,6 @@ typedef struct rz_magic_t RzMagic;
  *
  * This structure contains all metadata and matching criteria for a single magic
  * rule, including its type, operators, matching strength, and any child rules.
- * It is to evaluate file signatures.
  */
 struct rz_magic_line_t {
 	RBNode rb;
@@ -368,7 +367,7 @@ struct rz_magic_line_t {
 };
 
 /**
- * \brief Container for compiled magic rules and related metadata.
+ * \brief Container for magic rules and related metadata.
  *
  * Holds the path to the magic file(s), RBTree indexes for rule storage and lookup,
  * and precompiled regex patterns for various data types.
@@ -405,7 +404,7 @@ typedef struct rz_magic_state_t {
 	int reverse;
 } RzMagicState;
 
-RZ_API RzMagic *rz_magic_new();
+RZ_API RZ_OWN RzMagic *rz_magic_new();
 RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *);
 
 RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *, RZ_NONNULL const ut8 *, size_t);

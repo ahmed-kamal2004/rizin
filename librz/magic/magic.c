@@ -37,27 +37,23 @@ static bool magic_load_file(RZ_NONNULL RZ_BORROW RzMagic *m, const char *file_pa
 
 /* API */
 
-// TODO: reinitialize all the time
-RZ_API RzMagic *rz_magic_new() {
-	RzMagic *m = RZ_NEW0(RzMagic);
-	if (!m) {
-		return NULL;
-	}
-	return m;
+RZ_API RZ_OWN RzMagic *rz_magic_new() {
+	return RZ_NEW0(RzMagic);
 }
 
 RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *m) {
-	if (m) {
-		free(m->path);
-		rz_rbtree_free(m->magic_tree, magic_node_free_rb, NULL);
-		rz_rbtree_free(m->magic_named_tree, magic_node_free_rb, NULL);
-		rz_regex_free(m->format_short);
-		rz_regex_free(m->format_long);
-		rz_regex_free(m->format_quad);
-		rz_regex_free(m->format_float);
-		rz_regex_free(m->format_string);
-		free(m);
+	if (!m) {
+		return;
 	}
+	free(m->path);
+	rz_rbtree_free(m->magic_tree, magic_node_free_rb, NULL);
+	rz_rbtree_free(m->magic_named_tree, magic_node_free_rb, NULL);
+	rz_regex_free(m->format_short);
+	rz_regex_free(m->format_long);
+	rz_regex_free(m->format_quad);
+	rz_regex_free(m->format_float);
+	rz_regex_free(m->format_string);
+	free(m);
 }
 
 RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL const char *magic_path) {
