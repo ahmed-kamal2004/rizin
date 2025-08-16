@@ -242,7 +242,7 @@ static void magic_add_result(RzMagicState *ms, RzMagicLine *ml,
 
 static void magic_add_string(RzMagicState *ms, RzMagicLine *ml,
 	const char *s, size_t slen) {
-	char *out;
+	char *out, *safe_s;
 	size_t outlen, offset;
 
 	outlen = MAGIC_STRING_SIZE;
@@ -254,6 +254,12 @@ static void magic_add_string(RzMagicState *ms, RzMagicLine *ml,
 			break;
 		}
 	}
+	safe_s = malloc(outlen + 1);
+	if (!safe_s) {
+		return;
+	}
+	memcpy(safe_s, s, outlen);
+	safe_s[outlen] = '\0';
 	RzStrEscOptions opt = {
 		.show_asciidot = true,
 		.esc_bslash = true,
@@ -261,10 +267,11 @@ static void magic_add_string(RzMagicState *ms, RzMagicLine *ml,
 		.dot_nl = true, // VIS_NL
 		.keep_printable = true,
 	};
-	out = rz_str_escape_utf8(s, &opt);
+	out = rz_str_escape_utf8(safe_s, &opt);
 
 	magic_add_result(ms, ml, "%s", out);
 	free(out);
+	free(safe_s);
 }
 
 static int magic_test_signed(RzMagicLine *ml, int64_t value, int64_t wanted) {
