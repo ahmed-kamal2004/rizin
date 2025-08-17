@@ -3721,7 +3721,7 @@ parse_disassembler_options(char *options) {
 /* ARCompact_decodeInstr - Decode an ARCompact instruction returning the
    size of the instruction in bytes or zero if unrecognized.  */
 int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
-	disassemble_info *info) {
+	disassemble_info *info, void *data) {
 	int status;
 	bfd_byte buffer[4];
 	struct arcDisState s; /* ARC Disassembler state */
@@ -3744,7 +3744,7 @@ int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
 	memset(&s, 0, sizeof(struct arcDisState));
 
 	/* read first instruction */
-	status = (*info->read_memory_func)(address, buffer, 2, info);
+	status = (*info->read_memory_func)(address, buffer, 2, info, data);
 
 	if (status != 0) {
 		(*info->memory_error_func)(status, address, info);
@@ -3754,7 +3754,7 @@ int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
 	if (((buffer[lowbyte] & 0xf8) > 0x38) && ((buffer[lowbyte] & 0xf8) != 0x48)) {
 		s.instructionLen = 2;
 		s.words[0] = (buffer[lowbyte] << 8) | buffer[highbyte];
-		(*info->read_memory_func)(address + 2, buffer, 4, info);
+		(*info->read_memory_func)(address + 2, buffer, 4, info, data);
 		if (info->endian == BFD_ENDIAN_LITTLE) {
 			s.words[1] = bfd_getl32(buffer);
 		} else {
@@ -3762,7 +3762,7 @@ int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
 		}
 	} else {
 		s.instructionLen = 4;
-		status = (*info->read_memory_func)(address + 2, &buffer[2], 2, info);
+		status = (*info->read_memory_func)(address + 2, &buffer[2], 2, info, data);
 		if (status != 0) {
 			(*info->memory_error_func)(status, address + 2, info);
 			return -1;
@@ -3775,7 +3775,7 @@ int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
 
 		/* always read second word in case of limm */
 		/* we ignore the result since last insn may not have a limm */
-		(*info->read_memory_func)(address + 4, buffer, 4, info);
+		(*info->read_memory_func)(address + 4, buffer, 4, info, data);
 		if (info->endian == BFD_ENDIAN_LITTLE) {
 			s.words[1] = bfd_getl32(buffer);
 		} else {
@@ -3834,7 +3834,7 @@ int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
 			}
 
 			addr = s.addresses[operand[i] - '0'];
-			(*info->print_address_func)((bfd_vma)addr, info);
+			(*info->print_address_func)((bfd_vma)addr, data, info);
 			//(*func) (stream, "\n");
 		} else {
 			(*func)(stream, "%s", operand);
@@ -3845,82 +3845,6 @@ int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
 	info->bytes_per_line = 8;
 
 	return bytes; // s.instructionLen;
-}
-
-/*
- * This function is the same as decodeInstr except that this function
- * returns a struct arcDisState instead of the instruction length.
- *
- * This struct contains information useful to the debugger.
- */
-struct arcDisState
-arcAnalyzeInstr(
-	bfd_vma address, /* Address of this instruction */
-	disassemble_info *info) {
-	int status;
-	bfd_byte buffer[4];
-	struct arcDisState s; /* ARC Disassembler state */
-	int bytes;
-	int lowbyte, highbyte;
-
-	lowbyte = ((info->endian == BFD_ENDIAN_LITTLE) ? 1 : 0);
-	highbyte = ((info->endian == BFD_ENDIAN_LITTLE) ? 0 : 1);
-
-	memset(&s, 0, sizeof(struct arcDisState));
-
-	/* read first instruction */
-	status = (*info->read_memory_func)(address, buffer, 2, info);
-
-	if (status != 0) {
-		(*info->memory_error_func)(status, address, info);
-		s.instructionLen = -1;
-		return s;
-	}
-
-	if (((buffer[lowbyte] & 0xf8) > 0x38) && ((buffer[lowbyte] & 0xf8) != 0x48)) {
-		s.instructionLen = 2;
-		s.words[0] = (buffer[lowbyte] << 8) | buffer[highbyte];
-		(*info->read_memory_func)(address + 2, buffer, 4, info);
-		if (info->endian == BFD_ENDIAN_LITTLE) {
-			s.words[1] = bfd_getl32(buffer);
-		} else {
-			s.words[1] = bfd_getb32(buffer);
-		}
-	} else {
-		s.instructionLen = 4;
-		status = (*info->read_memory_func)(address + 2, &buffer[2], 2, info);
-		if (status != 0) {
-			(*info->memory_error_func)(status, address + 2, info);
-			s.instructionLen = -1;
-			return s;
-		}
-		if (info->endian == BFD_ENDIAN_LITTLE) {
-			s.words[0] = bfd_getl32(buffer);
-		} else {
-			s.words[0] = bfd_getb32(buffer);
-		}
-
-		/* always read second word in case of limm */
-		/* we ignore the result since last insn may not have a limm */
-		(*info->read_memory_func)(address + 4, buffer, 4, info);
-		if (info->endian == BFD_ENDIAN_LITTLE) {
-			s.words[1] = bfd_getl32(buffer);
-		} else {
-			s.words[1] = bfd_getb32(buffer);
-		}
-	}
-
-	s._this = &s;
-	s.coreRegName = _coreRegName;
-	s.auxRegName = _auxRegName;
-	s.condCodeName = _condCodeName;
-	s.instName = _instName;
-
-	/* disassemble */
-	bytes = dsmOneArcInst(address, (void *)&s, info);
-	/* We print max bytes for instruction */
-	info->bytes_per_line = bytes;
-	return s;
 }
 
 void arc_print_disassembler_options(FILE *stream) {

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2012-2018 pancake <pancake@nopcode.org>
+// SPDX-FileCopyrightText: 2009-2014 nibble <nibble.ds@gmail.com>
 // SPDX-License-Identifier: LGPL-3.0-only
 
 #include <stdio.h>
@@ -13,27 +13,21 @@
 
 typedef struct {
 	struct disassemble_info disasm_obj;
-	ut32 Offset;
+	unsigned long Offset;
 	RzStrBuf *buf_global;
-	int buf_len;
-	ut8 bytes[32];
-} ArcContext;
+	unsigned char bytes[4];
+} SparcContext;
 
-/* extern */
-int decodeInstr(bfd_vma address, disassemble_info *info);
-int ARCTangent_decodeInstr(bfd_vma address, disassemble_info *info, void *data);
-int ARCompact_decodeInstr(bfd_vma address, disassemble_info *info, void *data);
-
-static int arc_buffer_read_memory(bfd_vma memaddr, bfd_byte *myaddr, unsigned int length, struct disassemble_info *info, void *data) {
-	ArcContext *ctx = (ArcContext *)data;
+static int sparc_buffer_read_memory(bfd_vma memaddr, bfd_byte *myaddr, unsigned int length, struct disassemble_info *info, void *data) {
+	SparcContext *ctx = (SparcContext *)data;
 	int delta = (memaddr - ctx->Offset);
 	if (delta < 0) {
 		return -1; // disable backward reads
 	}
-	if ((delta + length) > sizeof(ctx->bytes)) {
+	if ((delta + length) > 4) {
 		return -1;
 	}
-	memcpy(myaddr, ctx->bytes + delta, RZ_MIN(ctx->buf_len - delta, length));
+	memcpy(myaddr, ctx->bytes, length);
 	return 0;
 }
 
@@ -46,7 +40,7 @@ static void memory_error_func(int status, bfd_vma memaddr, struct disassemble_in
 }
 
 static void generic_print_address_func(bfd_vma address, void *data, struct disassemble_info *info) {
-	ArcContext *ctx = (ArcContext *)data;
+	SparcContext *ctx = (SparcContext *)data;
 	if (!ctx->buf_global) {
 		return;
 	}
@@ -54,7 +48,7 @@ static void generic_print_address_func(bfd_vma address, void *data, struct disas
 }
 
 static int generic_fprintf_func(void *stream, void *data, const char *format, ...) {
-	ArcContext *ctx = (ArcContext *)data;
+	SparcContext *ctx = (SparcContext *)data;
 	int ret;
 	va_list ap;
 	if (!ctx->buf_global || !format) {
@@ -67,64 +61,65 @@ static int generic_fprintf_func(void *stream, void *data, const char *format, ..
 }
 
 static int disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
-	ArcContext *ctx = (ArcContext *)a->plugin_data;
-	if (len < 2) {
+	SparcContext *ctx = (SparcContext *)a->plugin_data;
+	if (len < 4) {
 		return -1;
 	}
 	ctx->buf_global = &op->buf_asm;
 	ctx->Offset = a->pc;
-	if (len > sizeof(ctx->bytes)) {
-		len = sizeof(ctx->bytes);
-	}
-	memcpy(ctx->bytes, buf, len); // TODO handle compact
-	ctx->buf_len = len;
+	// disasm inverted
+	ut32 newbuf = rz_swap_ut32(*(ut32 *)buf);
+	memcpy(ctx->bytes, &newbuf, 4); // TODO handle thumb
+
+	rz_strbuf_set(&op->buf_asm, "");
 	/* prepare disassembler */
 	memset(&ctx->disasm_obj, '\0', sizeof(struct disassemble_info));
 	ctx->disasm_obj.buffer = ctx->bytes;
-	ctx->disasm_obj.buffer_length = len;
-	ctx->disasm_obj.read_memory_func = &arc_buffer_read_memory;
+	ctx->disasm_obj.read_memory_func = &sparc_buffer_read_memory;
 	ctx->disasm_obj.symbol_at_address_func = &symbol_at_address;
 	ctx->disasm_obj.memory_error_func = &memory_error_func;
 	ctx->disasm_obj.print_address_func = &generic_print_address_func;
-	ctx->disasm_obj.endian = !a->big_endian;
+	ctx->disasm_obj.endian = a->big_endian;
 	ctx->disasm_obj.fprintf_func = &generic_fprintf_func;
 	ctx->disasm_obj.stream = stdout;
-	ctx->disasm_obj.mach = 0;
-	rz_strbuf_set(&op->buf_asm, "");
-	if (a->bits == 16) {
-		op->size = ARCompact_decodeInstr((bfd_vma)ctx->Offset, &ctx->disasm_obj, a->plugin_data);
-	} else {
-		op->size = ARCTangent_decodeInstr((bfd_vma)ctx->Offset, &ctx->disasm_obj, a->plugin_data);
+	ctx->disasm_obj.mach = ((a->bits == 64)
+			? bfd_mach_sparc_v9b
+			: 0);
+
+	op->size = print_insn_sparc((bfd_vma)ctx->Offset, &ctx->disasm_obj);
+
+	if (!strncmp(rz_strbuf_get(&op->buf_asm), "unknown", 7)) {
+		rz_asm_op_set_asm(op, "invalid");
 	}
 	if (op->size == -1) {
-		rz_strbuf_set(&op->buf_asm, "(data)");
+		rz_asm_op_set_asm(op, "(data)");
 	}
 	return op->size;
 }
 
 static bool init(void **user) {
-	ArcContext *ctx = RZ_NEW0(ArcContext);
+	SparcContext *ctx = RZ_NEW0(SparcContext);
 	rz_return_val_if_fail(ctx, false);
 	*user = ctx;
 	return true;
 }
 
-static bool fini(void *p) {
-	ArcContext *ctx = (ArcContext *)p;
+static bool fini(void *user) {
+	SparcContext *ctx = (SparcContext *)user;
 	if (ctx) {
 		RZ_FREE(ctx);
 	}
 	return true;
 }
 
-RzAsmPlugin rz_asm_plugin_arc_gnu = {
-	.name = "arc",
-	.arch = "arc",
-	.bits = 16 | 32,
-	.endian = RZ_SYS_ENDIAN_LITTLE | RZ_SYS_ENDIAN_BIG,
-	.desc = "Argonaut RISC Core",
-	.init = &init,
-	.fini = &fini,
+RzAsmPlugin rz_asm_plugin_sparc_gnu = {
+	.name = "sparc.gnu",
+	.arch = "sparc",
+	.bits = 32 | 64,
+	.endian = RZ_SYS_ENDIAN_BIG | RZ_SYS_ENDIAN_LITTLE,
+	.license = "GPL3",
+	.desc = "Sun SPARC disassembler",
 	.disassemble = &disassemble,
-	.license = "GPL3"
+	.init = &init,
+	.fini = &fini
 };
