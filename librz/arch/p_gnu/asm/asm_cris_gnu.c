@@ -73,12 +73,12 @@ static int generic_fprintf_func(void *stream, void *data, const char *format, ..
 bfd_boolean cris_parse_disassembler_options(disassemble_info *info, int distype);
 
 // TODO: refactor the gnu code to have a getter instead of exposing so many disasm entrypoints
-int print_insn_crisv10_v32_with_register_prefix(bfd_vma vma, disassemble_info *info);
-int print_insn_crisv10_v32_without_register_prefix(bfd_vma vma, disassemble_info *info);
-int print_insn_cris_with_register_prefix(bfd_vma vma, disassemble_info *info);
-int print_insn_cris_without_register_prefix(bfd_vma vma, disassemble_info *info);
-int print_insn_crisv32_with_register_prefix(bfd_vma vma, disassemble_info *info);
-int print_insn_crisv32_without_register_prefix(bfd_vma vma, disassemble_info *info);
+int print_insn_crisv10_v32_with_register_prefix(bfd_vma vma, disassemble_info *info, void *data);
+int print_insn_crisv10_v32_without_register_prefix(bfd_vma vma, disassemble_info *info, void *data);
+int print_insn_cris_with_register_prefix(bfd_vma vma, disassemble_info *info, void *data);
+int print_insn_cris_without_register_prefix(bfd_vma vma, disassemble_info *info, void *data);
+int print_insn_crisv32_with_register_prefix(bfd_vma vma, disassemble_info *info, void *data);
+int print_insn_crisv32_without_register_prefix(bfd_vma vma, disassemble_info *info, void *data);
 
 static int disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
 	CrisContext *ctx = (CrisContext *)a->plugin_data;
@@ -122,25 +122,25 @@ static int disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
 	if (a->syntax == RZ_ASM_SYNTAX_ATT) {
 		switch (mode) {
 		case 0:
-			op->size = print_insn_cris_with_register_prefix((bfd_vma)ctx->Offset, &disasm_obj);
+			op->size = print_insn_cris_with_register_prefix((bfd_vma)ctx->Offset, &disasm_obj, ctx);
 			break;
 		case 1:
-			op->size = print_insn_crisv10_v32_with_register_prefix((bfd_vma)ctx->Offset, &disasm_obj);
+			op->size = print_insn_crisv10_v32_with_register_prefix((bfd_vma)ctx->Offset, &disasm_obj, ctx);
 			break;
 		default:
-			op->size = print_insn_crisv32_with_register_prefix((bfd_vma)ctx->Offset, &disasm_obj);
+			op->size = print_insn_crisv32_with_register_prefix((bfd_vma)ctx->Offset, &disasm_obj, ctx);
 			break;
 		}
 	} else {
 		switch (mode) {
 		case 0:
-			op->size = print_insn_cris_without_register_prefix((bfd_vma)ctx->Offset, &disasm_obj);
+			op->size = print_insn_cris_without_register_prefix((bfd_vma)ctx->Offset, &disasm_obj, ctx);
 			break;
 		case 1:
-			op->size = print_insn_crisv10_v32_without_register_prefix((bfd_vma)ctx->Offset, &disasm_obj);
+			op->size = print_insn_crisv10_v32_without_register_prefix((bfd_vma)ctx->Offset, &disasm_obj, ctx);
 			break;
 		default:
-			op->size = print_insn_crisv32_without_register_prefix((bfd_vma)ctx->Offset, &disasm_obj);
+			op->size = print_insn_crisv32_without_register_prefix((bfd_vma)ctx->Offset, &disasm_obj, ctx);
 			break;
 		}
 	}

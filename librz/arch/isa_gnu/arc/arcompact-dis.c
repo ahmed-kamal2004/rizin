@@ -3807,7 +3807,7 @@ int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
 				(*func)(stream, "%08x ", (unsigned int)s.words[0]);
 			}
 
-			(*func)(stream, "    ");
+			(*func)(stream, data, "    ");
 		}
 
 		/* if the operand is actually in the instruction buffer */
