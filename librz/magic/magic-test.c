@@ -55,6 +55,77 @@
 
 #endif
 
+static int file_vprintf(char **s, const char *fmt, va_list ap) {
+	va_list ap2;
+	char cbuf[4096];
+	char *buf, *newstr;
+
+	va_copy(ap2, ap);
+	int len = vsnprintf(cbuf, sizeof(cbuf), fmt, ap2);
+	va_end(ap2);
+	if (len < 0) {
+		return -1;
+	}
+	if (len > sizeof(cbuf)) {
+		buf = malloc(len + 1);
+		va_copy(ap2, ap);
+		(void)vsnprintf(buf, len + 1, fmt, ap2);
+		va_end(ap2);
+	} else {
+		int nullbyte = len;
+		if (nullbyte > 0 && nullbyte == sizeof(cbuf)) {
+			nullbyte--;
+		}
+		cbuf[nullbyte] = 0;
+		buf = strdup(cbuf);
+	}
+	if (!buf) {
+		return -1;
+	}
+
+	int buflen = len;
+	if (*s) {
+		char *iter = *s;
+		while (*iter != '\n') {
+			iter++;
+		}
+		*iter = '\0';
+
+		int obuflen = strlen(*s);
+		len = obuflen + buflen + 1;
+		newstr = malloc(len);
+		if (!newstr) {
+			free(buf);
+			return -1;
+		}
+		memcpy(newstr, *s, obuflen);
+		memcpy(newstr + obuflen, buf, buflen);
+		newstr[len - 1] = 0;
+		free(buf);
+		free(*s);
+		if (len < 0) {
+			free(newstr);
+			return -1;
+		}
+		buf = newstr;
+	}
+	*s = buf;
+	return 0;
+}
+
+/*
+ * Like printf, only we append to a buffer.
+ */
+int file_printf(char **s, const char *fmt, ...) {
+	va_list ap;
+	int ret;
+
+	va_start(ap, fmt);
+	ret = file_vprintf(s, fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
 static int magic_test_line(RzMagicLine *, RzMagicState *);
 
 static RzMagicLine *magic_get_named(RzMagic *m, const char *name) {
@@ -204,22 +275,22 @@ static void magic_add_result(RzMagicState *ms, RzMagicLine *ml,
 	const char *fmt, ...) {
 	va_list ap;
 	int separate;
-	char *s, *tmp, *add;
+	char *s = NULL, *tmp = NULL, *add = NULL;
 
 	va_start(ap, fmt);
 	if (ml->stringify) {
-		if (vasprintf(&s, fmt, ap) == -1) {
+		if (file_vprintf(&s, fmt, ap) == -1) {
 			va_end(ap);
 			return;
 		}
 		va_end(ap);
-		if (asprintf(&tmp, ml->result, s) == -1) {
+		if (file_printf(&tmp, ml->result, s) == -1) {
 			free(s);
 			return;
 		}
 		free(s);
 	} else {
-		if (vasprintf(&tmp, ml->result, ap) == -1) {
+		if (file_vprintf(&tmp, ml->result, ap) == -1) {
 			va_end(ap);
 			return;
 		}
@@ -234,8 +305,8 @@ static void magic_add_result(RzMagicState *ms, RzMagicLine *ml,
 		add = tmp;
 
 	if (separate && *ms->out != '\0')
-		strlcat(ms->out, " ", sizeof ms->out);
-	strlcat(ms->out, add, sizeof ms->out);
+		rz_str_ncat(ms->out, " ", sizeof ms->out);
+	rz_str_ncat(ms->out, add, sizeof ms->out);
 
 	free(tmp);
 }

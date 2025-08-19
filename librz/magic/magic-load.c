@@ -1037,9 +1037,9 @@ RZ_API bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f) {
 	rz_return_val_if_fail(f, false);
 
 	RzMagicLine *ml = NULL, *parent, *parent0;
-	char *line, *tmp;
-	size_t size;
-	ssize_t slen;
+	size_t size = 4092;
+	char *tmp = RZ_NEWS0(char, size);
+	char *line = NULL;
 	ut32 at, level, n, i;
 
 	parent = NULL;
@@ -1047,20 +1047,20 @@ RZ_API bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f) {
 	level = 0;
 
 	at = 0;
-	tmp = NULL;
-	size = 0;
 
-	while ((slen = getline(&tmp, &size, f)) != -1) {
-		line = tmp;
-		if (line[slen - 1] == '\n')
-			line[slen - 1] = '\0';
-
+	while (fgets(tmp, size, f)) {
 		at++;
-
+		line = tmp;
 		while (isspace((ut8)*line))
 			line++;
+
 		if (*line == '\0' || *line == '#')
 			continue;
+
+		char *newline_remover = line;
+		while (*newline_remover != '\n')
+			newline_remover++;
+		*newline_remover = '\0';
 
 		if (strncmp(line, "!:mime", 6) == 0) {
 			magic_set_mimetype(m, at, ml, line);
