@@ -406,25 +406,19 @@ typedef struct rz_magic_state_t {
 
 RZ_API RZ_OWN RzMagic *rz_magic_new();
 RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *);
-
 RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *, RZ_NONNULL const ut8 *, size_t);
-
 RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL const char *);
 
-RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void);
-RZ_API void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *);
-
-RZ_API int magic_compare(const void *incoming, const RBNode *in_tree, void *user);
-RZ_API int magic_named_compare(const void *incoming, const RBNode *in_tree, void *user);
-
-RZ_API char *magic_strtoull(RZ_NONNULL const char *, RZ_NONNULL ut64 *);
-RZ_API char *magic_strtoll(RZ_NONNULL const char *, RZ_NONNULL int64_t *);
-
-RZ_API void magic_dump(RZ_NONNULL const RzMagic *);
-RZ_API bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL FILE *f);
-RZ_API RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *, RZ_NONNULL const void *, size_t, int);
-
 #endif
+
+RZ_OWN RzMagicLine *rz_magic_line_new(void);
+void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *);
+int magic_compare(const void *incoming, const RBNode *in_tree, void *user);
+int magic_named_compare(const void *incoming, const RBNode *in_tree, void *user);
+RZ_BORROW char *magic_strtoull(RZ_NONNULL const char *, RZ_NONNULL ut64 *);
+RZ_BORROW char *magic_strtoll(RZ_NONNULL const char *, RZ_NONNULL int64_t *);
+bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *, RZ_NONNULL FILE *f);
+RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *, RZ_NONNULL const void *, size_t, int);
 
 #ifdef __cplusplus
 }

@@ -1,6 +1,5 @@
 rz_magic_sources = [
   'magic-common.c',
-  'magic-dump.c',
   'magic-load.c',
   'magic-test.c',
   'magic.c'

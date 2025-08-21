@@ -56,6 +56,10 @@ RZ_API void rz_magic_free(RZ_NULLABLE RZ_OWN RzMagic *m) {
 	free(m);
 }
 
+/**
+ * \brief Load magic rules from magic_path and store them in the RzMagic context
+ *
+ */
 RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL const char *magic_path) {
 	rz_return_val_if_fail(m, false);
 
@@ -96,6 +100,9 @@ RZ_API bool rz_magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL const char
 	return magic_load_file(m, magic_path);
 }
 
+/**
+ * \brief Test buf against the loaded magic rules
+ */
 RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *m, RZ_NONNULL const ut8 *buf, size_t nb) {
 	rz_return_val_if_fail(m && buf, NULL);
 
@@ -110,7 +117,7 @@ RZ_API RZ_OWN char *rz_magic_buffer(RZ_NONNULL const RzMagic *m, RZ_NONNULL cons
 	return output;
 }
 
-RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void) {
+RZ_OWN RzMagicLine *rz_magic_line_new(void) {
 	RzMagicLine *ml = RZ_NEW0(RzMagicLine);
 	if (!ml) {
 		return NULL;
@@ -123,7 +130,7 @@ RZ_API RZ_OWN RzMagicLine *rz_magic_line_new(void) {
 	return ml;
 }
 
-RZ_API void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *ml) {
+void rz_magic_line_free(RZ_OWN RZ_NULLABLE RzMagicLine *ml) {
 	if (!ml) {
 		return;
 	}

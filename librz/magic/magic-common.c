@@ -18,7 +18,7 @@
 
 #include <rz_magic.h>
 
-RZ_API char *magic_strtoull(RZ_NONNULL const char *s, RZ_NONNULL ut64 *u) {
+RZ_BORROW char *magic_strtoull(RZ_NONNULL const char *s, RZ_NONNULL ut64 *u) {
 	rz_return_val_if_fail(s && u, NULL);
 
 	char *endptr;
@@ -37,7 +37,7 @@ RZ_API char *magic_strtoull(RZ_NONNULL const char *s, RZ_NONNULL ut64 *u) {
 	return (endptr);
 }
 
-RZ_API char *magic_strtoll(RZ_NONNULL const char *s, RZ_NONNULL int64_t *i) {
+RZ_BORROW char *magic_strtoll(RZ_NONNULL const char *s, RZ_NONNULL int64_t *i) {
 	rz_return_val_if_fail(s && i, NULL);
 
 	char *endptr;

@@ -1032,7 +1032,7 @@ static void magic_set_mimetype(RzMagic *m, ut32 at, RzMagicLine *ml, char *line)
 	ml->mimetype = rz_str_dup(mimetype);
 }
 
-RZ_API bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f) {
+bool magic_load(RZ_NONNULL RZ_BORROW RzMagic *m, RZ_NONNULL FILE *f) {
 	rz_return_val_if_fail(m, false);
 	rz_return_val_if_fail(f, false);
 

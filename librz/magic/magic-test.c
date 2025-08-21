@@ -1425,7 +1425,7 @@ static int magic_test_line(RzMagicLine *ml, RzMagicState *ms) {
 	return (ml->result != NULL);
 }
 
-RZ_API RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *m, RZ_NONNULL const void *base, size_t size, int flags) {
+RZ_OWN char *magic_test(RZ_NONNULL const RzMagic *m, RZ_NONNULL const void *base, size_t size, int flags) {
 	rz_return_val_if_fail(m && base, NULL);
 
 	RzMagicLine *ml;
