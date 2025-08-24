@@ -16,7 +16,7 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "rz_magic.h"
+#include "magic.h"
 #include "rz_util.h"
 
 #if RZ_SYS_ENDIAN == 0 // little endian

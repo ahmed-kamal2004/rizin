@@ -16,7 +16,7 @@
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <rz_magic.h>
+#include "magic.h"
 
 RZ_BORROW char *magic_strtoull(RZ_NONNULL const char *s, RZ_NONNULL ut64 *u) {
 	rz_return_val_if_fail(s && u, NULL);

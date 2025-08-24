@@ -4,6 +4,7 @@
 
 #include <rz_magic.h>
 #include <rz_util.h>
+#include "magic.h"
 
 RZ_LIB_VERSION(rz_magic);
 

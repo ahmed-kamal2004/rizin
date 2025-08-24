@@ -17,7 +17,7 @@
  */
 
 #include "rz_util.h"
-#include "rz_magic.h"
+#include "magic.h"
 
 static int magic_odigit(ut8 c) {
 	if (c >= '0' && c <= '7')
