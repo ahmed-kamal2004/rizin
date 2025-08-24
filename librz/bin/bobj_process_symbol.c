@@ -38,7 +38,10 @@ static void process_cxx_symbol(RzBinObject *o, RzBinSymbol *symbol) {
 }
 
 static void process_swift_symbol(RzBinObject *o, RzBinSymbol *symbol) {
-	rz_bin_process_swift(o, symbol->classname, symbol->dname, symbol->paddr, symbol->vaddr);
+	if (!symbol->dname) {
+		return;
+	}
+	rz_bin_process_swift(o, symbol);
 }
 
 RZ_IPI RzBinProcessLanguage rz_bin_process_language_symbol(RzBinObject *o) {
