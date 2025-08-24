@@ -236,7 +236,7 @@ typedef struct
 
 /* Standard disassemblers.  Disassemble one instruction at the given
    target address.  Return number of octets processed.  */
-typedef int (*disassembler_ftype)(bfd_vma, disassemble_info *);
+typedef int (*disassembler_ftype)(bfd_vma, disassemble_info *, void *);
 
 extern int print_insn_aarch64(bfd_vma, disassemble_info *);
 extern int print_insn_alpha(bfd_vma, disassemble_info *);
@@ -260,8 +260,8 @@ extern int print_insn_h8300(bfd_vma, disassemble_info *);
 extern int print_insn_h8300h(bfd_vma, disassemble_info *);
 extern int print_insn_h8300s(bfd_vma, disassemble_info *);
 extern int print_insn_h8500(bfd_vma, disassemble_info *);
-extern int print_insn_lanai(bfd_vma, disassemble_info *);
-extern int print_insn_hppa(bfd_vma, disassemble_info *);
+extern int print_insn_lanai(bfd_vma, disassemble_info *, void *);
+extern int print_insn_hppa(bfd_vma, disassemble_info *, void *);
 extern int print_insn_i370(bfd_vma, disassemble_info *);
 extern int print_insn_i386(bfd_vma, disassemble_info *);
 extern int print_insn_i386_att(bfd_vma, disassemble_info *);
@@ -307,7 +307,7 @@ extern int print_insn_s390(bfd_vma, disassemble_info *);
 extern int print_insn_sh(bfd_vma, disassemble_info *);
 extern int print_insn_sh64(bfd_vma, disassemble_info *);
 extern int print_insn_sh64x_media(bfd_vma, disassemble_info *);
-extern int print_insn_sparc(bfd_vma, disassemble_info *);
+extern int print_insn_sparc(bfd_vma, disassemble_info *, void *);
 extern int print_insn_spu(bfd_vma, disassemble_info *);
 extern int print_insn_tic30(bfd_vma, disassemble_info *);
 extern int print_insn_tic4x(bfd_vma, disassemble_info *);
@@ -317,7 +317,7 @@ extern int print_insn_tic80(bfd_vma, disassemble_info *);
 extern int print_insn_tilegx(bfd_vma, disassemble_info *);
 extern int print_insn_tilepro(bfd_vma, disassemble_info *);
 extern int print_insn_v850(bfd_vma, disassemble_info *);
-extern int print_insn_vax(bfd_vma, disassemble_info *);
+extern int print_insn_vax(bfd_vma, disassemble_info *, void *);
 extern int print_insn_visium(bfd_vma, disassemble_info *);
 extern int print_insn_w65(bfd_vma, disassemble_info *);
 extern int print_insn_xc16x(bfd_vma, disassemble_info *);

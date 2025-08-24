@@ -769,7 +769,7 @@ print_with_operands (const struct cris_opcode *opcodep,
     = (struct cris_disasm_data *) info->private_data;
 
   /* Print out the name first thing we do.  */
-  (*info->fprintf_func) (info->stream, "%s", opcodep->name);
+  (*info->fprintf_func) (info->stream, data, "%s", opcodep->name);
 
   cs = opcodep->args;
   s = cs;
@@ -988,7 +988,7 @@ print_with_operands (const struct cris_opcode *opcodep,
 		    *tp = 0;
 		    tp = temp;
 		    if (temp[0])
-		      (*info->fprintf_func) (info->stream, "%s", temp);
+		      (*info->fprintf_func) (info->stream, data, "%s", temp);
 
 		    (*info->print_address_func) ((bfd_vma) number, data, info);
 
@@ -1280,7 +1280,7 @@ print_with_operands (const struct cris_opcode *opcodep,
 
 	  *tp = 0;
 	  tp = temp;
-	  (*info->fprintf_func) (info->stream, "%s%s ",
+	  (*info->fprintf_func) (info->stream, data, "%s%s ",
 				 temp, cris_cc_strings[insn >> 12]);
 
 	  (*info->print_address_func) ((bfd_vma) where, data, info);
@@ -1312,7 +1312,7 @@ print_with_operands (const struct cris_opcode *opcodep,
 	info->target = target;
 	*tp = 0;
 	tp = temp;
-	(*info->fprintf_func) (info->stream, "%s", temp);
+	(*info->fprintf_func) (info->stream, data, "%s", temp);
 	(*info->print_address_func) (target, data, info);
       }
       break;
@@ -1368,10 +1368,10 @@ if (sregp) {
   *tp = 0;
 
   if (prefix_opcodep)
-    (*info->fprintf_func) (info->stream, " (OOPS unused prefix \"%s: %s\")",
+    (*info->fprintf_func) (info->stream, data, " (OOPS unused prefix \"%s: %s\")",
 			   prefix_opcodep->name, prefix_opcodep->args);
 
-  (*info->fprintf_func) (info->stream, "%s", temp);
+  (*info->fprintf_func) (info->stream, data, "%s", temp);
 
   /* Get info for matching case-tables, if we don't have any active.
      We assume that the last constant seen is used; either in the insn
@@ -1469,7 +1469,7 @@ print_insn_cris_generic (bfd_vma memaddr,
 	  advance += 2;
 
 	  /* If to print data as offsets, then shortcut here.  */
-	  (*info->fprintf_func) (info->stream, "case %ld%s: -> ",
+	  (*info->fprintf_func) (info->stream, data, "case %ld%s: -> ",
 				 case_offset + no_of_case_offsets
 				 - case_offset_counter,
 				 case_offset_counter == 1 ? "/default" :
@@ -1542,7 +1542,7 @@ print_insn_cris_generic (bfd_vma memaddr,
 
 	  if (matchedp == NULL)
 	    {
-	      (*info->fprintf_func) (info->stream, "??0x%x", insn);
+	      (*info->fprintf_func) (info->stream, data, "??0x%x", insn);
 	      advance += 2;
 
 	      info->insn_type = dis_noninsn;

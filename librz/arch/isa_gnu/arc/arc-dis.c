@@ -1070,7 +1070,7 @@ int ARCTangent_decodeInstr(bfd_vma address, disassemble_info *info, void *data) 
       (*func) (stream, "%08lx ", s.words[0]);
       (*func) (stream, "  ");
     */
-	(*func)(stream, "%s ", s.instrBuffer);
+	(*func)(stream, data, "%s ", s.instrBuffer);
 
 	if (__TRANSLATION_REQUIRED(s)) {
 		bfd_vma addr = s.addresses[s.operandBuffer[1] - '0'];
@@ -1078,7 +1078,7 @@ int ARCTangent_decodeInstr(bfd_vma address, disassemble_info *info, void *data) 
 		(*info->print_address_func)((bfd_vma)addr, data, info);
 		//(*func) (stream, "\n");
 	} else {
-		(*func)(stream, "%s", s.operandBuffer);
+		(*func)(stream, data, "%s", s.operandBuffer);
 	}
 
 	return s.instructionLen;

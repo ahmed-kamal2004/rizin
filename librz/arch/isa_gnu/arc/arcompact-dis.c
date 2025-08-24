@@ -3802,9 +3802,9 @@ int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
 			/* Show instruction stream from MSB to LSB*/
 
 			if (s.instructionLen == 2) {
-				(*func)(stream, "    %04x ", (unsigned int)s.words[0]);
+				(*func)(stream, data, "    %04x ", (unsigned int)s.words[0]);
 			} else {
-				(*func)(stream, "%08x ", (unsigned int)s.words[0]);
+				(*func)(stream, data, "%08x ", (unsigned int)s.words[0]);
 			}
 
 			(*func)(stream, data, "    ");
@@ -3816,7 +3816,7 @@ int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
 			operand = space + 1;
 		}
 
-		(*func)(stream, "%s ", instr);
+		(*func)(stream, data, "%s ", instr);
 
 		if (__TRANSLATION_REQUIRED(s)) {
 			bfd_vma addr;
@@ -3829,7 +3829,7 @@ int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
 				strncpy(buf, operand, sizeof(buf) - 1);
 				buf[sizeof(buf) - 1] = '\0';
 				tmpBuffer = strtok(buf, "@");
-				(*func)(stream, "%s", tmpBuffer);
+				(*func)(stream, data, "%s", tmpBuffer);
 				i = strlen(tmpBuffer) + 1;
 			}
 
@@ -3837,7 +3837,7 @@ int ARCompact_decodeInstr(bfd_vma address, /* Address of this instruction.  */
 			(*info->print_address_func)((bfd_vma)addr, data, info);
 			//(*func) (stream, "\n");
 		} else {
-			(*func)(stream, "%s", operand);
+			(*func)(stream, data, "%s", operand);
 		}
 	}
 

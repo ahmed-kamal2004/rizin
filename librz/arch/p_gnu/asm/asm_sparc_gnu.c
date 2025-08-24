@@ -86,7 +86,7 @@ static int disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
 			? bfd_mach_sparc_v9b
 			: 0);
 
-	op->size = print_insn_sparc((bfd_vma)ctx->Offset, &ctx->disasm_obj);
+	op->size = print_insn_sparc((bfd_vma)ctx->Offset, &ctx->disasm_obj, ctx);
 
 	if (!strncmp(rz_strbuf_get(&op->buf_asm), "unknown", 7)) {
 		rz_asm_op_set_asm(op, "invalid");

@@ -57,20 +57,20 @@ static char *entry_mask_bit[] =
 #define COERCE_SIGNED_CHAR(ch) ((signed char)(ch))
 
 /* Get a 1 byte signed integer.  */
-#define NEXTBYTE(p) \
-	((p) += 1, FETCH_DATA(info, p), \
+#define NEXTBYTE(p, data) \
+	((p) += 1, FETCH_DATA(info, p, data), \
 		COERCE_SIGNED_CHAR((p)[-1]))
 
 /* Get a 2 byte signed integer.  */
 #define COERCE16(x) ((int)(((x) ^ 0x8000) - 0x8000))
-#define NEXTWORD(p) \
-	((p) += 2, FETCH_DATA(info, p), \
+#define NEXTWORD(p, data) \
+	((p) += 2, FETCH_DATA(info, p, data), \
 		COERCE16(((p)[-1] << 8) + (p)[-2]))
 
 /* Get a 4 byte signed integer.  */
 #define COERCE32(x) ((int)(((x) ^ 0x80000000) - 0x80000000))
-#define NEXTLONG(p) \
-	((p) += 4, FETCH_DATA(info, p), \
+#define NEXTLONG(p, data) \
+	((p) += 4, FETCH_DATA(info, p, data), \
 		(COERCE32(((((((p)[-1] << 8) + (p)[-2]) << 8) + (p)[-3]) << 8) + (p)[-4])))
 
 /* Maximum length of an instruction.  */
@@ -87,10 +87,10 @@ struct private {
 /* Make sure that bytes from INFO->PRIVATE_DATA->BUFFER (inclusive)
    to ADDR (exclusive) are valid.  Returns 1 for success, longjmps
    on error.  */
-#define FETCH_DATA(info, addr) \
+#define FETCH_DATA(info, addr, data) \
 	((addr) <= ((struct private *)((info)->private_data))->max_fetched \
 			? 1 \
-			: fetch_data((info), (addr)))
+			: fetch_data((info), (addr), (data)))
 
 static int
 fetch_data(struct disassemble_info *info, bfd_byte *addr, void *data) {
@@ -142,7 +142,7 @@ print_insn_mode(const char *d,
 	unsigned char mode, reg;
 
 	/* Fetch and interpret mode byte.  */
-	mode = (unsigned char)NEXTBYTE(p);
+	mode = (unsigned char)NEXTBYTE(p, data);
 	reg = mode & 0xF;
 	switch (mode & 0xF0) {
 	case 0x00:
@@ -172,7 +172,7 @@ print_insn_mode(const char *d,
 		if (reg == 0xF) { /* Immediate?  */
 			int i;
 
-			FETCH_DATA(info, p + size);
+			FETCH_DATA(info, p + size, data);
 			(*info->fprintf_func)(info->stream, data, "$0x");
 			if (d[1] == 'd' || d[1] == 'f' || d[1] == 'g' || d[1] == 'h') {
 				int float_word;
@@ -200,7 +200,7 @@ print_insn_mode(const char *d,
 		break;
 	case 0x90: /* Autoincrement deferred:	@(Rn)+ */
 		if (reg == 0xF) {
-			(*info->fprintf_func)(info->stream, data, "*0x%x", NEXTLONG(p));
+			(*info->fprintf_func)(info->stream, data, "*0x%x", NEXTLONG(p, data));
 		} else {
 			(*info->fprintf_func)(info->stream, data, "@(%s)+", reg_names[reg]);
 		}
@@ -210,9 +210,9 @@ print_insn_mode(const char *d,
 		// fallthrough
 	case 0xA0: /* Displacement byte:		displ(Rn).  */
 		if (reg == 0xF) {
-			(*info->print_address_func)(addr + 2 + NEXTBYTE(p), data, info);
+			(*info->print_address_func)(addr + 2 + NEXTBYTE(p, data), data, info);
 		} else {
-			(*info->fprintf_func)(info->stream, data, "0x%x(%s)", NEXTBYTE(p),
+			(*info->fprintf_func)(info->stream, data, "0x%x(%s)", NEXTBYTE(p, data),
 				reg_names[reg]);
 		}
 		break;
@@ -221,9 +221,9 @@ print_insn_mode(const char *d,
 		// fallthrough
 	case 0xC0: /* Displacement word:		displ(Rn).  */
 		if (reg == 0xF) {
-			(*info->print_address_func)(addr + 3 + NEXTWORD(p), data, info);
+			(*info->print_address_func)(addr + 3 + NEXTWORD(p, data), data, info);
 		} else {
-			(*info->fprintf_func)(info->stream, data, "0x%x(%s)", NEXTWORD(p),
+			(*info->fprintf_func)(info->stream, data, "0x%x(%s)", NEXTWORD(p, data),
 				reg_names[reg]);
 		}
 		break;
@@ -232,9 +232,9 @@ print_insn_mode(const char *d,
 		// fallthrough
 	case 0xE0: /* Displacement long:		displ(Rn).  */
 		if (reg == 0xF) {
-			(*info->print_address_func)(addr + 5 + NEXTLONG(p), data, info);
+			(*info->print_address_func)(addr + 5 + NEXTLONG(p, data), data, info);
 		} else {
-			(*info->fprintf_func)(info->stream, data, "0x%x(%s)", NEXTLONG(p),
+			(*info->fprintf_func)(info->stream, data, "0x%x(%s)", NEXTLONG(p, data),
 				reg_names[reg]);
 		}
 		break;
@@ -274,9 +274,9 @@ print_insn_arg(const char *d,
 		unsigned char *p = p0;
 
 		if (arg_len == 1) {
-			(*info->print_address_func)(addr + 1 + NEXTBYTE(p), data, info);
+			(*info->print_address_func)(addr + 1 + NEXTBYTE(p, data), data, info);
 		} else {
-			(*info->print_address_func)(addr + 2 + NEXTWORD(p), data, info);
+			(*info->print_address_func)(addr + 2 + NEXTWORD(p, data), data, info);
 		}
 
 		return p - p0;
@@ -309,9 +309,9 @@ int print_insn_vax(bfd_vma memaddr, disassemble_info *info, void *data) {
 	/* Check if the info buffer has more than one byte left since
 	   the last opcode might be a single byte with no argument data.  */
 	if (info->buffer_length - (memaddr - info->buffer_vma) > 1) {
-		FETCH_DATA(info, buffer + 2);
+		FETCH_DATA(info, buffer + 2, data);
 	} else {
-		FETCH_DATA(info, buffer + 1);
+		FETCH_DATA(info, buffer + 1, data);
 		buffer[1] = 0;
 	}
 
@@ -326,7 +326,7 @@ int print_insn_vax(bfd_vma memaddr, disassemble_info *info, void *data) {
 	}
 	if (!argp) {
 		/* Handle undefined instructions. */
-		(*info->fprintf_func)(info->stream, ".word 0x%x",
+		(*info->fprintf_func)(info->stream, data, ".word 0x%x",
 			(buffer[0] << 8) + buffer[1]);
 		return 2;
 	}
@@ -336,7 +336,7 @@ int print_insn_vax(bfd_vma memaddr, disassemble_info *info, void *data) {
 	arg = buffer + ((votp->detail.code >> 8) ? 2 : 1);
 
 	/* Make sure we have it in mem */
-	FETCH_DATA(info, arg);
+	FETCH_DATA(info, arg, data);
 
 	(*info->fprintf_func)(info->stream, data, "%s", votp->name);
 	if (*argp) {

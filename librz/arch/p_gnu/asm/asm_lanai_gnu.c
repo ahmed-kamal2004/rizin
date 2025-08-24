@@ -80,7 +80,7 @@ static int disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
 	disasm_obj.fprintf_func = &generic_fprintf_func;
 	disasm_obj.stream = stdout;
 
-	op->size = print_insn_lanai((bfd_vma)ctx->Offset, &disasm_obj);
+	op->size = print_insn_lanai((bfd_vma)ctx->Offset, &disasm_obj, ctx);
 	if (op->size == -1) {
 		rz_strbuf_set(&op->buf_asm, "(data)");
 	}
