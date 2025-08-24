@@ -66,7 +66,7 @@ static int generic_fprintf_func(void *stream, void *data, const char *format, ..
 	return ret;
 }
 
-static int disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
+static int arc_gnu_disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
 	ArcContext *ctx = (ArcContext *)a->plugin_data;
 	if (len < 2) {
 		return -1;
@@ -102,14 +102,14 @@ static int disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
 	return op->size;
 }
 
-static bool init(void **user) {
+static bool arc_gnu_init(void **user) {
 	ArcContext *ctx = RZ_NEW0(ArcContext);
 	rz_return_val_if_fail(ctx, false);
 	*user = ctx;
 	return true;
 }
 
-static bool fini(void *p) {
+static bool arc_gnu_fini(void *p) {
 	ArcContext *ctx = (ArcContext *)p;
 	if (ctx) {
 		RZ_FREE(ctx);
@@ -123,8 +123,8 @@ RzAsmPlugin rz_asm_plugin_arc_gnu = {
 	.bits = 16 | 32,
 	.endian = RZ_SYS_ENDIAN_LITTLE | RZ_SYS_ENDIAN_BIG,
 	.desc = "Argonaut RISC Core",
-	.init = &init,
-	.fini = &fini,
-	.disassemble = &disassemble,
+	.init = &arc_gnu_init,
+	.fini = &arc_gnu_fini,
+	.disassemble = &arc_gnu_disassemble,
 	.license = "GPL3"
 };

@@ -60,7 +60,7 @@ static int generic_fprintf_func(void *stream, void *data, const char *format, ..
 	return ret;
 }
 
-static int disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
+static int sparc_gnu_disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
 	SparcContext *ctx = (SparcContext *)a->plugin_data;
 	if (len < 4) {
 		return -1;
@@ -97,14 +97,14 @@ static int disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
 	return op->size;
 }
 
-static bool init(void **user) {
+static bool sparc_gnu_init(void **user) {
 	SparcContext *ctx = RZ_NEW0(SparcContext);
 	rz_return_val_if_fail(ctx, false);
 	*user = ctx;
 	return true;
 }
 
-static bool fini(void *user) {
+static bool sparc_gnu_fini(void *user) {
 	SparcContext *ctx = (SparcContext *)user;
 	if (ctx) {
 		RZ_FREE(ctx);
@@ -119,7 +119,7 @@ RzAsmPlugin rz_asm_plugin_sparc_gnu = {
 	.endian = RZ_SYS_ENDIAN_BIG | RZ_SYS_ENDIAN_LITTLE,
 	.license = "GPL3",
 	.desc = "Sun SPARC disassembler",
-	.disassemble = &disassemble,
-	.init = &init,
-	.fini = &fini
+	.disassemble = &sparc_gnu_disassemble,
+	.init = &sparc_gnu_init,
+	.fini = &sparc_gnu_fini
 };

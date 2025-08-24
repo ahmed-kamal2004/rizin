@@ -58,7 +58,7 @@ static int generic_fprintf_func(void *stream, void *data, const char *format, ..
 	return ret;
 }
 
-static int disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
+static int lanai_gnu_disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
 	LanaiContext *ctx = (LanaiContext *)a->plugin_data;
 	struct disassemble_info disasm_obj;
 	if (len < 4) {
@@ -87,14 +87,14 @@ static int disassemble(RzAsm *a, RzAsmOp *op, const ut8 *buf, int len) {
 	return op->size;
 }
 
-static bool init(void **user) {
+static bool lanai_gnu_init(void **user) {
 	LanaiContext *ctx = RZ_NEW0(LanaiContext);
 	rz_return_val_if_fail(ctx, false);
 	*user = ctx;
 	return true;
 }
 
-static bool fini(void *p) {
+static bool lanai_gnu_fini(void *p) {
 	LanaiContext *ctx = (LanaiContext *)p;
 	if (ctx) {
 		RZ_FREE(ctx);
@@ -109,7 +109,7 @@ RzAsmPlugin rz_asm_plugin_lanai_gnu = {
 	.bits = 32,
 	.endian = RZ_SYS_ENDIAN_BIG,
 	.desc = "Google LANAI disassembler",
-	.disassemble = &disassemble,
-	.init = &init,
-	.fini = &fini
+	.disassemble = &lanai_gnu_disassemble,
+	.init = &lanai_gnu_init,
+	.fini = &lanai_gnu_fini
 };
