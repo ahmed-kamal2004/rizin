@@ -487,7 +487,7 @@ typedef struct rz_cons_context_t {
 	bool lastMode;
 	bool lastEnabled;
 	bool is_interactive;
-	bool last_interactive_option;
+	bool last_interactive_option; ///< To be deprecated for a push/pop behavior
 	bool pageable;
 	bool noflush;
 
@@ -549,7 +549,7 @@ typedef struct rz_cons_t {
 	RzConsFunctionKey cb_fkey;
 
 	void *user; // Used by <RzCore*>
-	int oldraw;
+	int oldraw; ///< To be deprecated for a push/pop behavior
 #if __UNIX__
 	struct termios term_raw, term_buf;
 #elif __WINDOWS__
