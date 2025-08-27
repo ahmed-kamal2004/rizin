@@ -265,7 +265,7 @@ static inline bool has_heap_globals(size_t RtlpHpHeapGlobalsOffset, size_t RtlpL
 	return RtlpHpHeapGlobalsOffset && RtlpLFHKeyOffset;
 }
 
-static bool symbol_do(const RzPdb *pdb, const PDBSymbol *symbol, void *u) {
+static bool symbol_do(RzPdb *pdb, const PDBSymbol *symbol, void *u) {
 	if (has_heap_globals(pdb->RtlpHpHeapGlobalsOffset, pdb->RtlpLFHKeyOffset)) {
 		return false;
 	}
@@ -391,7 +391,7 @@ fail:
 	rz_bin_file_delete(core->bin, bf);
 	rz_bin_file_set_cur_binfile(core->bin, obf);
 	rz_io_fd_close(core->io, fd);
-	return has_heap_globals();
+	return has_heap_globals(dbg->RtlpHpHeapGlobalsOffset, dbg->RtlpLFHKeyOffset);
 }
 
 static bool GetLFHKey(RzDebug *dbg, HANDLE h_proc, bool segment, WPARAM *lfhKey) {
@@ -1033,7 +1033,7 @@ static PHeapBlock GetSingleSegmentBlock(RzDebug *dbg, HANDLE h_proc, PSEGMENT_HE
 	SEGMENT_HEAP heap;
 	ReadProcessMemory(h_proc, heapBase, &heap, sizeof(SEGMENT_HEAP), NULL);
 	WPARAM RtlpHpHeapGlobal;
-	ReadProcessMemory(h_proc, (PVOID)RtlpHpHeapGlobalsOffset, &RtlpHpHeapGlobal, sizeof(WPARAM), NULL);
+	ReadProcessMemory(h_proc, (PVOID)dbg->RtlpHpHeapGlobalsOffset, &RtlpHpHeapGlobal, sizeof(WPARAM), NULL);
 
 	WPARAM pgSegOff = headerOff & heap.SegContexts[0].SegmentMask;
 	WPARAM segSignature;
