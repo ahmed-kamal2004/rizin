@@ -410,7 +410,7 @@ static int magic_test_type_byte(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
-
+	rz_write_le8(&value, value);
 	if (ml->type_operator == '&')
 		value &= (int8_t)ml->type_operand;
 	else if (ml->type_operator == '-')
@@ -440,6 +440,7 @@ static int magic_test_type_short(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
+	rz_write_le16(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BESHORT))
 		value = be16toh_mg(value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LESHORT))
@@ -473,6 +474,7 @@ static int magic_test_type_long(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
+	rz_write_le32(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BELONG))
 		value = be32toh_mg(value);
 
@@ -508,6 +510,7 @@ static int magic_test_type_quad(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
+	rz_write_le64(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEQUAD))
 		value = be64toh_mg(value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LEQUAD))
@@ -542,7 +545,7 @@ static int magic_test_type_ubyte(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
-
+	rz_write_le8(&value, value);
 	if (ml->type_operator == '&')
 		value &= (uint8_t)ml->type_operand;
 	else if (ml->type_operator == '-')
@@ -572,6 +575,7 @@ static int magic_test_type_ushort(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
+	rz_write_le16(&value, value);
 	if (ml->type == MAGIC_TYPE_UBESHORT)
 		value = be16toh_mg(value);
 	if (ml->type == MAGIC_TYPE_ULESHORT)
@@ -606,6 +610,7 @@ static int magic_test_type_ulong(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
+	rz_write_le32(&value, value);
 	if (ml->type == MAGIC_TYPE_UBELONG)
 		value = be32toh_mg(value);
 	if (ml->type == MAGIC_TYPE_ULELONG)
@@ -640,6 +645,7 @@ static int magic_test_type_uquad(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
+	rz_write_le64(&value, value);
 	if (ml->type == MAGIC_TYPE_UBEQUAD)
 		value = be64toh_mg(value);
 	if (ml->type == MAGIC_TYPE_ULEQUAD)
@@ -675,6 +681,7 @@ static int magic_test_type_float(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value0, sizeof value0) != 0)
 		return (0);
+	rz_write_le32(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEFLOAT))
 		value0 = be32toh_mg(value0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LEFLOAT))
@@ -700,6 +707,7 @@ magic_test_type_double(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value0, sizeof value0) != 0)
 		return (0);
+	rz_write_le64(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEDOUBLE))
 		value0 = be64toh_mg(value0);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_LEDOUBLE))
@@ -848,6 +856,7 @@ static int magic_test_type_date(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
+	rz_write_le32(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEDATE) ||
 		ml->type == magic_reverse_type(ms, MAGIC_TYPE_BELDATE))
 		value = be32toh_mg(value);
@@ -892,6 +901,7 @@ static int magic_test_type_qdate(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
+	rz_write_le64(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEQDATE) ||
 		ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEQLDATE))
 		value = be64toh_mg(value);
@@ -936,6 +946,7 @@ static int magic_test_type_udate(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
+	rz_write_le32(&value, value);
 	if (ml->type == magic_reverse_type(ms, MAGIC_TYPE_BEDATE) ||
 		ml->type == magic_reverse_type(ms, MAGIC_TYPE_BELDATE))
 		value = be32toh_mg(value);
@@ -980,6 +991,7 @@ static int magic_test_type_uqdate(RzMagicLine *ml, RzMagicState *ms) {
 
 	if (magic_copy_from(ms, -1, &value, sizeof value) != 0)
 		return (0);
+	rz_write_le64(&value, value);
 	if (ml->type == MAGIC_TYPE_UBEQDATE ||
 		ml->type == MAGIC_TYPE_UBEQLDATE)
 		value = be64toh_mg(value);
