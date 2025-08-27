@@ -16,12 +16,6 @@ typedef HRESULT(__stdcall *DebugConnectWide_t)(
 	_In_ REFIID InterfaceId,
 	_Out_ PVOID *Interface);
 
-typedef struct {
-	DebugCreate_t w32_DebugCreate;
-	DebugConnectWide_t w32_DebugConnectWide;
-	DbgEngContext *idbg;
-} RzIOWindbg;
-
 #define WINDBGURI "windbg://"
 
 typedef struct { // Keep in sync with debug_windbg.c
@@ -37,6 +31,12 @@ typedef struct { // Keep in sync with debug_windbg.c
 	PDEBUG_SYMBOLS3 dbgSymbols;
 	PDEBUG_ADVANCED3 dbgAdvanced;
 } DbgEngContext;
+
+typedef struct {
+	DebugCreate_t w32_DebugCreate;
+	DebugConnectWide_t w32_DebugConnectWide;
+	DbgEngContext *idbg;
+} RzIOWindbg;
 
 #define THISCALL(dbginterface, function, ...)  dbginterface->lpVtbl->function(dbginterface, __VA_ARGS__)
 #define ITHISCALL(dbginterface, function, ...) THISCALL(idbg->dbginterface, function, __VA_ARGS__)
