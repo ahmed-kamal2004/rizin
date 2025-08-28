@@ -288,6 +288,8 @@ typedef struct rz_pdb_t {
 	RzPdbOmapStream *s_omap;
 	RzPdbPeStream *s_pe;
 	RzPVector /*<PDBModuleInfo *>*/ *module_infos;
+	size_t RtlpHpHeapGlobalsOffset; ///< Related to windows heap
+	size_t RtlpLFHKeyOffset; ///< Related to windows heap
 } RzPdb;
 
 typedef struct {

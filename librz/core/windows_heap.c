@@ -55,9 +55,6 @@
 #define PDI_HEAP_BLOCKS     0x10
 #define PDI_HEAP_ENTRIES_EX 0x200
 
-static size_t RtlpHpHeapGlobalsOffset = 0;
-static size_t RtlpLFHKeyOffset = 0;
-
 #define CHECK_INFO(heapInfo) \
 	if (!heapInfo) { \
 		RZ_LOG_ERROR("core: It wasn't possible to get the heap information\n"); \
@@ -264,12 +261,12 @@ static void free_extra_info(PDEBUG_HEAP_INFORMATION heap) {
 	}
 }
 
-static inline bool has_heap_globals(void) {
+static inline bool has_heap_globals(size_t RtlpHpHeapGlobalsOffset, size_t RtlpLFHKeyOffset) {
 	return RtlpHpHeapGlobalsOffset && RtlpLFHKeyOffset;
 }
 
 static bool symbol_do(const RzPdb *pdb, const PDBSymbol *symbol, void *u) {
-	if (has_heap_globals()) {
+	if (has_heap_globals(pdb->RtlpHpHeapGlobalsOffset, pdb->RtlpLFHKeyOffset)) {
 		return false;
 	}
 	if (symbol->kind != PDB_Public) {
@@ -291,17 +288,17 @@ static bool symbol_do(const RzPdb *pdb, const PDBSymbol *symbol, void *u) {
 
 	char *name = rz_demangler_msvc(data->name, RZ_DEMANGLER_FLAG_BASE);
 	if (RZ_STR_EQ(name, "RtlpHpHeapGlobals")) {
-		RtlpHpHeapGlobalsOffset = addr;
+		pdb->RtlpHpHeapGlobalsOffset = addr;
 	}
 	if (RZ_STR_EQ(name, "RtlpLFHKey")) {
-		RtlpLFHKeyOffset = addr;
+		pdb->RtlpLFHKeyOffset = addr;
 	}
 	free(name);
 	return true;
 }
 
 static bool GetHeapGlobalsOffset(RzDebug *dbg, HANDLE h_proc) {
-	if (has_heap_globals()) {
+	if (has_heap_globals(dbg->RtlpHpHeapGlobalsOffset, dbg->RtlpLFHKeyOffset)) {
 		return true;
 	}
 	RzCore *core = dbg->corebind.core;
@@ -380,7 +377,13 @@ static bool GetHeapGlobalsOffset(RzDebug *dbg, HANDLE h_proc) {
 		RZ_LOG_WARN("core: Cannot find base address, flags will probably be misplaced\n");
 	}
 
+	pdb->RtlpHpHeapGlobalsOffset = dbg->RtlpHpHeapGlobalsOffset;
+	pdb->RtlpLFHKeyOffset = dbg->RtlpLFHKeyOffset;
+
 	rz_pdb_all_symbols_foreach(pdb, symbol_do, (void *)baddr);
+
+	dbg->RtlpHpHeapGlobalsOffset = pdb->RtlpHpHeapGlobalsOffset;
+	dbg->RtlpLFHKeyOffset = pdb->RtlpLFHKeyOffset;
 
 fail:
 	rz_bin_pdb_free(pdb);
@@ -401,9 +404,9 @@ static bool GetLFHKey(RzDebug *dbg, HANDLE h_proc, bool segment, WPARAM *lfhKey)
 	}
 
 	if (segment) {
-		lfhKeyLocation = RtlpHpHeapGlobalsOffset + sizeof(WPARAM);
+		lfhKeyLocation = dbg->RtlpHpHeapGlobalsOffset + sizeof(WPARAM);
 	} else {
-		lfhKeyLocation = RtlpLFHKeyOffset; // ntdll!RtlpLFHKey
+		lfhKeyLocation = dbg->RtlpLFHKeyOffset; // ntdll!RtlpLFHKey
 	}
 	if (!ReadProcessMemory(h_proc, (PVOID)lfhKeyLocation, lfhKey, sizeof(WPARAM), NULL)) {
 		rz_sys_perror("ReadProcessMemory");
@@ -649,7 +652,7 @@ static bool GetSegmentHeapBlocks(RzDebug *dbg, HANDLE h_proc, PVOID heapBase, PH
 		return false;
 	}
 	WPARAM lfhKey;
-	WPARAM lfhKeyLocation = RtlpHpHeapGlobalsOffset + sizeof(WPARAM);
+	WPARAM lfhKeyLocation = dbg->RtlpHpHeapGlobalsOffset + sizeof(WPARAM);
 	if (!ReadProcessMemory(h_proc, (PVOID)lfhKeyLocation, &lfhKey, sizeof(WPARAM), &bytesRead)) {
 		rz_sys_perror("ReadProcessMemory");
 		RZ_LOG_ERROR("core: LFH key not found.\n");
@@ -715,7 +718,7 @@ static bool GetSegmentHeapBlocks(RzDebug *dbg, HANDLE h_proc, PVOID heapBase, PH
 	}
 
 	WPARAM RtlpHpHeapGlobal;
-	ReadProcessMemory(h_proc, (PVOID)RtlpHpHeapGlobalsOffset, &RtlpHpHeapGlobal, sizeof(WPARAM), &bytesRead);
+	ReadProcessMemory(h_proc, (PVOID)dbg->RtlpHpHeapGlobalsOffset, &RtlpHpHeapGlobal, sizeof(WPARAM), &bytesRead);
 	// Backend Blocks (And VS)
 	int i;
 	for (i = 0; i < 2; i++) {
