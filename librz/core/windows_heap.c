@@ -377,9 +377,6 @@ static bool GetHeapGlobalsOffset(RzDebug *dbg, HANDLE h_proc) {
 		RZ_LOG_WARN("core: Cannot find base address, flags will probably be misplaced\n");
 	}
 
-	pdb->RtlpHpHeapGlobalsOffset = dbg->RtlpHpHeapGlobalsOffset;
-	pdb->RtlpLFHKeyOffset = dbg->RtlpLFHKeyOffset;
-
 	rz_pdb_all_symbols_foreach(pdb, symbol_do, (void *)baddr);
 
 	dbg->RtlpHpHeapGlobalsOffset = pdb->RtlpHpHeapGlobalsOffset;
