@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2025 ahmed-kamal2004 <ahmedkamal200427@gmail.com>
 // SPDX-License-Identifier: LGPL-3.0-only
 
-#ifndef ASMUTILS_H
-#define ASMUTILS_H
+#ifndef CRIS_CONTEXT_H
+#define CRIS_CONTEXT_H
 
 #include <rz_util.h>
 #include <common_gnu/disas-asm.h>

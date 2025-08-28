@@ -28,7 +28,7 @@
 #include <common_gnu/sysdep.h>
 #include <common_gnu/opcode/cris.h>
 #include <common_gnu/libiberty.h>
-#include <asmutils.h>
+#include <cris/cris_context.h>
 
 /* Return TRUE if the start of STR matches PREFIX, FALSE otherwise.  */
 

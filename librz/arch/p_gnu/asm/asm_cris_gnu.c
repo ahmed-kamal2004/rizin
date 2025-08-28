@@ -17,7 +17,7 @@ http://developer.axis.com/old/documentation/hw/etraxfs/iop_howto/iop_howto.pdf
 #include <rz_asm.h>
 #include <rz_types.h>
 #include <rz_lib.h>
-#include <asmutils.h>
+#include <cris/cris_context.h>
 
 static int cris_buffer_read_memory(bfd_vma memaddr, bfd_byte *myaddr, ut32 length, struct disassemble_info *info, void *data) {
 	CrisContext *ctx = (CrisContext *)data;
