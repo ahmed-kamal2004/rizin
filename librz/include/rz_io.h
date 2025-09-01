@@ -120,7 +120,6 @@ typedef struct rz_io_plugin_t {
 	void *widget;
 	const char *uris;
 	int (*listener)(RzIODesc *io);
-	int (*init)(void);
 	bool isdbg;
 	// int (*is_file_opened)(RzIO *io, RzIODesc *fd, const char *);
 	char *(*system)(RzIO *io, RzIODesc *fd, const char *);
