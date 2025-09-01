@@ -145,6 +145,10 @@ RZ_IPI void rz_core_debug_signal_print(RzDebug *dbg, RzCmdStateOutput *state);
 RZ_IPI RzCoreIOMapInfo *rz_core_io_map_info_new(RzCoreFile *cf, int perm_orig);
 RZ_IPI void rz_core_io_map_info_free(RzCoreIOMapInfo *info);
 
+/* cmark.c */
+RZ_IPI void rz_core_mark_print(RzMark *b, RzCmdStateOutput *state);
+RZ_IPI void rz_core_mark_range_print(RzMark *b, RzCmdStateOutput *state, ut64 range_from, ut64 range_to);
+
 /* cflag.c */
 RZ_IPI void rz_core_flag_print(RzFlag *f, RzCmdStateOutput *state);
 RZ_IPI void rz_core_flag_real_name_print(RzFlag *f, RzCmdStateOutput *state);

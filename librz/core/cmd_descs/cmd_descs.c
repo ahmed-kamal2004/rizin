@@ -72,6 +72,7 @@ static const RzCmdDescDetail cmd_debug_inject_opcode_details[2];
 static const RzCmdDescDetail cmd_debug_inject_assembly_details[2];
 static const RzCmdDescDetail cmd_debug_inject_syscall_details[2];
 static const RzCmdDescDetail eval_getset_details[2];
+static const RzCmdDescDetail mark_describe_details[2];
 static const RzCmdDescDetail egg_config_details[2];
 static const RzCmdDescDetail history_list_or_exec_details[2];
 static const RzCmdDescDetail cmd_info_query_details[2];
@@ -583,6 +584,17 @@ static const RzCmdDescArg flag_tag_search_args[2];
 static const RzCmdDescArg flag_zone_add_args[2];
 static const RzCmdDescArg flag_zone_remove_args[2];
 static const RzCmdDescArg flag_hexdump_args[2];
+static const RzCmdDescArg mark_add_args[4];
+static const RzCmdDescArg mark_append_args[4];
+static const RzCmdDescArg mark_remove_args[2];
+static const RzCmdDescArg mark_color_args[3];
+static const RzCmdDescArg mark_comment_args[3];
+static const RzCmdDescArg mark_rename_args[3];
+static const RzCmdDescArg mark_realname_args[3];
+static const RzCmdDescArg mark_move_args[4];
+static const RzCmdDescArg mark_distance_args[2];
+static const RzCmdDescArg mark_describe_args[2];
+static const RzCmdDescArg mark_range_args[2];
 static const RzCmdDescArg flirt_create_args[2];
 static const RzCmdDescArg flirt_dump_args[2];
 static const RzCmdDescArg flirt_scan_args[2];
@@ -12457,6 +12469,262 @@ static const RzCmdDescHelp flag_hexdump_help = {
 	.args = flag_hexdump_args,
 };
 
+static const RzCmdDescHelp m_help = {
+	.summary = "Manage marks",
+};
+static const RzCmdDescArg mark_add_args[] = {
+	{
+		.name = "name",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+
+	},
+	{
+		.name = "end",
+		.type = RZ_CMD_ARG_TYPE_NUM,
+
+	},
+	{
+		.name = "comment",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+		.flags = RZ_CMD_ARG_FLAG_LAST,
+		.optional = true,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp mark_add_help = {
+	.summary = "Adds a mark if there are no existing marks.",
+	.description = "Adds the mark to the current offset only if no mark covers this offset already",
+	.args = mark_add_args,
+};
+
+static const RzCmdDescArg mark_append_args[] = {
+	{
+		.name = "name",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+
+	},
+	{
+		.name = "end",
+		.type = RZ_CMD_ARG_TYPE_NUM,
+
+	},
+	{
+		.name = "comment",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+		.flags = RZ_CMD_ARG_FLAG_LAST,
+		.optional = true,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp mark_append_help = {
+	.summary = "Add mark.",
+	.description = "Adds a mark at the current offset, replacing any existing mark with the same name.",
+	.args = mark_append_args,
+};
+
+static const RzCmdDescArg mark_remove_args[] = {
+	{
+		.name = "regex_pattern",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+		.flags = RZ_CMD_ARG_FLAG_LAST,
+		.optional = true,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp mark_remove_help = {
+	.summary = "Remove mark.",
+	.description = "Removes marks by name. If <regex_pattern> is given, only marks whose name matches the regex are removed. Otherwise, all marks covering the current offset are removed.",
+	.args = mark_remove_args,
+};
+
+static const RzCmdDescArg mark_remove_all_args[] = {
+	{ 0 },
+};
+static const RzCmdDescHelp mark_remove_all_help = {
+	.summary = "Remove all marks.",
+	.args = mark_remove_all_args,
+};
+
+static const RzCmdDescArg mark_list_args[] = {
+	{ 0 },
+};
+static const RzCmdDescHelp mark_list_help = {
+	.summary = "List all marks.",
+	.args = mark_list_args,
+};
+
+static const RzCmdDescArg mark_list_at_args[] = {
+	{ 0 },
+};
+static const RzCmdDescHelp mark_list_at_help = {
+	.summary = "List all marks containing the current offset.",
+	.args = mark_list_at_args,
+};
+
+static const RzCmdDescArg mark_color_args[] = {
+	{
+		.name = "name",
+		.type = RZ_CMD_ARG_TYPE_FLAG,
+
+	},
+	{
+		.name = "color",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+		.flags = RZ_CMD_ARG_FLAG_LAST,
+		.optional = true,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp mark_color_help = {
+	.summary = "Set a color for the given mark / Show the color for the given mark.",
+	.args = mark_color_args,
+};
+
+static const RzCmdDescArg mark_comment_args[] = {
+	{
+		.name = "name",
+		.type = RZ_CMD_ARG_TYPE_FLAG,
+
+	},
+	{
+		.name = "comment",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+		.flags = RZ_CMD_ARG_FLAG_LAST,
+		.optional = true,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp mark_comment_help = {
+	.summary = "Set a comment for the given mark. If no comment is given, it shows the current one for the mark.",
+	.args = mark_comment_args,
+};
+
+static const RzCmdDescArg mark_rename_args[] = {
+	{
+		.name = "old",
+		.type = RZ_CMD_ARG_TYPE_FLAG,
+
+	},
+	{
+		.name = "new",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+		.flags = RZ_CMD_ARG_FLAG_LAST,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp mark_rename_help = {
+	.summary = "Rename mark.",
+	.args = mark_rename_args,
+};
+
+static const RzCmdDescArg mark_realname_args[] = {
+	{
+		.name = "name",
+		.type = RZ_CMD_ARG_TYPE_FLAG,
+
+	},
+	{
+		.name = "realname",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+		.flags = RZ_CMD_ARG_FLAG_LAST,
+		.optional = true,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp mark_realname_help = {
+	.summary = "Show the realname of the mark / Set the realname of the mark.",
+	.description = "Each mark has two identifiers. <name> is the unique, escaped identifier used internally by Rizin. <realname> is the original, unescaped name, kept as given by the user.",
+	.args = mark_realname_args,
+};
+
+static const RzCmdDescArg mark_move_args[] = {
+	{
+		.name = "name",
+		.type = RZ_CMD_ARG_TYPE_FLAG,
+
+	},
+	{
+		.name = "new_start",
+		.type = RZ_CMD_ARG_TYPE_RZNUM,
+
+	},
+	{
+		.name = "new_end",
+		.type = RZ_CMD_ARG_TYPE_RZNUM,
+		.flags = RZ_CMD_ARG_FLAG_LAST,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp mark_move_help = {
+	.summary = "Move a mark to new a location.",
+	.args = mark_move_args,
+};
+
+static const RzCmdDescArg mark_distance_args[] = {
+	{
+		.name = "regex_pattern",
+		.type = RZ_CMD_ARG_TYPE_STRING,
+		.flags = RZ_CMD_ARG_FLAG_LAST,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp mark_distance_help = {
+	.summary = "Distance in bytes to reach the starting of mark from the current offset.",
+	.args = mark_distance_args,
+};
+
+static const RzCmdDescHelp md_help = {
+	.summary = "Describe mark.",
+};
+static const RzCmdDescDetailEntry mark_describe_Usage_space_example_detail_entries[] = {
+	{ .text = "md", .arg_str = NULL, .comment = "Describe all marks containing the current offset" },
+	{ .text = "md foo", .arg_str = NULL, .comment = "Describe the mark named 'foo' and show distance from current offset to reach 'foo' in bytes" },
+	{ 0 },
+};
+static const RzCmdDescDetail mark_describe_details[] = {
+	{ .name = "Usage example", .entries = mark_describe_Usage_space_example_detail_entries },
+	{ 0 },
+};
+static const RzCmdDescArg mark_describe_args[] = {
+	{
+		.name = "name",
+		.type = RZ_CMD_ARG_TYPE_FLAG,
+		.optional = true,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp mark_describe_help = {
+	.summary = "Describe marks at the current offset or a named mark with distance from the offset.",
+	.description = "Displays information about marks. Without arguments, it describes all marks that contain the current offset. With a <name> argument, it shows details of that mark and the distance in bytes from the current offset to reach the mark. If the mark begins after the current offset, it shows <name> - <bytes> (distance from current offset to  start of the mark). If the mark ends before the current offset, it shows  <name> + <bytes> (distance from current offset to the end of the mark).",
+	.details = mark_describe_details,
+	.args = mark_describe_args,
+};
+
+static const RzCmdDescArg mark_range_args[] = {
+	{
+		.name = "size",
+		.type = RZ_CMD_ARG_TYPE_RZNUM,
+		.flags = RZ_CMD_ARG_FLAG_LAST,
+		.optional = true,
+
+	},
+	{ 0 },
+};
+static const RzCmdDescHelp mark_range_help = {
+	.summary = "Show marks in the current block or in the next <size> bytes.",
+	.args = mark_range_args,
+};
+
 static const RzCmdDescHelp F_help = {
 	.summary = "FLIRT signature management",
 };
@@ -23367,6 +23635,47 @@ RZ_IPI void rzshell_cmddescs_init(RzCore *core) {
 
 	RzCmdDesc *flag_hexdump_cd = rz_cmd_desc_argv_new(core->rcmd, f_cd, "fx", rz_flag_hexdump_handler, &flag_hexdump_help);
 	rz_warn_if_fail(flag_hexdump_cd);
+
+	RzCmdDesc *m_cd = rz_cmd_desc_group_new(core->rcmd, root_cd, "m", rz_mark_add_handler, &mark_add_help, &m_help);
+	rz_warn_if_fail(m_cd);
+	RzCmdDesc *mark_append_cd = rz_cmd_desc_argv_new(core->rcmd, m_cd, "m+", rz_mark_append_handler, &mark_append_help);
+	rz_warn_if_fail(mark_append_cd);
+
+	RzCmdDesc *mark_remove_cd = rz_cmd_desc_argv_new(core->rcmd, m_cd, "m-", rz_mark_remove_handler, &mark_remove_help);
+	rz_warn_if_fail(mark_remove_cd);
+
+	RzCmdDesc *mark_remove_all_cd = rz_cmd_desc_argv_new(core->rcmd, m_cd, "m-*", rz_mark_remove_all_handler, &mark_remove_all_help);
+	rz_warn_if_fail(mark_remove_all_cd);
+
+	RzCmdDesc *mark_list_cd = rz_cmd_desc_argv_state_new(core->rcmd, m_cd, "ml", RZ_OUTPUT_MODE_STANDARD | RZ_OUTPUT_MODE_RIZIN | RZ_OUTPUT_MODE_QUIET | RZ_OUTPUT_MODE_JSON | RZ_OUTPUT_MODE_TABLE, rz_mark_list_handler, &mark_list_help);
+	rz_warn_if_fail(mark_list_cd);
+
+	RzCmdDesc *mark_list_at_cd = rz_cmd_desc_argv_state_new(core->rcmd, m_cd, "ml.", RZ_OUTPUT_MODE_STANDARD | RZ_OUTPUT_MODE_RIZIN | RZ_OUTPUT_MODE_QUIET | RZ_OUTPUT_MODE_JSON | RZ_OUTPUT_MODE_TABLE, rz_mark_list_at_handler, &mark_list_at_help);
+	rz_warn_if_fail(mark_list_at_cd);
+
+	RzCmdDesc *mark_color_cd = rz_cmd_desc_argv_new(core->rcmd, m_cd, "mc", rz_mark_color_handler, &mark_color_help);
+	rz_warn_if_fail(mark_color_cd);
+
+	RzCmdDesc *mark_comment_cd = rz_cmd_desc_argv_new(core->rcmd, m_cd, "mC", rz_mark_comment_handler, &mark_comment_help);
+	rz_warn_if_fail(mark_comment_cd);
+
+	RzCmdDesc *mark_rename_cd = rz_cmd_desc_argv_new(core->rcmd, m_cd, "mr", rz_mark_rename_handler, &mark_rename_help);
+	rz_warn_if_fail(mark_rename_cd);
+
+	RzCmdDesc *mark_realname_cd = rz_cmd_desc_argv_new(core->rcmd, m_cd, "mN", rz_mark_realname_handler, &mark_realname_help);
+	rz_warn_if_fail(mark_realname_cd);
+
+	RzCmdDesc *mark_move_cd = rz_cmd_desc_argv_new(core->rcmd, m_cd, "mm", rz_mark_move_handler, &mark_move_help);
+	rz_warn_if_fail(mark_move_cd);
+
+	RzCmdDesc *mark_distance_cd = rz_cmd_desc_argv_new(core->rcmd, m_cd, "mf", rz_mark_distance_handler, &mark_distance_help);
+	rz_warn_if_fail(mark_distance_cd);
+
+	RzCmdDesc *md_cd = rz_cmd_desc_group_state_new(core->rcmd, m_cd, "md", RZ_OUTPUT_MODE_STANDARD | RZ_OUTPUT_MODE_TABLE | RZ_OUTPUT_MODE_JSON, rz_mark_describe_handler, &mark_describe_help, &md_help);
+	rz_warn_if_fail(md_cd);
+
+	RzCmdDesc *mark_range_cd = rz_cmd_desc_argv_state_new(core->rcmd, m_cd, "mi", RZ_OUTPUT_MODE_STANDARD | RZ_OUTPUT_MODE_RIZIN | RZ_OUTPUT_MODE_QUIET | RZ_OUTPUT_MODE_JSON | RZ_OUTPUT_MODE_TABLE, rz_mark_range_handler, &mark_range_help);
+	rz_warn_if_fail(mark_range_cd);
 
 	RzCmdDesc *F_cd = rz_cmd_desc_group_new(core->rcmd, root_cd, "F", NULL, NULL, &F_help);
 	rz_warn_if_fail(F_cd);
