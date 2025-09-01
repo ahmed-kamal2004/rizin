@@ -14,9 +14,7 @@
 #include <rz_cmd.h>
 
 #include <rz_config.h>
-#include "rz_bind.h"
-#include "rz_util/rz_assert.h"
-#include "rz_util/rz_str.h"
+#include <rz_bind.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -318,6 +316,8 @@ typedef struct rz_debug_t {
 	int glibc_version;
 	bool is_glibc_resolved;
 	bool nt_x86_xstate_supported; ///< Track whether X86_FEATURE_XSAVE feature is supported on current kernel
+	size_t RtlpHpHeapGlobalsOffset; ///< Related to windows heap
+	size_t RtlpLFHKeyOffset; ///< Related to windows heap
 } RzDebug;
 
 typedef struct rz_debug_desc_plugin_t {
