@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2009-2020 pancake <pancake@nopcode.org>
 // SPDX-License-Identifier: LGPL-3.0-only
 
-#define USE_THREADS       1
-#define ALLOW_THREADED    0
 #define UNCOLORIZE_NONTTY 0
 
 #include <rz_core.h>
@@ -103,38 +101,35 @@ static int main_help(RZ_BORROW RZ_NONNULL RzCore *core, int line) {
 			"-0",          "",          "Print \\x00 after init and every command",
 			"-1",          "",          "Redirect stderr to stdout",
 			"-2",          "",          "Close stderr file descriptor (silent warning messages)",
-			"-a",          "[arch]",    "Set asm.arch",
+			"-a",          "arch",      "Set asm.arch",
 			"-A",          "",          "Run 'aaa' command to analyze all referenced code",
-			"-b",          "[bits]",    "Set asm.bits",
-			"-B",          "[baddr]",   "Set base address for PIE binaries",
-			"-c 'cmd..'",  "",          "Execute rizin command",
+			"-b",          "bits",      "Set asm.bits",
+			"-B",          "baddr",     "Set base address for PIE binaries",
+			"-c",          "'cmd..'",   "Execute rizin command",
 			"-C",          "",          "File is host:port (alias for -cR+http://%%s/cmd/)",
 			"-d",          "",          "Debug the executable 'file' or running process 'pid",
-			"-D",          "[backend]", "Enable debug mode (e cfg.debug=true)",
-			"-e k=v",      "",          "Evaluate config var",
+			"-D",          "backend",   "Enable debug mode (e cfg.debug=true)",
+			"-e",          "k=v",       "Evaluate config var",
 			"-f",          "",          "Block size = file size",
-			"-F",          "[binplug]", "Force to use that rbin plugin",
+			"-F",          "binplug",   "Force to use that rbin plugin",
 			"-h, -hh",     "",          "Show help message, -hh for long",
-			"-H",          "([var])",   "Display variable",
-			"-i",          "[file]",    "Run script file",
-			"-I",          "[file]",    "Run script file before the file is opened",
-			"-k",          "[OS/kern]", "Set asm.os (linux, macos, w32, netbsd, ...)",
-			"-l",          "[lib]",     "Load plugin file",
+			"-H",          "[var]",     "Display variable",
+			"-i",          "file",      "Run script file",
+			"-I",          "file",      "Run script file before the file is opened",
+			"-k",          "OS/kern",   "Set asm.os (linux, macos, w32, netbsd, ...)",
+			"-l",          "lib",       "Load plugin file",
 			"-L",          "",          "List supported IO plugins",
-			"-m",          "[addr]",    "Map file at given address (loadaddr)",
+			"-m",          "addr",      "Map file at given address (loadaddr)",
 			"-M",          "",          "Do not demangle symbol names",
 			"-n, -nn",     "",          "Do not load RzBin info (-nn only load bin structures)",
 			"-N",          "",          "Do not load user settings and scripts",
 			"-NN",         "",          "Do not load any script or plugin",
 			"-q",          "",          "Quiet mode (no prompt) and quit after -i and -c",
 			"-qq",         "",          "Quiet mode (no prompt) and force quit",
-			"-p",          "[p.rzdb]",  "Load project file",
-			"-r",          "[rz-run]",  "Specify rz-run profile to load (same as -e dbg.profile=X)",
-			"-R",          "[rule]",    "Specify custom rz-run directive",
-			"-s",          "[addr]",    "Initial seek",
-		#if USE_THREADS && ALLOW_THREADED
-			"-t",          "",          "load rz-bin info in thread",
-		#endif
+			"-p",          "p.rzdb",    "Load project file",
+			"-r",          "rz-run",    "Specify rz-run profile to load (same as -e dbg.profile=X)",
+			"-R",          "rule",      "Specify custom rz-run directive",
+			"-s",          "addr",      "Initial seek",
 			"-T",          "",          "Do not compute file hashes",
 			"-u",          "",          "Set bin.filter=false to get raw sym/sec/cls names",
 			"-v, -V",      "",          "Show rizin version (-V show lib versions)",
@@ -693,15 +688,6 @@ RZ_API int rz_main_rizin(int argc, const char **argv) {
 		case 's':
 			s_seek = opt.arg;
 			break;
-#if USE_THREADS
-		case 't':
-#if ALLOW_THREADED
-			threaded = true;
-#else
-			eprintf("WARNING: -t is temporarily disabled!\n");
-#endif
-			break;
-#endif
 		case 'T':
 			compute_hashes = false;
 			break;
