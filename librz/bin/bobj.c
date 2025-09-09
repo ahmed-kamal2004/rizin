@@ -598,14 +598,15 @@ RZ_IPI RzBinObject *rz_bin_object_get_cur(RzBin *bin) {
 	return bin->cur->o;
 }
 
-RZ_IPI RzBinObject *rz_bin_object_find_by_arch_bits(RzBinFile *bf, const char *arch, int bits, const char *name) {
-	rz_return_val_if_fail(bf && arch && name, NULL);
+RZ_IPI RzBinObject *rz_bin_object_find_by_arch_bits(RzBinFile *bf, RZ_NONNULL const char *arch, int bits, RZ_NULLABLE const char *machine, RZ_NULLABLE const char *filename) {
+	rz_return_val_if_fail(bf && arch, NULL);
 	if (bf->o) {
 		RzBinInfo *info = bf->o->info;
 		if (info && info->arch && info->file &&
 			(bits == info->bits) &&
 			!strcmp(info->arch, arch) &&
-			!strcmp(info->file, name)) {
+			(!filename || RZ_STR_EQ(info->file, filename)) &&
+			(!machine || RZ_STR_EQ(info->machine, machine))) {
 			return bf->o;
 		}
 	}

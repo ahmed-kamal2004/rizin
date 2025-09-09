@@ -822,16 +822,27 @@ trashbin:
 	return NULL;
 }
 
-RZ_API bool rz_bin_use_arch(RzBin *bin, const char *arch, int bits, const char *name) {
+/**
+ * \brief Sets the object file matching the \p arch, \p bits and optionally the \p machine and \p filename.
+ *
+ * \param bin The current RzBin instance.
+ * \param arch The architecture of the binary file.
+ * \param bits The architecture bits of the binary file.
+ * \param machine (Optional) The machine of the binary file.
+ * \param filename (Optional) The filename of the RzBinFile to load. Can be NULL.
+ *
+ * \return True if the binary file was successfully set according to the parameters. False otherwise.
+ */
+RZ_API bool rz_bin_use_arch(RzBin *bin, const char *arch, int bits, RZ_NULLABLE const char *machine, RZ_NULLABLE const char *filename) {
 	rz_return_val_if_fail(bin && arch, false);
 
-	RzBinFile *binfile = rz_bin_file_find_by_arch_bits(bin, arch, bits);
+	RzBinFile *binfile = rz_bin_file_find_by_arch_bits(bin, arch, bits, machine, filename);
 	if (!binfile) {
 		RZ_LOG_WARN("Cannot find binfile with arch/bits %s/%d\n", arch, bits);
 		return false;
 	}
 
-	RzBinObject *obj = rz_bin_object_find_by_arch_bits(binfile, arch, bits, name);
+	RzBinObject *obj = rz_bin_object_find_by_arch_bits(binfile, arch, bits, machine, filename);
 	if (!obj && binfile->xtr_data) {
 		RzBinXtrData *xtr_data = rz_list_get_n(binfile->xtr_data, 0);
 		if (xtr_data && !xtr_data->loaded) {
@@ -839,7 +850,7 @@ RZ_API bool rz_bin_use_arch(RzBin *bin, const char *arch, int bits, const char *
 				.baseaddr = UT64_MAX,
 				.loadaddr = rz_bin_get_laddr(bin)
 			};
-			if (!rz_bin_file_object_new_from_xtr_data(bin, binfile, &obj_opts, xtr_data)) {
+			if (!rz_bin_file_set_xtr_data_as_current_obj(bin, binfile, &obj_opts, xtr_data)) {
 				return false;
 			}
 		}
@@ -851,15 +862,25 @@ RZ_API bool rz_bin_use_arch(RzBin *bin, const char *arch, int bits, const char *
 	return rz_bin_set_cur_binfile(bin, binfile);
 }
 
-RZ_API bool rz_bin_select(RzBin *bin, const char *arch, int bits, const char *name) {
-	rz_return_val_if_fail(bin, false);
+/**
+ * \brief Selects the binfile matching \p arch, \p bits and optionally \p machine
+ * and \p filename and sets it as current binfile in RzBin.
+ *
+ * \param bin The current RzBin instance.
+ * \param arch The architecture of the binary file.
+ * \param bits The architecture bits of the binary file.
+ * \param machine (Optional) The machine of the binary file.
+ * \param filename (Optional) The filename of RzBinFile to load.
+ *
+ * \return True if the binary file was successfully set according to the parameters. False otherwise.
+ */
+RZ_API bool rz_bin_select(RzBin *bin, RZ_NONNULL const char *arch, int bits, RZ_NULLABLE const char *machine, RZ_NULLABLE const char *filename) {
+	rz_return_val_if_fail(bin && arch, false);
 
-	RzBinFile *cur = rz_bin_cur(bin);
 	RzBinObject *obj = NULL;
-	name = !name && cur ? cur->file : name;
-	RzBinFile *binfile = rz_bin_file_find_by_arch_bits(bin, arch, bits);
-	if (binfile && name) {
-		obj = rz_bin_object_find_by_arch_bits(binfile, arch, bits, name);
+	RzBinFile *binfile = rz_bin_file_find_by_arch_bits(bin, arch, bits, machine, filename);
+	if (binfile) {
+		obj = rz_bin_object_find_by_arch_bits(binfile, arch, bits, machine, filename);
 	}
 	if (!rz_bin_file_set_obj(binfile, obj)) {
 		return NULL;
