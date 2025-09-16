@@ -34,12 +34,62 @@ DEFINE_COUNT_ONES(ut16);
 DEFINE_COUNT_ONES(ut8);
 
 /**
+ * \brief Count trailing zeros of \p v.
+ * If v == 0 it returns 64.
+ *
+ * \param v The value to count the trailing zeros for.
+ *
+ * \return The number of trailing zeros.
+ */
+static inline size_t rz_bits_trailing_zeros(ut64 v) {
+	if (v == 0) {
+		return 64;
+	}
+#if HAVE___BUILTIN_CTZLL
+	return __builtin_ctzll(v);
+#else
+	// src: https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightBinSearch
+	size_t c;
+	if (v & 0x1) {
+		// special case for odd v (assumed to happen half of the time)
+		return 0;
+	}
+	c = 1;
+	if ((v & 0xffffffff) == 0) {
+		v >>= 32;
+		c += 32;
+	}
+	if ((v & 0xffff) == 0) {
+		v >>= 16;
+		c += 16;
+	}
+	if ((v & 0xff) == 0) {
+		v >>= 8;
+		c += 8;
+	}
+	if ((v & 0xf) == 0) {
+		v >>= 4;
+		c += 4;
+	}
+	if ((v & 0x3) == 0) {
+		v >>= 2;
+		c += 2;
+	}
+	c -= v & 0x1;
+	return c;
+#endif
+}
+
+/**
  * \brief Get the number of leading zeros of a 64-bit integer in binary representation.
  * \param x the 64-bit integer
  * \return the number of leading zeros
  */
 static inline int rz_bits_leading_zeros(ut64 x) {
-#if HAS___BUILTIN_CLZLL
+	if (x == 0) {
+		return 64;
+	}
+#if HAVE___BUILTIN_CLZLL
 	return __builtin_clzll(x);
 #else
 	int n = 0;
