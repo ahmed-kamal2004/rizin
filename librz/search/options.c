@@ -73,6 +73,14 @@ RZ_API bool rz_search_opt_set_max_threads(RZ_NONNULL RzSearchOpt *opt, RzThreadN
 }
 
 /**
+ * \brief Returns the number of threads defined in the options \p opt.
+ */
+RZ_API size_t rz_search_opt_get_max_threads(RZ_NONNULL const RzSearchOpt *opt) {
+	rz_return_val_if_fail(opt, 0);
+	return opt->max_threads;
+}
+
+/**
  * \brief Enables the printing of progress during the search.
  *
  * \param opt The search options to update.
