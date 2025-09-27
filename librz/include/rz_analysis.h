@@ -548,7 +548,7 @@ typedef struct rz_analysis_t {
 	char *sdb_types_path; ///<  system path prefix, whether created in initialization or passed by RzCore.
 	ut64 cmpval; ///< last compare value for jump table.
 	ut64 lea_jmptbl_ip; ///< jump table x86 lea ip
-	HtSP /*<const char *, RzSetU *>*/ *ht_cpp_virtual_xrefs; ///< addresses of cpp virtual function calls
+	HtSP /*<const char *, RzSetU *>*/ *ht_virtual_xrefs; ///< addresses of virtual function calls
 } RzAnalysis;
 
 typedef enum rz_analysis_addr_hint_type_t {
@@ -2304,7 +2304,8 @@ typedef struct rz_variable_book_t {
 } RzCppVariableBook;
 
 RZ_API RzCppVariableBook *rz_analysis_mark_classes(RzAnalysis *analysis);
-RZ_API void rz_analysis_devirtualize_methods(RzAnalysis *analysis);
+RZ_API void rz_analysis_devirtualize_cxx_methods(RzAnalysis *analysis);
+RZ_API void rz_analysis_devirtualize_objc_methods(RZ_NULLABLE RzCore *core);
 RZ_API void rz_analysis_devirtualize(RzAnalysis *analysis, RzCppVariableBook *var_book);
 RZ_API void rz_analysis_virtual_xrefs_print(RzAnalysis *analysis, const char *vfunc);
 RZ_API void rz_analysis_virtual_xrefs_print_table(RzAnalysis *analysis, const char *vfunc, RzTable *table);
