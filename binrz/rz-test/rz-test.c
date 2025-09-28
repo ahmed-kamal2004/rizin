@@ -88,18 +88,18 @@ static int help(bool verbose) {
 			"-x",           "[num]",          "Number of expected failed tests",
 			// clang-format on
 		};
-		size_t maxOptionAndArgLength = 0;
-		for (int i = 0; i < sizeof(options) / sizeof(options[0]); i += 3) {
-			size_t optionLength = strlen(options[i]);
+		size_t maxFlagAndArgLength = 0;
+		for (int i = 0; i < RZ_ARRAY_SIZE(options); i += 3) {
+			size_t flagLength = strlen(options[i]);
 			size_t argLength = strlen(options[i + 1]);
-			size_t totalLength = optionLength + argLength;
-			if (totalLength > maxOptionAndArgLength) {
-				maxOptionAndArgLength = totalLength;
+			size_t flagAndArgLength = flagLength + argLength;
+			if (flagAndArgLength > maxFlagAndArgLength) {
+				maxFlagAndArgLength = flagAndArgLength;
 			}
 		}
-		for (int i = 0; i < sizeof(options) / sizeof(options[0]); i += 3) {
-			if (i + 1 < sizeof(options) / sizeof(options[0])) {
-				rz_print_colored_help_option(options[i], options[i + 1], options[i + 2], maxOptionAndArgLength);
+		for (int i = 0; i < RZ_ARRAY_SIZE(options); i += 3) {
+			if (i + 1 < RZ_ARRAY_SIZE(options)) {
+				rz_print_colored_help_option(options[i], options[i + 1], options[i + 2], maxFlagAndArgLength);
 			}
 		}
 		printf("Supported test types: @json @unit @fuzz @cmds\n"
