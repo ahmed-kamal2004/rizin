@@ -204,7 +204,12 @@ typedef struct rz_bin_string_search_opt_t {
 	size_t min_length; ///< Smallest string length that is possible to find.
 	size_t max_length; ///< Maximum buffer size, which will also determine the maximum string length.
 	size_t max_region_size; ///< Maximum allowable size for the search interval between two memory regions.
-	size_t raw_alignment; ///< Memory sector alignment used for the raw string search.
+	/**
+	 * \brief Memory alignment of the intervals strings are searched in.
+	 * This is not the same as string alignment.
+	 * Which is always set to the alignment of the encoding or guessed.
+	 */
+	size_t raw_alignment;
 	bool check_ascii_freq; ///< If true, perform check on ASCII frequencies when looking for false positives
 	RzStrEnc string_encoding; ///< The default string encoding type (when set to guess, it is automatically guessed).
 	RzBinStringSearchMode mode; ///< String search mode (auto, ro sections or raw binary)
@@ -504,6 +509,21 @@ typedef struct rz_bin_plugin_t {
 	RZ_OWN RzBinSourceLineInfo *(*lines)(RzBinFile *bf); //< only called once on load, ownership is transferred to the caller
 	RzPVector /*<RzBinSymbol *>*/ *(*symbols)(RzBinFile *bf);
 	RzPVector /*<RzBinImport *>*/ *(*imports)(RzBinFile *bf);
+	/**
+	 * \brief A method to search for strings in the binary.
+	 * If the binary always has a known string encoding (ASCII, UTF-8, UTF-16 etc.),
+	 * it is advisable to implement this function.
+	 * A simple implementation like the following is enough:
+	 * ```c
+	 * RzPVector *strings(RzBinFile *bf) {
+	 *   RzBinStringSearchOpt opt;
+	 *   rz_bin_string_search_opt_init(&opt);
+	 *   opt.mode = RZ_BIN_STRING_SEARCH_MODE_READ_ONLY_SECTIONS;
+	 *   opt.string_encoding = RZ_STRING_ENC_UTF8;
+	 *   return rz_bin_file_strings(bf, &opt);
+	 * }
+	 * ```
+	 */
 	RzPVector /*<RzBinString *>*/ *(*strings)(RzBinFile *bf);
 	RzBinInfo *(*info)(RzBinFile *bf);
 	RzStructuredData *(*bin_structure)(RzBinFile *bf);
@@ -760,7 +780,7 @@ typedef struct rz_bin_string_t {
 	 * Note: This is not related to the physical addresses an MMU would manage!
 	 */
 	ut64 paddr;
-	ut32 size; // size of buffer containing the string in bytes
+	ut32 size; ///< Size of buffer containing the string in bytes. Including the NUL byte.
 	ut32 length; // length of string in chars
 	RzStrEnc type; // Ascii Wide cp850 utf8 mutf8 ...
 } RzBinString;

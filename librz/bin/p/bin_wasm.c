@@ -318,6 +318,16 @@ static RzBuffer *create(RzBin *bin, const ut8 *code, int codelen, const ut8 *dat
 	return buf;
 }
 
+static RzPVector /*<RzBinString *>*/ *strings(RzBinFile *bf) {
+	RzBinStringSearchOpt opt;
+	rz_bin_string_search_opt_init(&opt);
+	opt.mode = RZ_BIN_STRING_SEARCH_MODE_READ_ONLY_SECTIONS;
+	// The WebAssembly standard defines names in UTF-8:
+	// https://webassembly.github.io/spec/core/bikeshed/#binary-utf8
+	opt.string_encoding = RZ_STRING_ENC_UTF8;
+	return rz_bin_file_strings(bf, &opt);
+}
+
 RzBinPlugin rz_bin_plugin_wasm = {
 	.name = "wasm",
 	.desc = "WebAssembly",
@@ -337,6 +347,7 @@ RzBinPlugin rz_bin_plugin_wasm = {
 	.info = &info,
 	.libs = &libs,
 	.create = &create,
+	.strings = &strings,
 };
 
 #ifndef RZ_PLUGIN_INCORE

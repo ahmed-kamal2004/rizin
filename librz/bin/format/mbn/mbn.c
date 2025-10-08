@@ -15,6 +15,7 @@
  */
 
 #include "mbn.h"
+#include <rz_util/rz_str.h>
 #include <stddef.h>
 
 bool mbn_read_sbl_header(RzBuffer *b, SblHeader *sb, ut64 *offset) {
