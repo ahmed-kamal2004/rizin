@@ -15,26 +15,14 @@
 
 #define INS_OP(I) (cmd.ops[(I)])
 
-static const char *h8300_register_name(H8300Operand *op) {
-	switch (op->typ) {
-	case H8300_OP_R8:
-		return h8300_get_register8_name(op->reg);
-	case H8300_OP_R16:
-		return h8300_get_register16_name(op->reg);
-	case H8300_OP_R32:
-		return h8300_get_register32_name(op->reg);
-	default: return NULL;
-	}
-}
-
-static void h8300_op2val(RzAnalysis *analysis, struct h8300_cmd *cmd, RzAnalysisValue *av, H8300Operand *iop) {
+static void h8300_op2val(RzAnalysis *analysis, H8300Instruction *cmd, RzAnalysisValue *av, H8300Operand *iop) {
 	switch (iop->typ) {
 	case H8300_OP_NONE: break;
 	case H8300_OP_R8:
 	case H8300_OP_R16:
 	case H8300_OP_R32:
 		av->type = RZ_ANALYSIS_VAL_REG;
-		av->reg = rz_reg_get(analysis->reg, h8300_register_name(iop), RZ_REG_TYPE_ANY);
+		av->reg = rz_reg_get(analysis->reg, h8300_get_register_name(iop->reg), RZ_REG_TYPE_ANY);
 		break;
 	case H8300_OP_IMM:
 		av->type = RZ_ANALYSIS_VAL_IMM;
@@ -55,17 +43,17 @@ static void h8300_op2val(RzAnalysis *analysis, struct h8300_cmd *cmd, RzAnalysis
 		break;
 	case H8300_OP_RD:
 		av->type = RZ_ANALYSIS_VAL_MEM;
-		av->reg = rz_reg_get(analysis->reg, h8300_get_register32_name(iop->rd.reg), RZ_REG_TYPE_ANY);
+		av->reg = rz_reg_get(analysis->reg, h8300_get_register_name(iop->rd.reg), RZ_REG_TYPE_ANY);
 		av->delta = iop->rd.disp;
 		break;
 	case H8300_OP_RI:
 		av->type = RZ_ANALYSIS_VAL_MEM;
-		av->reg = rz_reg_get(analysis->reg, h8300_get_register32_name(iop->reg), RZ_REG_TYPE_ANY);
+		av->reg = rz_reg_get(analysis->reg, h8300_get_register_name(iop->reg), RZ_REG_TYPE_ANY);
 		break;
 	case H8300_OP_RPOSTINC:
 	case H8300_OP_RPREDEC:
 		av->type = RZ_ANALYSIS_VAL_MEM;
-		av->reg = rz_reg_get(analysis->reg, h8300_get_register32_name(iop->reg), RZ_REG_TYPE_ANY);
+		av->reg = rz_reg_get(analysis->reg, h8300_get_register_name(iop->reg), RZ_REG_TYPE_ANY);
 		break;
 	case H8300_OP_CCR:
 		av->type = RZ_ANALYSIS_VAL_REG;
@@ -74,7 +62,7 @@ static void h8300_op2val(RzAnalysis *analysis, struct h8300_cmd *cmd, RzAnalysis
 	}
 }
 
-static void h8300_analyze_val(RzAnalysis *analysis, RzAnalysisOp *aop, struct h8300_cmd *cmd) {
+static void h8300_analyze_val(RzAnalysis *analysis, RzAnalysisOp *aop, H8300Instruction *cmd) {
 	uint8_t srci = 0;
 	for (uint8_t i = 0; i < cmd->ops_count; ++i) {
 		H8300Operand *iop = cmd->ops + i;
@@ -104,14 +92,14 @@ static void h8300_analyze_val(RzAnalysis *analysis, RzAnalysisOp *aop, struct h8
 static int h8300_op(RzAnalysis *analysis, RzAnalysisOp *op, ut64 addr,
 	const ut8 *buf, int len, RzAnalysisOpMask mask) {
 	int ret;
-	struct h8300_cmd cmd = { 0 };
+	H8300Instruction cmd = { 0 };
 
 	if (!op) {
 		return 2;
 	}
 
 	op->addr = addr;
-	ret = op->size = h8300_decode_command(buf, len, &cmd, addr);
+	ret = op->size = h8300_decode_command(buf, len, &cmd, addr, analysis->cpu);
 
 	if (ret < 0) {
 		return ret;
@@ -249,7 +237,7 @@ static int h8300_op(RzAnalysis *analysis, RzAnalysisOp *op, ut64 addr,
 		switch (cmd.fmt) {
 		case H8300_INSN_FORMAT_RI:
 			op->type = RZ_ANALYSIS_OP_TYPE_IRCALL;
-			op->ireg = h8300_get_register32_name(INS_OP(0).reg);
+			op->ireg = h8300_get_register_name(INS_OP(0).reg);
 			break;
 		case H8300_INSN_FORMAT_ABS:
 			op->type = RZ_ANALYSIS_OP_TYPE_CALL;
@@ -272,7 +260,7 @@ static int h8300_op(RzAnalysis *analysis, RzAnalysisOp *op, ut64 addr,
 		switch (cmd.fmt) {
 		case H8300_INSN_FORMAT_RI:
 			op->type = RZ_ANALYSIS_OP_TYPE_IRJMP;
-			op->ireg = h8300_get_register32_name(INS_OP(0).reg);
+			op->ireg = h8300_get_register_name(INS_OP(0).reg);
 			break;
 		case H8300_INSN_FORMAT_ABS:
 			op->type = RZ_ANALYSIS_OP_TYPE_JMP;
@@ -365,7 +353,12 @@ static int h8300_op(RzAnalysis *analysis, RzAnalysisOp *op, ut64 addr,
 	}
 
 	if (mask & RZ_ANALYSIS_OP_MASK_DISASM) {
-		op->mnemonic = rz_str_newf("%s%s%s", cmd.instr, RZ_STR_ISEMPTY(cmd.ops_str) ? "" : " ", cmd.ops_str);
+		H8300InstructionStr ins_str = { 0 };
+		if (h8300_make_opstr(&cmd, &ins_str)) {
+			op->mnemonic = rz_str_newf("%s%s%s", ins_str.instr, RZ_STR_ISEMPTY(ins_str.ops_str) ? "" : " ", ins_str.ops_str);
+		} else {
+			op->mnemonic = rz_str_dup("invalid");
+		}
 	}
 
 	if (mask & RZ_ANALYSIS_OP_MASK_VAL) {
@@ -384,6 +377,71 @@ static int h8300_op(RzAnalysis *analysis, RzAnalysisOp *op, ut64 addr,
 }
 
 static char *get_reg_profile(RzAnalysis *analysis) {
+	if (h8300_cpu_type(analysis->cpu) == CPU_H8300H) {
+		char *p =
+			"=PC	pc\n"
+			"=SP	er7\n"
+			"=A0	r0\n"
+			"gpr	er0	.32	0	0\n"
+			"gpr	r0	.16	0	0\n"
+			"gpr	r0h	.8	0	0\n"
+			"gpr	r0l	.8	1	0\n"
+			"gpr	e0	.16	2	0\n"
+
+			"gpr	er1	.32	4	0\n"
+			"gpr	r1	.16	4	0\n"
+			"gpr	r1h	.8	4	0\n"
+			"gpr	r1l	.8	5	0\n"
+			"gpr	e1	.16	6	0\n"
+
+			"gpr	er2	.32	8	0\n"
+			"gpr	r2	.16	8	0\n"
+			"gpr	r2h	.8	8	0\n"
+			"gpr	r2l	.8	9	0\n"
+			"gpr	e2	.16	10	0\n"
+
+			"gpr	er3	.32	12	0\n"
+			"gpr	r3	.16	12	0\n"
+			"gpr	r3h	.8	12	0\n"
+			"gpr	r3l	.8	13	0\n"
+			"gpr	e3	.16	14	0\n"
+
+			"gpr	er4	.32	16	0\n"
+			"gpr	r4	.16	16	0\n"
+			"gpr	r4h	.8	16	0\n"
+			"gpr	r4l	.8	17	0\n"
+			"gpr	e4	.16	18	0\n"
+
+			"gpr	er5	.32	20	0\n"
+			"gpr	r5	.16	20	0\n"
+			"gpr	r5h	.8	20	0\n"
+			"gpr	r5l	.8	21	0\n"
+			"gpr	e5	.16	22	0\n"
+
+			"gpr	er6	.32	24	0\n"
+			"gpr	r6	.16	24	0\n"
+			"gpr	r6h	.8	24	0\n"
+			"gpr	r6l	.8	25	0\n"
+			"gpr	e6	.16	26	0\n"
+
+			"gpr	er7	.32	28	0\n"
+			"gpr	r7	.16	28	0\n"
+			"gpr	r7h	.8	28	0\n"
+			"gpr	r7l	.8	29	0\n"
+			"gpr	e7	.16	30	0\n"
+
+			"gpr	pc	.24	32	0\n"
+			"gpr	ccr	.8	35	0\n"
+			"gpr	I	.1	.287	0\n"
+			"gpr	U1	.1	.286	0\n"
+			"gpr	H	.1	.285	0\n"
+			"gpr	U2	.1	.284	0\n"
+			"gpr	N	.1	.283	0\n"
+			"gpr	Z	.1	.282	0\n"
+			"gpr	V	.1	.281	0\n"
+			"gpr	C	.1	.280	0\n";
+		return strdup(p);
+	}
 	char *p =
 		"=PC	pc\n"
 		"=SP	r7\n"
@@ -412,16 +470,8 @@ static char *get_reg_profile(RzAnalysis *analysis) {
 		"gpr	r7	.16	14	0\n"
 		"gpr	r7h	.8	14	0\n"
 		"gpr	r7l	.8	15	0\n"
-		"gpr	pc	.24	16	0\n"
-		"gpr	ccr	.8	19	0\n"
-		"gpr	e0	.16	30	0\n"
-		"gpr	e1	.16	32	0\n"
-		"gpr	e2	.16	34	0\n"
-		"gpr	e3	.16	36	0\n"
-		"gpr	e4	.16	38	0\n"
-		"gpr	e5	.16	40	0\n"
-		"gpr	e6	.16	44	0\n"
-		"gpr	e7	.16	46	0\n"
+		"gpr	pc	.16	16	0\n"
+		"gpr	ccr	.8	18	0\n"
 		"gpr	I	.1	.151	0\n"
 		"gpr	U1	.1	.150	0\n"
 		"gpr	H	.1	.149	0\n"
